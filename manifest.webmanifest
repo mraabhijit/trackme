@@ -1,6 +1,6 @@
 {
-  "name": "Journable",
-  "short_name": "Journable",
+  "name": "TrackMe",
+  "short_name": "TrackMe",
   "description": "A private food, exercise and water journal that lives on your phone.",
   "start_url": "./",
   "scope": "./",
