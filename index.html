@@ -8,15 +8,16 @@
 <meta name="theme-color" content="#1c7352">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/192.png">
-<title>Journable</title>
+<title>TrackMe</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231c7352'/%3E%3Cpath d='M12 31h40a20 17 0 0 1-20 17A20 17 0 0 1 12 31z' fill='%23fff'/%3E%3Cpath d='M31 28C29 17 36 10 49 10c1 12-6 18-18 18z' fill='%23bfe8d3'/%3E%3C/svg%3E">
+<script src="early.js"></script>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <header class="hdr" id="hdr">
   <button type="button" id="menu-btn" class="icon-btn" aria-label="Open menu" aria-expanded="false" aria-controls="drawer"><svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
   <h1 id="title" class="title"></h1>
-  <button type="button" id="ai-chip" class="status-chip" aria-label="Text reading: Basic parser">Basic parser</button>
+  <button type="button" id="ai-chip" class="status-chip" aria-label="Basic: the built-in rules read what you type. Tap to set up on-device AI.">Basic</button>
 </header>
 <div id="app">
   <div id="banners"></div>
@@ -24,7 +25,7 @@
 </div>
 <form id="qbar" class="qbar" hidden autocomplete="off">
   <label for="ql" class="sr-only">What did you eat or exercise?</label>
-  <textarea id="ql" rows="1" maxlength="500" placeholder="What did you eat or exercise?" enterkeyhint="send"></textarea>
+  <textarea id="ql" rows="1" maxlength="500" placeholder="What did you eat or exercise?" enterkeyhint="enter"></textarea>
   <button type="button" id="ql-mic" class="icon-btn" aria-label="Speak" hidden></button>
   <button type="submit" id="ql-send" class="icon-btn send" aria-label="Send"><svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><path d="M4 12l16-8l-6 16l-3-7z"/></svg></button>
   <button type="button" id="ql-plus" class="icon-btn" aria-label="Add food by search"><svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>

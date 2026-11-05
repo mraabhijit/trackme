@@ -348,6 +348,7 @@ function cleanSavedItem(it){
     unitG:numIn(it.unitG,0.0001,5000)?it.unitG:1,grams:it.grams,per100:per};
   var a=it.adj;if(a&&typeof a==='object'&&numIn(a.kcal,0,20000)&&numIn(a.p,0,20000)&&numIn(a.c,0,20000)&&numIn(a.f,0,20000))o2.adj={kcal:a.kcal,p:a.p,c:a.c,f:a.f};
   if(typeof it.slot==='string'&&/^[\w-]{1,40}$/.test(it.slot))o2.slot=it.slot;
+  if(it.est==='ai')o2.est='ai';
   return o2;
 }
 function cleanSaved(x){
@@ -518,7 +519,8 @@ function dayInfo(p,date){
 
 /* ---------- device settings (not part of backups): theme ---------- */
 var UIK=NS+'ui';
-var UI=(function(){var o=jget(UIK,{});o=o&&typeof o==='object'?o:{};return {theme:['system','light','dark'].indexOf(o.theme)>=0?o.theme:'system',voiceOk:o.voiceOk===true,voiceLang:o.voiceLang==='hi-IN'?'hi-IN':'en-IN',backupReminder:o.backupReminder!==false,llmOn:o.llmOn===true,modelId:typeof o.modelId==='string'&&/^[\w.\-]{1,60}$/.test(o.modelId)?o.modelId:null}})();
+var FONT_SIZES=[['small','Small',13],['medium','Medium',14],['large','Large',16],['xlarge','Extra large',18]];
+var UI=(function(){var o=jget(UIK,{});o=o&&typeof o==='object'?o:{};return {fontSize:FONT_SIZES.some(function(f){return f[0]===o.fontSize})?o.fontSize:'medium',theme:['system','light','dark'].indexOf(o.theme)>=0?o.theme:'system',voiceOk:o.voiceOk===true,voiceLang:o.voiceLang==='hi-IN'?'hi-IN':'en-IN',backupReminder:o.backupReminder!==false,llmOn:o.llmOn===true,modelId:typeof o.modelId==='string'&&/^[\w.\-]{1,60}$/.test(o.modelId)?o.modelId:null}})();
 function saveUI(){jset(UIK,UI)}
 function applyTheme(){
   var r=document.documentElement;
@@ -526,6 +528,10 @@ function applyTheme(){
   else{r.setAttribute('data-theme',UI.theme);r.style.colorScheme=UI.theme}
 }
 applyTheme();
+/* text size: the root font size (the whole layout is rem based); early.js applies the saved value before first paint */
+function fontPx(k){var f=FONT_SIZES.filter(function(x){return x[0]===k})[0];return f?f[2]:14}
+function applyFontSize(){document.documentElement.style.fontSize=fontPx(UI.fontSize)+'px'}
+applyFontSize();
 
 /* ---------- state ---------- */
 var S={myFoods:null,tab:'today',profile:meta.activeProfileId?loadProfile(meta.activeProfileId):null,today:todayStr(),viewDate:todayStr(),add:null,range:30,newPerson:false,importState:null,exportedSinceDelete:false,persisted:null,pending:null};
@@ -534,6 +540,7 @@ function setProfile(pid){S.pending=null;meta.activeProfileId=pid;saveMeta();S.pr
 /* ---------- icons (own simple line icons) ---------- */
 function icon(paths,cls){return s('svg',{viewBox:'0 0 24 24',class:'ico'+(cls?' '+cls:''),'aria-hidden':'true'},paths.map(function(d){return s('path',{d:d})}))}
 var ICONS={
+  back:['M19 12H5','M11 6l-6 6l6 6'],
   menu:['M4 6h16','M4 12h16','M4 18h16'],
   today:['M12 3v2','M12 19v2','M3 12h2','M19 12h2','M5.6 5.6L7 7','M17 17l1.4 1.4','M5.6 18.4L7 17','M17 7l1.4-1.4','M12 8a4 4 0 1 0 0 8a4 4 0 0 0 0-8z'],
   goals:['M5 21V4','M5 4h11l-2 4l2 4H5'],
@@ -571,8 +578,10 @@ function brandIcon(size){
 var toastTimer=null;
 function toast(msg,undoLabel,undoFn){
   var box=$('#toasts');box.replaceChildren();clearTimeout(toastTimer);
-  var t=h('div',{class:'toast'},h('span',{text:msg}));
+  var wide=UI.fontSize==='large'||UI.fontSize==='xlarge',t=h('div',{class:'toast'+(wide?' wide':'')},h('span',{text:msg}));
   if(undoFn)t.appendChild(h('button',{type:'button',text:undoLabel||'Undo',onclick:function(){box.replaceChildren();clearTimeout(toastTimer);undoFn()}}));
+  /* Large / Extra large text: sit just above the quick-log bar (full width, at most 2 lines: see .toast.wide) */
+  var qb=$('#qbar');if(wide)box.style.setProperty('--toast-bottom',(qb&&qb.offsetHeight?Math.round(window.innerHeight-qb.getBoundingClientRect().top+8):88)+'px');
   box.appendChild(t);toastTimer=setTimeout(function(){box.replaceChildren()},undoFn?5000:3500);
 }
 
@@ -617,7 +626,7 @@ function openSheet(o){
 /* ---------- drawer ---------- */
 var NAV=[['backup','Backup & restore','backup'],['today','Today','today'],['goals','Daily goals','goals'],['weekly','Weekly summary','weekly'],['weight','Weight tracker','weight'],['water','Water tracker','water'],
   ['saved','Saved entries','saved'],['myfoods','My foods','myfoods'],['history','History','history'],['ai','On-device AI','ai'],['phone','Check my phone','phone'],['settings','Settings','settings'],['about','About','about']];
-var TITLES={today:'Today',add:'Add food',history:'History',weight:'Weight tracker',goals:'Daily goals',backup:'Backup & restore',settings:'Settings',myfoods:'My foods',weekly:'Weekly summary',water:'Water tracker',saved:'Saved entries',about:'About',ai:'On-device AI',phone:'Check my phone'};
+var TITLES={today:'Today',add:'Add food',history:'History',weight:'Weight tracker',goals:'Daily goals',backup:'Backup & restore',settings:'Settings',myfoods:'My foods',weekly:'Weekly summary',water:'Water tracker',saved:'Saved entries',about:'About',ai:'On-device AI',phone:'Check my phone',meal:'Meal'};
 function drawerOpen(){return $('#drawer').classList.contains('open')}
 function openDrawer(){
   buildDrawer();var d=$('#drawer');d.classList.add('open');d.removeAttribute('inert');$('#drawer-scrim').hidden=false;
@@ -633,14 +642,14 @@ function goto(view){
   closeDrawer(false);closeSheet(false);S.pending=null;S.aiRedraw=null;
   if(view==='goals')S.newPerson=false;
   if(view==='myfoods')S.myFoods={mode:'list'};
-  if(view==='weekly')S.weekStart=null;
+  if(view==='weekly')S.weekIdx=0;
   if(view==='add')S.add=null;
   if(view==='today')S.viewDate=S.viewDate||S.today;
   S.tab=view;render(true);
 }
 function buildDrawer(){
   var d=$('#drawer');d.replaceChildren();
-  d.appendChild(h('div',{class:'drawer-brand'},brandIcon(36),h('span',{class:'brand-name',text:'Journable'})));
+  d.appendChild(h('div',{class:'drawer-brand'},brandIcon(36),h('span',{class:'brand-name',text:'TrackMe'})));
   if(S.profile){
     var ps=listProfiles();
     var sel=h('select',{id:'p-switch','aria-label':'Person',onchange:function(){S.newPerson=false;setProfile(sel.value);closeDrawer(false);S.tab='today';render(true)}});
@@ -659,7 +668,8 @@ function titleFor(){
   if(S.tab==='goals'){return !S.profile?'Welcome':S.newPerson?'Add a person':'Daily goals'}
   if(S.tab==='add')return S.add&&S.add.editId?'Edit entry':'Add food';
   if(S.tab==='today')return S.viewDate===S.today?'Today':fmtDate(S.viewDate);
-  return TITLES[S.tab]||'Journable';
+  if(S.tab==='meal'&&S.meal)return S.meal.name||'Meal';
+  return TITLES[S.tab]||'TrackMe';
 }
 function buildShell(){
   var t=$('#title'),isToday=S.tab==='today'&&!!S.profile;
@@ -667,7 +677,7 @@ function buildShell(){
   if(isToday){t.appendChild(h('button',{type:'button',id:'date-btn',class:'title-btn','aria-haspopup':'dialog','aria-expanded':'false',onclick:function(){openCalendar($('#date-btn'))}},titleFor()))}
   else t.textContent=titleFor();
   var showBar=isToday;
-  $('#qbar').hidden=!showBar;document.body.classList.toggle('has-qbar',showBar);
+  $('#qbar').hidden=!showBar;document.body.classList.toggle('has-qbar',showBar);if(showBar&&typeof autoGrow==='function')try{autoGrow()}catch(e){}
   buildDrawer();
 }
 function render(focusHeading){
@@ -675,9 +685,9 @@ function render(focusHeading){
   try{
     showBanners();
     if(!S.profile&&S.tab!=='goals'&&S.tab!=='about')S.tab='goals';
-    buildShell();
+    buildShell();pinMetrics();if(S.tab!=='today')document.documentElement.style.scrollPaddingTop='';
     root.replaceChildren();
-    ({today:viewToday,add:viewAdd,history:viewHistory,weight:viewWeight,goals:viewGoals,backup:viewBackup,settings:viewSettings,myfoods:viewMyFoods,weekly:viewWeekly,water:viewWater,saved:viewSaved,about:viewAbout,ai:viewAI,phone:viewPhone})[S.tab](root);
+    ({today:viewToday,add:viewAdd,history:viewHistory,weight:viewWeight,goals:viewGoals,backup:viewBackup,settings:viewSettings,myfoods:viewMyFoods,weekly:viewWeekly,meal:viewMeal,water:viewWater,saved:viewSaved,about:viewAbout,ai:viewAI,phone:viewPhone})[S.tab](root);
     updateCredit();
   }catch(err){
     root.replaceChildren(h('section',{class:'card',role:'alert',id:'crash'},h('h2',{text:'Something went wrong'}),
@@ -692,7 +702,7 @@ function render(focusHeading){
 }
 function exportRaw(){
   var o={app:'diet-tracker-raw',exportedAt:new Date().toISOString(),keys:{}};
-  skeys(NS).forEach(function(k){o.keys[k]=sget(k)});download(o,'journable-raw-'+todayStr()+'.json');
+  skeys(NS).forEach(function(k){o.keys[k]=sget(k)});download(o,'trackme-raw-'+todayStr()+'.json');
 }
 function setTab(t){if(!S.profile&&t!=='goals')t='goals';goto(t)}
 
@@ -753,11 +763,84 @@ function chipsFor(n,adjusted){
   var c=function(t){return h('span',{class:'nchip',text:t})};
   return h('div',{class:'nchips'},c('Calories: '+r0(n.kcal)),c('Carbs: '+r0(n.c)+'g'),c('Protein: '+r0(n.p)+'g'),c('Fat: '+r0(n.f)+'g'),adjusted?h('span',{class:'tag',text:'adjusted'}):null);
 }
-function qtyText(e){return fmtQty(e.qty)+' × '+shortUnit(e)+(e.unit==='g'?'':' ('+r0(e.grams)+' g)')}
+/* "2 × katori (300 g)", "100 × g", "200 ml": the unit is shown the way it was typed */
+function qtyText(e){var s=shortUnit(e);return e.unit==='g'?fmtQty(e.qty)+' '+s:fmtQty(e.qty)+' × '+s+' ('+r0(e.grams)+' g)'}
+/* compact pinned summary: Remaining + carbs / protein / fat, each consumed / goal with a thin bar */
+function compactBar(tot,c,left,counted,eaten){
+  function col(label,id,val,goal,over,extra){
+    return h('div',{class:'cc'+(over?' over':'')},h('span',{class:'cl',id:id+'-label',text:label}),bar(goal>0?val/goal:0,over),h('span',{class:'cv',id:id,text:extra!==undefined?extra:r0(val)+' / '+r0(goal)}));
+  }
+  var tgt=c.target+counted,neg=left<0;
+  return h('div',{class:'sum-cmp',id:'sum-compact',role:'group','aria-label':'Summary: calories remaining and macros'},
+    h('div',{class:'cols4c'},
+      h('div',{class:'cc'+(neg?' over':'')},h('span',{class:'cl',id:'c-remaining-label',text:neg?'Over by':'Remaining'}),bar(tgt>0?eaten/tgt:0,neg),h('span',{class:'cv strong'+(neg?' bad':''),id:'c-remaining',text:neg?'-'+r0(-left)+' kcal':r0(left)+' kcal'})),
+      col('Carbs','c-carbs',tot.c,c.c,c.c>0&&tot.c>c.c*1.0001),col('Protein','c-protein',tot.p,c.p,false),col('Fat','c-fat',tot.f,c.f,c.f>0&&tot.f>c.f*1.0001)));
+}
+/* collapse once scrolled past ~60 px, expand again near the top (hysteresis); never when the page is too short to scroll */
+var PIN={collapsed:false,lockUntil:0};
+function pinMetrics(){var hd=$('#hdr');document.documentElement.style.setProperty('--hdr-h',(hd?hd.offsetHeight:56)+'px')}
+function pinScroll(initial){
+  var pin=$('#today-pin');
+  if(!pin||S.tab!=='today')return;
+  var y=window.scrollY||0,now=Date.now();
+  if(!initial&&now<PIN.lockUntil)return;
+  var want=PIN.collapsed;
+  if(!PIN.collapsed){
+    if(y>60){
+      var strip=pin.querySelector('.strip'),hc=(strip?strip.offsetHeight+10:62)+78,D=Math.max(0,pin.offsetHeight-hc),room=document.documentElement.scrollHeight-window.innerHeight;
+      if(room-D>100)want=true;   /* collapsing shortens the page: only if it can still scroll afterwards, otherwise it would flip back and forth */
+    }
+  }else if(y<=20)want=false;
+  if(want!==PIN.collapsed){
+    PIN.collapsed=want;pin.classList.toggle('collapsed',want);PIN.lockUntil=now+350;
+  }
+  clearTimeout(PIN.padT);
+  PIN.padT=setTimeout(function(){var pn=$('#today-pin');if(pn)document.documentElement.style.scrollPaddingTop=(($('#hdr')||{offsetHeight:56}).offsetHeight+(PIN.collapsed?pn.offsetHeight:((pn.querySelector('.strip')||{offsetHeight:52}).offsetHeight+88))+8)+'px'},260);
+}
+/* swipe between days on Today: right = previous day, left = next day (never into the future) */
+var SW={id:null,x:0,y:0,ok:false};
+function swipeBlocked(t){
+  if(!t||!t.closest)return true;
+  if(t.closest('textarea,input,select,#qbar,#sheet,.sheet,[role=dialog],dialog,#drawer,.scroll-x,.tbl-wrap,table,.wk-wrap'))return true;
+  return false;
+}
+function swipeDay(dir){
+  var nd=addDays(S.viewDate,dir);
+  if(nd>S.today){
+    var v=$('#view');if(v&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){v.classList.remove('bounce');void v.offsetWidth;v.classList.add('bounce');setTimeout(function(){v.classList.remove('bounce')},400)}
+    return false;
+  }
+  S.viewDate=nd;render();return true;
+}
+document.addEventListener('pointerdown',function(ev){
+  SW.ok=false;
+  if(S.tab!=='today'||!S.profile||sheetState||document.body.classList.contains('sheet-open'))return;
+  if(ev.pointerType==='mouse'&&ev.button!==0)return;
+  var dr=$('#drawer');if(dr&&dr.classList.contains('open'))return;
+  if(swipeBlocked(ev.target))return;
+  try{var sel0=window.getSelection();if(sel0&&String(sel0).length>0)return}catch(e){}   /* leave an existing text selection alone */
+  SW={id:ev.pointerId,x:ev.clientX,y:ev.clientY,ok:true};
+},true);
+var SWQ=0;
+document.addEventListener('click',function(ev){if(Date.now()<SWQ){ev.stopPropagation();ev.preventDefault()}},true);   /* a mouse drag is not a tap */
+document.addEventListener('pointerup',function(ev){
+  if(!SW.ok||ev.pointerId!==SW.id)return;SW.ok=false;
+  var dx=ev.clientX-SW.x,dy=ev.clientY-SW.y;
+  if(ev.pointerType==='mouse'&&Math.abs(dx)+Math.abs(dy)>12)SWQ=Date.now()+300;
+  if(Math.abs(dx)<=60||Math.abs(dx)<=1.5*Math.abs(dy))return;
+  if(S.tab!=='today'||sheetState)return;
+  try{window.getSelection().removeAllRanges()}catch(e){}
+  swipeDay(dx>0?-1:1);
+},true);
+document.addEventListener('pointercancel',function(){SW.ok=false},true);
+window.addEventListener('scroll',function(){pinScroll(false)},{passive:true});
+window.addEventListener('resize',function(){pinMetrics();pinScroll(true)});
 function viewToday(root){
   var p=S.profile,d=S.viewDate,info=dayInfo(p,d),c=info.c,tot=info.tot,eaten=tot.kcal,isToday=d===S.today;
-  root.appendChild(weekStrip(d));
-  root.appendChild(h('p',{class:'muted small date-long',id:'date-long',text:p.name+' - '+fmtDateLong(d)}));
+  /* the week strip, the date line and the Calories/Macros card are pinned under the header; the big card collapses to one compact bar when you scroll */
+  var pin=h('div',{class:'today-pin noanim',id:'today-pin'});root.appendChild(pin);
+  pin.appendChild(weekStrip(d));
+  pin.appendChild(h('p',{class:'muted small date-long',id:'date-long',text:p.name+' - '+fmtDateLong(d)}));
   /* one-time notice for profiles moved to the new activity scale */
   var an=p.activityNote;
   if(an&&!an.dismissed&&an.from!==an.to){
@@ -771,7 +854,8 @@ function viewToday(root){
   var m3=m3Card(p,d);if(m3)root.appendChild(m3);
   /* Calories + macros */
   var exercise=info.exTotal,counted=info.counted,left=info.left,note=targetNote(c,p);
-  root.appendChild(h('section',{class:'card cal-card',id:'cal-card','aria-label':'Calories and macros'},
+  var cmpEl=compactBar(tot,c,left,counted,eaten);
+  pin.appendChild(h('section',{class:'card cal-card',id:'cal-card','aria-label':'Calories and macros'},h('div',{class:'sum-exp'},
     h('h2',{class:'cardhead'},icon(ICONS.today,'hico'),'Calories'),
     h('div',{class:'pbar big',id:'t-bar',role:'progressbar','aria-valuemin':'0','aria-valuemax':String(r0(c.target+counted)),'aria-valuenow':String(r0(eaten)),'aria-label':'Calories eaten of daily target'},h('i',{class:eaten>c.target+counted?'over':'',style:'width:'+Math.min(100,(c.target+counted)>0?eaten/(c.target+counted)*100:0)+'%'})),
     h('div',{class:'cols3'},
@@ -780,7 +864,8 @@ function viewToday(root){
       h('div',null,h('span',{class:'clabel',id:'t-remaining-label',text:left>=0?'Remaining':'Over by'}),h('span',{class:'cval strong'+(left<0?' bad':''),id:'t-remaining',text:String(left>=0?r0(left):'-'+r0(-left))}))),
     exercise>0&&!p.exerciseAdds?h('p',{class:'small muted',id:'ex-note',text:'Exercise: not added, your activity level already includes workouts.'}):null,
     h('h2',{class:'cardhead'},icon(ICONS.weekly,'hico'),'Macros'),
-    h('div',{class:'cols3 macros'},macroCol('Carbs','t-c',tot.c,c.c),macroCol('Protein','t-p',tot.p,c.p),macroCol('Fat','t-f',tot.f,c.f))));
+    h('div',{class:'cols3 macros'},macroCol('Carbs','t-c',tot.c,c.c),macroCol('Protein','t-p',tot.p,c.p),macroCol('Fat','t-f',tot.f,c.f))),cmpEl));
+  PIN.collapsed=false;requestAnimationFrame(function(){pinScroll(true);requestAnimationFrame(function(){pin.classList.remove('noanim')})});
   root.appendChild(waterCard(p,d));
   /* meals */
   var bySlot={},order=[];
@@ -792,8 +877,8 @@ function viewToday(root){
   function logOf(e){if(!e.logId)return null;if(!(e.logId in logCache))logCache[e.logId]=findLog(p.id,e.logId,e.date);return logCache[e.logId]}
   groups.forEach(function(g){
     var list=g.list,sub=sumEntries(list).kcal;
-    var card=h('section',{class:'card slot','aria-label':g.name,'data-slot':g.id},
-      h('h3',null,h('span',{text:g.name}),h('span',{class:'slot-kcal',text:r0(sub)+' kcal'}),
+    var card=h('section',{class:'card slot tappable','aria-label':g.name,'data-slot':g.id,onclick:function(ev){if(ev.target.closest('button,a,input,select,textarea'))return;openMeal(d,g)}},
+      h('h3',null,h('button',{type:'button',class:'slot-title-btn','aria-label':'Open details for '+g.name,onclick:function(){openMeal(d,g)}},g.name),h('span',{class:'slot-kcal',text:r0(sub)+' kcal'}),
         h('button',{type:'button',class:'icon-btn slot-menu-btn','aria-label':'Options for '+g.name,'aria-haspopup':'dialog',onclick:function(ev){openSlotMenu(g,ev.currentTarget)}},icon(ICONS.more))));
     var ul=h('ul',{class:'plain'}),lastLog=null;
     list.forEach(function(e){
@@ -806,7 +891,7 @@ function viewToday(root){
       lastLog=e.logId||null;
       var li=h('li',{class:'entry col','data-time':e.time,'data-id':e.id});
       var menuBtn=h('button',{type:'button',class:'icon-btn menu-btn','aria-label':'Options for '+e.foodName,'aria-haspopup':'dialog',onclick:function(){openEntryMenu(e,menuBtn)}},icon(ICONS.more));
-      li.appendChild(h('div',{class:'top'},h('div',{class:'grow'},h('b',{text:e.foodName}),' ',h('span',{class:'qty-text',text:'('+qtyText(e)+')'})),menuBtn));
+      li.appendChild(h('div',{class:'top'},h('div',{class:'grow'},h('b',{text:e.foodName}),' ',h('span',{class:'qty-text',text:'('+qtyText(e)+')'}),e.est==='ai'&&!e.adj?h('span',null,' ',h('span',{class:'tag ai',title:'Calories and macros estimated by AI','aria-label':'Estimated by AI',text:'AI'})):null),menuBtn));
       li.appendChild(h('div',{class:'muted small'},h('span',{class:'time-text',text:fmt12(e.time)})));
       li.appendChild(chipsFor(n,!!e.adj));
       ul.appendChild(li);
@@ -816,33 +901,109 @@ function viewToday(root){
     root.appendChild(card);
   });
   if(info.exs.length)root.appendChild(exerciseCard(p,info,logOf));
-  /* day total */
-  if(info.ents.length){
-    var cols=[['Calories','dt-kcal',tot.kcal,c.target,''],['Carbs','dt-c',tot.c,c.c,'g'],['Protein','dt-p',tot.p,c.p,'g'],['Fat','dt-f',tot.f,c.f,'g']];
-    root.appendChild(h('section',{class:'card',id:'day-total','aria-label':'Day total'},h('h2',{text:'Day total'}),
-      h('div',{class:'cols4'},cols.map(function(k){
-        var pct=k[3]>0?k[2]/k[3]:0;
-        return h('div',null,h('span',{class:'clabel',text:k[0]}),h('span',{class:'cval',id:k[1],text:r0(k[2])+k[4]}),bar(pct,false),h('span',{class:'pct small muted',id:k[1]+'-pct',text:r0(pct*100)+'%'}));
-      }))));
+}
+
+/* ---------- MEAL DETAIL: items, totals, nutrition facts, on-demand AI analysis ---------- */
+var MEAL_AN={};   /* in-memory cache of AI analyses, keyed by the meal's numbers; never stored */
+function openMeal(d,g){S.meal={date:d,slot:g.id,name:g.name};S.tab='meal';render(true)}
+function mealFacts(list){
+  /* sums only the nutrients the food table really has: carbs, fibre, protein, fat. Fibre is partial when some items have none. */
+  var t={c:0,p:0,f:0,fib:0},fibN=0;
+  list.forEach(function(e){
+    var n=entryNut(e);t.c+=n.c;t.p+=n.p;t.f+=n.f;
+    var known=e.est!=='ai'&&!(e.per100.fib===0&&/^(c_|off_|ai_|rp_)/.test(e.foodId||''));
+    if(known){t.fib+=nut(e).fib;fibN++}
+  });
+  t.fibN=fibN;t.n=list.length;return t;
+}
+function mealKey(list){return list.map(function(e){var n=entryNut(e);return e.id+':'+r1(n.kcal)+'/'+r1(n.p)+'/'+r1(n.c)+'/'+r1(n.f)}).join('|')}
+function mealPrompt(name,list,tot,fact){
+  var L=['Meal: '+name+'.'];
+  list.forEach(function(e){var n=entryNut(e);L.push('- '+e.foodName+' ('+qtyText(e)+'): '+r0(n.kcal)+' kcal, protein '+r1(n.p)+' g, carbs '+r1(n.c)+' g, fat '+r1(n.f)+' g')});
+  L.push('Total: '+r0(tot.kcal)+' kcal, protein '+r1(tot.p)+' g, carbs '+r1(tot.c)+' g, fat '+r1(tot.f)+' g'+(fact.fibN?', fibre '+r1(fact.fib)+' g'+(fact.fibN<fact.n?' (from '+fact.fibN+' of '+fact.n+' items)':''):'')+'.');
+  return L.join('\n');
+}
+/* one plain-text generation (temperature 0, short), with timeout and Cancel; resolves {text,reason} */
+function llmAnalyse(prompt){
+  return new Promise(function(resolve){
+    var done=false,job={};LLM.job=job;
+    function fin(text,reason){if(done)return;done=true;clearTimeout(tm);if(LLM.job===job)LLM.job=null;if(LLM.state==='ready')llmTouch();resolve({text:text,reason:reason})}
+    var tm=setTimeout(function(){llmInterrupt();fin(null,'timeout')},window.__llmTimeoutMs||30000);
+    job.cancel=function(){llmInterrupt();fin(null,'cancelled')};
+    llmEnsure().then(function(ok){
+      if(done)return;if(!ok){fin(null,'error');return}
+      var mk=llmMock();
+      if(mk&&mk.analyse)return Promise.resolve(mk.analyse(prompt));
+      if(mk)return Promise.reject(new Error('no analyse'));
+      var eng=LLM.engine,model=llmModel(LLM.modelId);if(!eng)return Promise.reject(new Error('no engine'));
+      var req={messages:[{role:'system',content:'You write a short note about one meal for the person who ate it. Use only the numbers given. Write 2 or 3 plain sentences about the mix of protein, fibre, fat and sugar. No lists, no medical advice, no diagnoses.'},{role:'user',content:prompt+(model&&model.qwen?' /no_think':'')}],temperature:0,max_tokens:140};
+      if(model&&model.qwen)req.extra_body={enable_thinking:false};
+      return eng.chat.completions.create(req).then(function(r){return r&&r.choices&&r.choices[0]&&r.choices[0].message&&r.choices[0].message.content});
+    }).then(function(t){if(done)return;t=typeof t==='string'?t.replace(/\s+/g,' ').trim().slice(0,600):'';fin(t||null,t?'ok':'bad')},function(){fin(null,'error')});
+  });
+}
+function viewMeal(root){
+  var p=S.profile,m=S.meal;
+  var list=m?entriesOn(p.id,m.date).filter(function(e){return e.slot===m.slot}):[];
+  if(!list.length){S.tab='today';S.meal=null;S.viewDate=m?m.date:S.viewDate;viewToday(root);return}
+  var d=m.date,info=dayInfo(p,d),c=info.c,tot=sumEntries(list),fact=mealFacts(list);
+  var live=p.slots.filter(function(x){return x.id===m.slot})[0],name=live?live.name:slotNameOf(p,list[0]);m.name=name;
+  var g={id:m.slot,name:name,list:list,removed:!live};
+  var t=$('#title');if(t)t.textContent=name;
+  root.appendChild(h('div',{class:'row',style:'margin-bottom:8px'},h('button',{type:'button',class:'icon-btn',id:'meal-back','aria-label':'Back to the day',onclick:function(){S.tab='today';S.viewDate=d;S.meal=null;render(true)}},icon(ICONS.back)),
+    h('span',{class:'muted small grow',text:p.name+' - '+fmtDateLong(d)})));
+  var card=h('section',{class:'card meal-card',id:'meal-card','aria-label':name+' details'});
+  var ul=h('ul',{class:'plain'});
+  list.forEach(function(e){
+    var n=entryNut(e);
+    var mb=h('button',{type:'button',class:'icon-btn menu-btn','aria-label':'Options for '+e.foodName,'aria-haspopup':'dialog',onclick:function(){openEntryMenu(e,mb)}},icon(ICONS.more));
+    var li=h('li',{class:'entry col','data-id':e.id});
+    li.appendChild(h('div',{class:'top'},h('div',{class:'grow'},h('b',{text:e.foodName}),' ',h('span',{class:'qty-text',text:'('+qtyText(e)+')'}),e.est==='ai'&&!e.adj?h('span',null,' ',h('span',{class:'tag ai','aria-label':'Estimated by AI',title:'Calories and macros estimated by AI',text:'AI'})):null),mb));
+    li.appendChild(chipsFor(n,!!e.adj));ul.appendChild(li);
+  });
+  card.appendChild(ul);
+  function tcol(label,id,val,goal,unit){
+    var pc=goal>0?val/goal*100:0;
+    return h('div',{class:'tc'+(pc>100?' over':'')},h('span',{class:'cl',text:label}),h('span',{class:'cv',id:id,text:r0(val)+unit}),bar(goal>0?val/goal:0,pc>100),h('span',{class:'cp',id:id+'-pct',text:r0(pc)+'%'+(pc>100?' (over)':'')}));
   }
-  var empty=p.slots.filter(function(s){return !bySlot[s.id]});
-  if(empty.length){
-    var chips=h('div',{class:'chips',role:'group','aria-label':'Add food to a meal'});
-    empty.forEach(function(s){chips.appendChild(h('button',{type:'button',class:'chip','data-add-slot':s.id,text:'Add to '+s.name,onclick:function(){S.add=newAddCtx({date:d,slot:s.id});S.tab='add';render(true)}}))});
-    root.appendChild(h('section',{class:'card',id:'empty-slots'},h('h3',{style:'margin-bottom:8px',text:groups.length?'Other meals':'Log a meal'}),
-      groups.length?null:h('p',{class:'muted small',text:'Type what you ate in the box below, for example "2 roti, dal and curd at 1pm". Or pick a meal to add one food by search.'}),chips));
+  card.appendChild(h('div',{class:'cols4c meal-totals',id:'meal-totals','aria-label':'Meal totals and share of the daily goal'},
+    tcol('Calories','mt-kcal',tot.kcal,c.target+info.counted,''),tcol('Carbs','mt-c',tot.c,c.c,'g'),tcol('Protein','mt-p',tot.p,c.p,'g'),tcol('Fat','mt-f',tot.f,c.f,'g')));
+  card.appendChild(h('p',{class:'muted small',style:'margin:2px 0 6px',text:'Share of your daily goal for the day.'}));
+  card.appendChild(h('div',{class:'row meal-foot'},h('span',{class:'muted time-text',id:'meal-time',text:fmt12(list[0].time)}),h('span',{class:'grow'}),
+    h('button',{type:'button',class:'btn sm',id:'meal-add',text:'Add to '+name,onclick:function(){S.add=newAddCtx({date:d,slot:m.slot});S.tab='add';render(true)}}),
+    h('button',{type:'button',class:'icon-btn slot-menu-btn',id:'meal-menu','aria-label':'Options for '+name,'aria-haspopup':'dialog',onclick:function(ev){openSlotMenu(g,ev.currentTarget)}},icon(ICONS.more))));
+  root.appendChild(card);
+  /* health analysis: on demand, AI only */
+  var key=mealKey(list),an=h('section',{class:'card',id:'health-card','aria-label':'Health analysis'}),out=h('p',{id:'an-text',class:'an-text'}),note=h('p',{class:'muted small',id:'an-note'}),btnRow=h('div',{class:'row'});
+  an.appendChild(h('h2',{class:'cardhead'},'Health analysis'));
+  function drawAn(){
+    out.textContent=MEAL_AN[key]||'';btnRow.replaceChildren();
+    var on=aiEnabled();
+    if(MEAL_AN[key])note.textContent='AI-written, not medical advice. Made from this meal\'s numbers on your phone and not saved.';
+    else if(!on)note.textContent='Turn on the on-device AI (Settings, then On-device AI) to get a short written analysis of this meal.';
+    else note.textContent='A short note on the mix of protein, fibre, fat and sugar, written by the on-device AI. Not medical advice.';
+    btnRow.appendChild(h('button',{type:'button',class:'btn',id:'an-btn',disabled:!on,text:MEAL_AN[key]?'Analyse again':'Analyse this meal',onclick:run}));
   }
-  /* numbers behind the target */
-  var def=info.deficit;
-  root.appendChild(h('section',{class:'card','aria-label':'Your numbers'},h('h3',{style:'margin-bottom:6px',text:'Your numbers'}),
-    h('dl',{class:'kv',id:'totals','aria-live':'polite','aria-atomic':'true'},
-      kv('Daily target','t-target',r0(c.target)+' kcal'),
-      kv('Calories you burn per day','t-tdee',r0(c.tdee)+' kcal'),
-      kv('Eaten vs what you burn (deficit)','t-deficit',r0(Math.abs(def))+' kcal '+(def>=0?'under':'over'),def<0)),
-    h('p',{class:'small muted',id:'deficit-help',text:isToday?'The day is not over yet, so this number shrinks as you eat. A deficit means you have eaten less than you burn per day.':'A deficit means you ate less than you burn per day.'}),
-    noteEl(note),
-    h('p',{class:'small muted'},'Fibre: '+r1(tot.fib)+' g')));
-  root.appendChild(weekChart(p,d));
+  function run(){
+    btnRow.replaceChildren(h('span',{class:'muted',id:'an-busy',role:'status',text:'Analysing...'}),h('button',{type:'button',class:'btn',id:'an-cancel',text:'Cancel',onclick:function(){if(LLM.job&&LLM.job.cancel)LLM.job.cancel()}}));
+    llmAnalyse(mealPrompt(name,list,tot,fact)).then(function(r){
+      if(!out.isConnected)return;
+      if(r.text){MEAL_AN[key]=r.text;drawAn()}
+      else{drawAn();note.textContent=r.reason==='cancelled'?'Cancelled.':r.reason==='timeout'?'That took too long, so it was stopped. You can try again.':'The AI could not write an analysis this time.'}
+    });
+  }
+  an.appendChild(out);an.appendChild(btnRow);an.appendChild(note);drawAn();root.appendChild(an);
+  /* nutrition facts: only what the food table has */
+  var nf=h('section',{class:'card',id:'nf-card','aria-label':'Nutrition facts'});nf.appendChild(h('h2',{class:'cardhead'},'Nutrition facts'));
+  function row(id,label,val,unit,sub,partial){
+    var r=h('div',{class:'nf-row'+(sub?' sub':''),id:id},h('span',{class:'nf-l'},label,partial?h('small',{class:'muted nf-partial',text:'partial: from '+fact.fibN+' of '+fact.n+' items'}):null),h('span',{class:'nf-v',text:r1(val)+' '+unit}));return r;
+  }
+  nf.appendChild(row('nf-carbs','Total carbohydrates',fact.c,'g'));
+  if(fact.fibN>0)nf.appendChild(row('nf-fibre','Dietary fibre',fact.fib,'g',true,fact.fibN<fact.n));
+  nf.appendChild(row('nf-protein','Protein',fact.p,'g'));
+  nf.appendChild(row('nf-fat','Total fat',fact.f,'g'));
+  nf.appendChild(h('p',{class:'muted small',id:'nf-note',text:'Only the nutrients in the built-in food table are shown. Sugars, fat types, minerals and vitamins are not in it, so they are left out rather than guessed.'+(list.some(function(e){return e.est==='ai'})?' AI-estimated items add only calories, carbs, protein and fat.':'')}));
+  root.appendChild(nf);
 }
 
 /* ---------- model 3 choice card, water card, exercise card ---------- */
@@ -908,7 +1069,7 @@ function exerciseCard(p,info,logOf){
 }
 function exQtyText(x){return fmtQty(x.minutes)+' min'+(x.distanceKm?', '+fmtQty(x.distanceKm)+' km':'')}
 function exSnap(x){var o={type:'exercise',actKey:x.actKey,label:x.label,minutes:x.minutes,met:x.met};if(x.distanceKm)o.distanceKm=x.distanceKm;if(x.kcalAdj!=null)o.kcalAdj=x.kcalAdj;return o}
-function foodSnap(e){var o={type:'food',foodId:e.foodId,foodName:e.foodName,qty:e.qty,unit:e.unit,unitLabel:e.unitLabel,unitG:e.unitG,grams:e.grams,per100:e.per100,slot:e.slot};if(e.adj)o.adj=e.adj;return o}
+function foodSnap(e){var o={type:'food',foodId:e.foodId,foodName:e.foodName,qty:e.qty,unit:e.unit,unitLabel:e.unitLabel,unitG:e.unitG,grams:e.grams,per100:e.per100,slot:e.slot};if(e.adj)o.adj=e.adj;if(e.est)o.est=e.est;return o}
 
 /* ---------- exercise row menu and its sheets ---------- */
 function openExMenu(x0,opener){
@@ -992,9 +1153,25 @@ function openExDT(x,opener){
 }
 
 /* ---------- saved entries ---------- */
+/* "Edit as text" for a whole meal: its items back as one line each (or what you originally typed), re-read and saved over the old ones */
+function editMealAsText(g,opener){
+  var p=S.profile,first=g.list[0],lg=first.logId?findLog(p.id,first.logId,first.date):null;
+  var lines=g.list.map(function(e){return fmtQty(e.qty)+' '+shortUnit(e)+' '+e.foodName.replace(/\s*\([^)]*\)/g,'').replace(/,.*$/,'')}).join('\n');
+  var txt=lg&&lg.text&&g.list.every(function(e){return e.logId===first.logId})?lg.text:lines;
+  openSheet({title:'Edit as text',opener:opener,id:'et-sheet',build:function(body,close){
+    var ta=h('textarea',{id:'et-text',rows:'6',maxlength:'500','aria-label':'Meal as text, one item per line'});ta.value=txt;
+    body.appendChild(h('p',{class:'muted small',text:'One item per line. Date, time and meal stay as they are. You check the result before it replaces this meal.'}));
+    body.appendChild(ta);
+    body.appendChild(h('div',{class:'row',style:'margin-top:10px'},h('button',{type:'button',class:'btn primary grow',id:'et-go',text:'Read and check',onclick:function(){
+      var v=ta.value.trim();if(!v)return;close(false);openPreview(v,null,{date:first.date,time:first.time,slot:g.id,replace:g.list.map(function(e){return {id:e.id,date:e.date}})});
+    }}),h('button',{type:'button',class:'btn',text:'Cancel',onclick:function(){close()}})));
+    ta.focus();
+  }});
+}
 function openSlotMenu(g,opener){
   openSheet({title:g.name,opener:opener,id:'slot-menu',build:function(body,close){
     var ul=h('ul',{class:'plain menu-list'});
+    if(!g.removed)ul.appendChild(h('li',null,h('button',{type:'button',id:'sm-text',class:'menu-item',onclick:function(){close(false);editMealAsText(g,opener)}},icon(ICONS.edit),h('span',{class:'grow',text:'Edit as text'}))));
     ul.appendChild(h('li',null,h('button',{type:'button',id:'sm-save',class:'menu-item',onclick:function(){close(false);openSaveName(g.list.map(foodSnap),g.name,opener)}},icon(ICONS.saved),h('span',{class:'grow',text:'Save this meal'}))));
     body.appendChild(ul);ul.querySelector('button').setAttribute('data-autofocus','1');
   }});
@@ -1030,7 +1207,7 @@ function addSavedTo(sv,date){
     }else{
       var live=p.slots.some(function(q){return q.id===s.slot}),slot=live?s.slot:nextSlotId(p,date),sl=p.slots.filter(function(q){return q.id===slot})[0]||p.slots[0];
       var e={id:uuid(),date:date,time:time,slot:sl.id,slotName:sl.name,foodId:s.foodId,foodName:s.foodName,qty:s.qty,unit:s.unit,unitLabel:s.unitLabel,unitG:s.unitG,grams:s.grams,per100:s.per100,logId:logId,updatedAt:now,createdAt:now};
-      if(s.adj)e.adj=s.adj;putEntry(p.id,e);n++;
+      if(s.adj)e.adj=s.adj;if(s.est)e.est=s.est;putEntry(p.id,e);n++;
     }
   });
   if(n)putLog(p.id,{id:logId,date:date,time:time,text:sv.name,updatedAt:now,createdAt:now});
@@ -1179,36 +1356,12 @@ function kv(label,id,val,bad){return h('div',null,h('dt',{text:label}),h('dd',{i
 function fmtQty(q){return String(Math.round(q*100)/100)}
 function shortUnit(e){return (e.unitLabel||e.unit||'g').replace(/\s*\(.*$/,'')}
 
-function weekChart(p,endDate,opts){
-  opts=opts||{};
-  var days=opts.days||[],i;if(!days.length)for(i=6;i>=0;i--)days.push(addDays(endDate,-i));
-  var data=days.map(function(d){var x=dayInfo(p,d);return {d:d,kcal:x.tot.kcal,target:x.c.target,ex:x.exTotal,future:d>S.today}});
-  var tgt=data[data.length-1].target,max=Math.max(tgt,Math.max.apply(null,data.map(function(x){return Math.max(x.kcal,x.ex)})))*1.15;
-  var W=340,H=170,L=8,B=28,T=18,bw=(W-L*2)/7,sv=s('svg',{class:'chart',viewBox:'0 0 '+W+' '+H,role:'img','aria-label':'Calories per day for '+fmtDate(days[0])+' to '+fmtDate(days[days.length-1])+'. Target '+r0(tgt)+' kcal.'});
-  function y(v){return T+(H-T-B)*(1-v/max)}
-  data.forEach(function(x,k){
-    var bx=L+k*bw+bw*0.18,w=bw*0.64,top=y(x.kcal);
-    sv.appendChild(s('rect',{class:'bar'+(x.kcal>x.target?' over':''),x:bx,y:top,width:w,height:Math.max(0,H-B-top),rx:3}));
-    sv.appendChild(s('text',{x:bx+w/2,y:Math.max(11,top-3),'text-anchor':'middle',text:x.kcal?String(r0(x.kcal)):''}));
-    sv.appendChild(s('text',{x:bx+w/2,y:H-10,'text-anchor':'middle',text:parseD(x.d).toLocaleDateString(undefined,{weekday:'short'})}));
-  });
-  if(opts.exercise){
-    var pts=data.filter(function(x){return x.ex>0});
-    if(pts.length>1)sv.appendChild(s('polyline',{class:'exl',fill:'none',points:pts.map(function(x){var k=data.indexOf(x);return (L+k*bw+bw/2)+','+y(x.ex)}).join(' ')}));
-    pts.forEach(function(x){var k=data.indexOf(x);sv.appendChild(s('circle',{class:'exd',cx:L+k*bw+bw/2,cy:y(x.ex),r:3.5}))});
-  }
-  sv.appendChild(s('line',{class:'tl',x1:L,x2:W-L,y1:y(tgt),y2:y(tgt)}));
-  sv.appendChild(s('text',{x:W-L,y:y(tgt)-4,'text-anchor':'end',text:'Target '+r0(tgt)}));
-  var tb=h('table',{class:'sr-only'},h('caption',{text:'Calories per day'}),h('tr',null,h('th',{text:'Day'}),h('th',{text:'kcal'}),h('th',{text:'Target'}),h('th',{text:'Exercise'}),h('th',{text:'Status'})));
-  data.forEach(function(x){tb.appendChild(h('tr',null,h('td',{text:x.d}),h('td',{text:String(r0(x.kcal))}),h('td',{text:String(r0(x.target))}),h('td',{text:String(r0(x.ex))}),h('td',{text:x.kcal>x.target?'over target':x.kcal>0?'within target':'no entries'})))});
-  return h('section',{class:'card',id:opts.id||null},h('h2',{text:opts.title||'Last 7 days'}),sv,tb,h('p',{class:'small muted',text:'Dashed line is your target. Red bars are over target.'+(opts.exercise?' The line shows calories burned in workouts.':'')}));
-}
-
 /* ---------- quick-log bar and the "Check before saving" sheet ---------- */
 function autoGrow(){
   var ta=$('#ql');ta.style.height='auto';
   var cs=getComputedStyle(ta),lh=parseFloat(cs.lineHeight)||22,pad2=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0);
-  var max=lh*4+pad2;ta.style.height=Math.min(ta.scrollHeight,max)+'px';ta.style.overflowY=ta.scrollHeight>max?'auto':'hidden';
+  var max=lh*5+pad2;ta.style.height=Math.min(ta.scrollHeight,max)+'px';ta.style.overflowY=ta.scrollHeight>max?'auto':'hidden';
+  var qb=$('#qbar');if(qb&&!qb.hidden)document.documentElement.style.setProperty('--qbar-h',qb.offsetHeight+'px');
 }
 function initQuickBar(){
   var ta=$('#ql');
@@ -1260,19 +1413,26 @@ function submitQuick(){
   openPreview(t);
 }
 function slotOfId(id){return S.profile.slots.filter(function(s){return s.id===id})[0]}
-function amountText(it){return it.unit==='g'?r0(it.grams)+' g':fmtQty(it.qty)+' × '+it.unitLabel.replace(/\s*\(.*$/,'')+' ('+r0(it.grams)+' g)'}
+function amountText(it){return it.unit==='g'&&shortUnit(it)==='g'?r0(it.grams)+' g':it.unit==='g'?fmtQty(it.qty)+' '+shortUnit(it)+' ('+r0(it.grams)+' g)':fmtQty(it.qty)+' × '+it.unitLabel.replace(/\s*\(.*$/,'')+' ('+r0(it.grams)+' g)'}
 function rowItemsFor(txt,date){
   var kg=weightOn(S.profile.id,S.profile,date),sv=savedFor(txt,loadSaved(S.profile.id));
   if(sv)return savedItems(sv,kg);
   return buildItems(normText(foldFractions(normText(txt))),kg);
 }
-function openPreview(text,restore){
+function openPreview(text,restore,opts){
   var st;
-  if(restore){st=restore;text=st.text}
+  if(restore){st=restore;text=st.text;st.waitAI=false}
   else{
-    var res=parseLog(text,{viewDate:S.viewDate});
-    st={text:text,date:res.date,time:res.time,slot:res.slotId,touched:res.timeExplicit,items:res.items,panel:null,timeExplicit:res.timeExplicit,mealExplicit:res.slotExplicit,dateExplicit:res.dateExplicit,rule:res};
+    /* AI on: the model reads the text first (rows appear when it answers); AI off or unavailable: the built-in rules read it */
+    var useAI=aiEnabled(),lineMap=[],blocks=splitTimeBlocks(text,S.profile.slots,S.today,lineMap),res=parseLog(blocks[0],{viewDate:S.viewDate,metaOnly:useAI});
+    if(blocks.length>1){   /* distinct times: later blocks are their own groups inside the same sheet */
+      var gd=parseLog(text,{viewDate:S.viewDate,metaOnly:true}).date;
+      res=parseLog(blocks[0],{viewDate:gd,metaOnly:useAI});
+      if(!useAI)for(var bi=1;bi<blocks.length;bi++){var rb=parseLog(blocks[bi],{viewDate:gd});rb.items.forEach(function(it){it.gt=rb.time;it.gs=rb.slotId;res.items.push(it)})}
+    }
+    st={text:text,date:res.date,time:res.time,slot:res.slotId,touched:res.timeExplicit,items:res.items,panel:null,timeExplicit:res.timeExplicit,mealExplicit:res.slotExplicit,dateExplicit:res.dateExplicit,rule:res,waitAI:useAI,blocks:blocks,lineMap:lineMap};
   }
+  if(opts){st.date=opts.date;st.time=opts.time;st.slot=opts.slot;st.touched=true;st.timeExplicit=true;st.mealExplicit=true;st.dateExplicit=true;st.replace=opts.replace}
   var opener=$('#ql-send');
   var rowsBox,saveBtn,chipBox,panelBox,tp=null;
   function isFoodRow(i){return i.type==='food'&&i.foodId}
@@ -1304,14 +1464,20 @@ function openPreview(text,restore){
   }
   function drawRows(){
     rowsBox.replaceChildren();
-    if(nFood()+nEx()===0){
+    if(nFood()+nEx()===0&&!st.waitAI){
       var nb=h('div',{class:'banner info',id:'pv-empty',role:'status'},h('b',{text:'Couldn\'t find any food or exercise. '}),st.items.length?'Fix the words in the rows below, or choose what to do.':'Try a few words like "2 roti and dal".');
       var nr=h('div',{class:'row',style:'margin-top:8px'});
-      if(aiEnabled())nr.appendChild(h('button',{type:'button',class:'btn sm',id:'pv-tryai',text:'Try AI',onclick:function(){runAI(false)}}));
+      if(aiEnabled())nr.appendChild(h('button',{type:'button',class:'btn sm',id:'pv-tryai',text:'Try AI',onclick:function(){runAI()}}));
       nr.appendChild(h('button',{type:'button',class:'btn sm',id:'pv-manual',text:'Add food manually',onclick:function(){S.pending=null;closeSheet(false);S.add=newAddCtx({date:st.date,slot:st.slot});S.tab='add';render(true)}}));
       nb.appendChild(nr);rowsBox.appendChild(nb);
     }
-    st.items.forEach(function(it,idx){rowsBox.appendChild(pvRow(it,idx))});
+    var multi=st.items.some(function(i){return i.gt}),lastKey=null;
+    st.items.forEach(function(it,idx){
+      if(multi){
+        var gk=(it.gt||st.time)+'|'+(it.gs||st.slot);
+        if(gk!==lastKey){lastKey=gk;var gsl=slotOfId(it.gs||st.slot);rowsBox.appendChild(h('div',{class:'pv-group',role:'heading','aria-level':'3',text:(gsl?gsl.name:'Meal')+', '+fmt12(it.gt||st.time)}))}
+      }
+      rowsBox.appendChild(pvRow(it,idx))});
     updSave();
   }
   function pvRow(it){
@@ -1320,6 +1486,7 @@ function openPreview(text,restore){
       onchange:function(){
         var arr=rowItemsFor(inp.value,st.date);
         if(!arr.length){it.type='unmatched';it.foodId=null;it.text=inp.value;it.cands=[];it.flag='none';it.score=0;draw();updSave();return}
+        var gt0=it.gt,gs0=it.gs;arr.forEach(function(a){if(gt0){a.gt=gt0;a.gs=gs0}});
         if(arr.length===1){Object.keys(it).forEach(function(k){delete it[k]});Object.assign(it,arr[0]);drawRows();return}
         var at=st.items.indexOf(it);[].splice.apply(st.items,[at,1].concat(arr));drawRows();
       }});
@@ -1354,8 +1521,10 @@ function openPreview(text,restore){
         if(!S.profile.exerciseAdds)status.appendChild(h('p',{class:'small muted pv-ex-note',text:'Not added to your day: your activity level already includes workouts.'}));
       }else if(it.type==='food'&&it.foodId){
         status.appendChild(h('div',{class:'pv-line'},h('b',{class:'pv-food',text:it.foodName}),' ',
+          it.est==='ai'?h('span',{class:'tag ai pv-ai-tag',title:'Calories and macros estimated by AI','aria-label':'Estimated by AI',text:'AI'}):null,
           it.flag==='check'?h('span',{class:'tag pv-flag',text:'Check'}):null,it.assumed?h('span',{class:'tag pv-assumed',text:'amount assumed'}):null,it.fromSaved?h('span',{class:'tag alt',text:'saved'}):null));
-        status.appendChild(h('div',{class:'muted small pv-amount'},amountText(it)+' - ',h('b',{class:'pv-kcal',text:r0(it.kcal)+' kcal'})));
+        status.appendChild(h('div',{class:'muted small pv-amount'},amountText(it)+' - ',h('b',{class:'pv-kcal',text:r0(it.kcal)+' kcal'}),it.est==='ai'?' - P '+r0(it.p)+' / C '+r0(it.c)+' / F '+r0(it.f)+' g':null));
+        if(it.est==='ai')status.appendChild(h('p',{class:'small muted pv-est-note',text:'Not in the food list: these numbers are the AI\'s estimate. Please check them.'}));
         tools.appendChild(h('button',{type:'button',class:'btn sm pv-notthis',text:'Not this?',onclick:function(){panel.hidden=!panel.hidden;if(!panel.hidden)altsPanel()}}));
       }else{
         status.appendChild(h('div',{class:'pv-line pv-none'},h('span',{class:'tag pv-notfound',text:'Not found'}),' ',h('span',{text:'No food matched these words. Change the words above, or choose an action.'})));
@@ -1370,10 +1539,11 @@ function openPreview(text,restore){
     return box;
   }
   function save(){
-    var ents=[],exs=[],now=Date.now(),date=st.date,time=st.time;
-    if(!st.touched&&!st.timeExplicit&&date===S.today)time=nowTime();
-    var slot=slotOfId(st.slot)||S.profile.slots[0],logId='l'+uuid().replace(/[^\w]/g,'').slice(0,20);
+    var ents=[],exs=[],now=Date.now(),date=st.date,time0=st.time;
+    if(!st.touched&&!st.timeExplicit&&date===S.today)time0=nowTime();
+    var time=time0,slot0=slotOfId(st.slot)||S.profile.slots[0],slot=slot0,logId='l'+uuid().replace(/[^\w]/g,'').slice(0,20);
     st.items.forEach(function(it){
+      var time=it.gt||time0,slot=(it.gs&&slotOfId(it.gs))||slot0;
       if(it.type==='exercise'){
         var x={id:uuid(),date:date,time:time,actKey:it.actKey,label:it.label,minutes:it.minutes,met:it.met,kgUsed:it.kg,kcal:it.met*it.kg*it.minutes/60,logId:logId,updatedAt:now,createdAt:now};
         if(it.distanceKm)x.distanceKm=it.distanceKm;if(it.kcalAdj!=null)x.kcalAdj=it.kcalAdj;exs.push(x);return;
@@ -1381,12 +1551,13 @@ function openPreview(text,restore){
       if(!isFoodRow(it))return;var f=findFood(it.foodId),per=it.per100||(f&&f.per100);if(!per)return;
       var e={id:uuid(),date:date,time:time,slot:slot.id,slotName:slot.name,foodId:it.foodId,foodName:it.foodName,qty:it.qty,unit:it.unit,unitLabel:it.unitLabel,unitG:it.unitG,grams:it.grams,
         per100:{kcal:per.kcal,p:per.p,c:per.c,f:per.f,fib:per.fib||0},updatedAt:now,createdAt:now,logId:logId};
-      if(it.adj)e.adj=it.adj;ents.push(e);
+      if(it.adj)e.adj=it.adj;if(it.est==='ai')e.est='ai';ents.push(e);
     });
     if(!ents.length&&!exs.length)return;
     putLog(S.profile.id,{id:logId,date:date,time:time,text:st.text.slice(0,500),updatedAt:now,createdAt:now});
+    if(st.replace)st.replace.forEach(function(o){removeEntry(S.profile.id,o.id,o.date)});
     ents.forEach(function(e){putEntry(S.profile.id,e)});exs.forEach(function(x){putEx(S.profile.id,x)});
-    closeSheet(false);S.pending=null;$('#ql').value='';autoGrow();S.viewDate=date;S.tab='today';render(true);
+    closeSheet(false);S.pending=null;if(!st.replace){$('#ql').value='';autoGrow()}S.viewDate=date;S.tab='today';render(true);
     var msg=ents.length?'Saved '+ents.length+(ents.length===1?' item':' items')+' to '+slot.name:'';
     if(exs.length)msg+=(msg?' and ':'Saved ')+exs.length+(exs.length===1?' exercise':' exercises');
     toast(msg);
@@ -1398,22 +1569,43 @@ function openPreview(text,restore){
     if(busy){aiBox.appendChild(h('span',{class:'pv-ai-msg',id:'pv-ai-busy',text:msg}));aiBox.appendChild(h('button',{type:'button',class:'btn sm',id:'pv-ai-cancel',text:'Cancel',onclick:function(){if(LLM.state==='loading'||LLM.state==='downloading')llmCancel();else if(LLM.job&&LLM.job.cancel)LLM.job.cancel()}}))}
     else{
       if(msg)aiBox.appendChild(h('span',{class:'pv-ai-msg small muted',id:'pv-ai-msg',text:msg+' '}));
-      if(aiEnabled()&&nFood()+nEx()>0)aiBox.appendChild(h('button',{type:'button',class:'btn sm',id:'pv-reread',text:'Re-read with AI',onclick:function(){runAI(false)}}));
+      if(aiEnabled()&&nFood()+nEx()>0)aiBox.appendChild(h('button',{type:'button',class:'btn sm',id:'pv-reread',text:'Re-read with AI',onclick:function(){runAI()}}));
     }
   }
-  function runAI(auto){
-    st.aiTried=true;aiLine(LLM.state==='ready'?'Reading with on-device AI...':'Starting on-device AI...',true);
-    var ctx={viewDate:S.viewDate};
-    parseLogAI(st.text,ctx,{rule:st.rule,force:!auto}).then(function(r){
+  /* AI on: ONE model call for the WHOLE text (all lines). With several distinct times the rules only decide which line belongs to which time group
+     (the model's items are matched back to their line), so the groups are still separate entries. The rules read the text by themselves only as the Basic fallback. */
+  function aiBlocksRun(){
+    var blocks=st.blocks||[st.text];
+    if(blocks.length<2)return parseLogAI(st.text,{viewDate:S.viewDate});
+    var gd=parseLog(st.text,{viewDate:S.viewDate,metaOnly:true}).date;
+    return parseLogAI(st.text,{viewDate:gd,metaText:blocks[0]}).then(function(r){
+      var metas=blocks.map(function(b){return parseLog(b,{viewDate:gd,metaOnly:true})}),items=[];
+      if(!r.used){   /* Basic fallback: the rules read each time group */
+        blocks.forEach(function(b,i){var rb=parseLog(b,{viewDate:gd});rb.items.forEach(function(it){if(i>0){it.gt=rb.time;it.gs=rb.slotId}items.push(it)})});
+        return {res:Object.assign({},r.res,{items:items}),used:false,reason:r.reason};
+      }
+      var by=blocks.map(function(){return []});
+      r.res.items.forEach(function(it){var bi=it.line!=null&&st.lineMap&&st.lineMap[it.line]>=0?st.lineMap[it.line]:0;by[bi].push(it)});
+      by.forEach(function(arr,bi){arr.forEach(function(it){if(bi>0){it.gt=metas[bi].time;it.gs=metas[bi].slotId}items.push(it)})});
+      return {res:Object.assign({},r.res,{items:items}),used:true,reason:'ok'};
+    });
+  }
+  function runAI(){
+    st.aiTried=true;st.waitAI=true;aiLine(LLM.state==='ready'?'Reading with on-device AI...':'Starting on-device AI...',true);drawRows();
+    aiBlocksRun().then(function(r){
+      st.waitAI=false;
       if(!aiBox.isConnected)return;
-      if(!r.used){aiLine(r.reason==='cancelled'?'AI read cancelled, using the built-in rules.':r.reason==='timeout'?'AI took too long, using the built-in rules.':r.reason==='confident'?'The built-in rules were confident about every row.':r.reason==='loadfail'?'The AI could not start ('+(LLM.err||'see On-device AI')+') Using the built-in rules.':'AI could not read this, using the built-in rules.');return}
-      if(auto&&dirty){aiLine('AI finished after you changed rows, so nothing was replaced. Tap Re-read with AI to use it.');return}
       var m=r.res;st.items=m.items;
+      if(!r.used){
+        drawRows();
+        aiLine(r.reason==='cancelled'?'AI read cancelled, using the built-in rules.':r.reason==='timeout'?'AI took too long, using the built-in rules.':r.reason==='loadfail'?'The AI could not start ('+(LLM.err||'see On-device AI')+') Using the built-in rules.':'AI could not read this, using the built-in rules.');
+        return;
+      }
       if(m.dateAi&&!st.dateExplicit){st.date=m.date;if(!st.touched&&!st.timeExplicit)st.time=st.date===S.today?nowTime():pastDefaultTime(S.profile.slots,st.slot,st.mealExplicit);reKg()}
       if(m.timeAi&&!st.touched){st.time=m.time}
       if(m.slotAi&&!st.mealExplicit){st.slot=m.slotId;st.mealExplicit=true}
-      dirty=false;drawChips();drawRows();
-      aiLine('Re-read with AI'+(m.aiDropped?' ('+m.aiDropped+' invented item'+(m.aiDropped===1?'':'s')+' ignored)':'')+'. Please check the rows.');
+      drawChips();drawRows();
+      aiLine('Read with on-device AI'+(m.aiDropped?' ('+m.aiDropped+' invented item'+(m.aiDropped===1?'':'s')+' ignored)':'')+'. Please check the rows.');
     });
   }
   openSheet({title:'Check before saving',opener:opener,id:'pv-sheet',tall:true,dismiss:false,build:function(body){
@@ -1428,7 +1620,7 @@ function openPreview(text,restore){
   }});
   drawRows();
   var f0=$('#pv-sheet .pv-text');if(f0){try{f0.focus({preventScroll:true})}catch(e){}}
-  if(!restore&&aiEnabled()&&(st.items.some(lowConf)||!st.items.length)&&!st.aiTried)runAI(true);else aiLine('',false);
+  if(st.waitAI&&!restore)runAI();else aiLine('',false);
 }
 
 /* =====================================================================
@@ -1444,6 +1636,10 @@ var UNITW={katori:'katori',katoris:'katori',katora:'katori',vati:'katori',bowl:'
   tbsp:'tbsp',tablespoon:'tbsp',tablespoons:'tbsp',tsp:'tsp',teaspoon:'tsp',teaspoons:'tsp',spoon:'tsp',spoons:'tsp',
   chammach:'tsp',chamach:'tsp',chamcha:'tsp',chammache:'tsp',g:'g',gm:'g',gms:'g',gram:'g',grams:'g',gr:'g',kg:'kg',
   ml:'ml',l:'l',litre:'l',liter:'l',litres:'l',liters:'l',handful:'handful',mutthi:'handful',muthi:'handful',serving:'serving',servings:'serving'};
+/* the unit exactly as the person typed it (spelling variants folded): shown and stored as typed, never relabelled */
+var UNIT_SHOW={katori:'katori',katoris:'katori',katora:'katori',vati:'katori',bowl:'bowl',bowls:'bowl',glass:'glass',glasses:'glass',gilas:'glass',cup:'cup',cups:'cup',plate:'plate',plates:'plate',
+  piece:'piece',pieces:'piece',pc:'piece',pcs:'piece',nos:'piece',no:'piece',slice:'slice',slices:'slice',tbsp:'tbsp',tablespoon:'tbsp',tablespoons:'tbsp',tsp:'tsp',teaspoon:'tsp',teaspoons:'tsp',spoon:'spoon',spoons:'spoon',
+  chammach:'tsp',chamach:'tsp',chamcha:'tsp',chammache:'tsp',g:'g',gm:'g',gms:'g',gram:'g',grams:'g',gr:'g',kg:'kg',ml:'ml',l:'l',litre:'l',liter:'l',litres:'l',liters:'l',handful:'handful',mutthi:'handful',muthi:'handful',serving:'serving',servings:'serving'};
 var SINGLE_UNIT={g:1,l:1,no:1,gr:1};   /* these only count as units right after a number */
 var SIZEW={small:0.75,chhota:0.75,chhoti:0.75,chota:0.75,mini:0.75,large:1.3,bada:1.3,badi:1.3,big:1.3,bit:0.5,thoda:0.5,thodi:0.5,little:0.5,medium:1};
 var STOPW={};('of ki ka ke ko wala wali wale plain some the my i had ate eat eaten eating have having took take drank drink drunk for in at on me mein mai ne khaya khayi khaye khai piya piyi pi liya li lia is was just about around approx approximately like also too only to hai tha thi x subah dopahar shaam raat morning afternoon evening night then aaj today yesterday kal').split(' ').forEach(function(w){STOPW[w]=1});
@@ -1459,18 +1655,20 @@ var MONTHS={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,
 var WEEKDAYS={monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,sunday:0,mon:1,tue:2,tues:2,wed:3,thu:4,thur:4,thurs:4,fri:5,sat:6,sun:0};
 var SIZE_MAX_G=5000;
 
+/* collapse spaces but keep line breaks (one per line break): several lines are several pieces of one entry */
+function squash(t){return t.replace(/\r\n?/g,'\n').replace(/[^\S\n]+/g,' ').replace(/ ?\n[ \n]*/g,'\n').trim()}
 function normText(t){
   var FR={'\u00bd':'.5','\u00bc':'.25','\u00be':'.75','\u2153':'.33','\u2154':'.67'};
-  t=String(t==null?'':t).replace(/(\d)?\s*([\u00bd\u00bc\u00be\u2153\u2154])/g,function(m,d,f){return (d||'0')+FR[f]});
+  t=String(t==null?'':t).replace(/(\d)?\s*([\u00bd\u00bc\u00be\u2153\u2154])/g,function(m,d,f){return d?d+FR[f]:' 0'+FR[f]});   /* "rice ½ bowl" -> "rice 0.5 bowl" (the space before a lone fraction is kept) */
   try{t=t.normalize('NFKC')}catch(e){}
   t=t.replace(/(\d),(\d{3})(?!\d)/g,'$1$2');
-  return t.toLowerCase().replace(/\u2044/g,'/').replace(/[\u2018\u2019]/g,"'").replace(/\s+/g,' ').trim();
+  return squash(t.toLowerCase().replace(/\u2044/g,'/').replace(/[\u2018\u2019]/g,"'"));
 }
 function ymdAdd(date,n){return addDays(date,n)}
 /* ---- date ---- */
 function extractDate(t,today){
   var r={date:null,text:t,meal:null,adjusted:false},m,y,mo,dd;
-  function cut(re){var x=re.exec(r.text);if(x){r.text=(r.text.slice(0,x.index)+' '+r.text.slice(x.index+x[0].length)).replace(/\s+/g,' ').trim()}return x}
+  function cut(re){var x=re.exec(r.text);if(x){r.text=squash(r.text.slice(0,x.index)+' '+r.text.slice(x.index+x[0].length))}return x}
   function mk(Y,M,D){var s0=Y+'-'+pad(M)+'-'+pad(D);return isDate(s0)?s0:null}
   function pastOf(M,D,Yexp){
     var Y=Yexp||+today.slice(0,4),s0=mk(Y,M,D);if(!s0)return null;
@@ -1510,7 +1708,7 @@ function extractDate(t,today){
 /* ---- time ---- */
 function extractTime(t){
   var r={time:null,text:t,explicit:false},m,pm=/\b(raat|night|shaam|evening|dopahar|afternoon)\b/.test(t),am=/\b(subah|morning)\b/.test(t);
-  function cut(x){r.text=(r.text.slice(0,x.index)+' '+r.text.slice(x.index+x[0].length)).replace(/\s+/g,' ').trim()}
+  function cut(x){r.text=squash(r.text.slice(0,x.index)+' '+r.text.slice(x.index+x[0].length))}
   function bare(h12,mm,hasAmPm){
     var H=h12;
     if(hasAmPm==='am')H=h12%12;else if(hasAmPm==='pm')H=h12%12+12;
@@ -1567,7 +1765,7 @@ function slotForKey(slots,key){
 }
 function extractMeal(t,slots,hint){
   var r={slot:null,text:t,found:false},i,m;
-  function cut(x){r.text=(r.text.slice(0,x.index)+' '+r.text.slice(x.index+x[0].length)).replace(/\s+/g,' ').trim()}
+  function cut(x){r.text=squash(r.text.slice(0,x.index)+' '+r.text.slice(x.index+x[0].length))}
   /* 1. the user's own slot names, longest first */
   var byLen=slots.slice().sort(function(a,b){return b.name.length-a.name.length});
   for(i=0;i<byLen.length;i++){
@@ -1607,7 +1805,7 @@ function foldFractions(t){
   return t;
 }
 function parseSegment(seg){
-  var toks=tokenizeSeg(seg),qty=null,unit=null,size=null,sizeW=null,words=[],prevNum=false,pend=0,i,t,v,nx;
+  var toks=tokenizeSeg(seg),qty=null,unit=null,uw=null,size=null,sizeW=null,words=[],prevNum=false,pend=0,i,t,v,nx;
   for(i=0;i<toks.length;i++){
     t=toks[i];nx=toks[i+1];
     if(t==='sawa'||t==='sade'){pend=t==='sawa'?0.25:0.5;if(!(nx&&isNumTok(nx))&&qty===null){qty=(t==='sawa'?1:0)+pend;pend=0}prevNum=true;continue}
@@ -1619,10 +1817,10 @@ function parseSegment(seg){
       else if(prevNum&&v<1&&qty>=1&&Math.floor(qty)===qty)qty+=v;
       prevNum=true;continue;
     }
-    if((t==='bada'||t==='badi'||t==='chhota'||t==='chhoti')&&nx&&UNITW[nx]==='tsp'){unit=(t[0]==='b')?'tbsp':'tsp';i++;prevNum=false;continue}
+    if((t==='bada'||t==='badi'||t==='chhota'||t==='chhoti')&&nx&&UNITW[nx]==='tsp'){unit=(t[0]==='b')?'tbsp':'tsp';uw=unit;i++;prevNum=false;continue}
     if(UNITW[t]){
       if(SINGLE_UNIT[t]&&!prevNum){words.push(t);prevNum=false;continue}
-      if(unit===null)unit=UNITW[t];
+      if(unit===null){unit=UNITW[t];uw=UNIT_SHOW[t]||UNITW[t]}
       prevNum=false;continue;
     }
     if(SIZEW[t]!==undefined){if(size===null){size=SIZEW[t];sizeW=t}prevNum=false;continue}
@@ -1630,7 +1828,7 @@ function parseSegment(seg){
     words.push(t);prevNum=false;
   }
   words=words.map(sing);
-  return {qty:qty,unit:unit,size:size,sizeWord:sizeW,words:words,phrase:words.join(' '),tokens:toks};
+  return {qty:qty,unit:unit,unitWord:uw,size:size,sizeWord:sizeW,words:words,phrase:words.join(' '),tokens:toks};
 }
 /* break "2 roti 1 katori dal" or "roti 2 dal 3" where a new amount starts after food words */
 function cutByNumbers(seg){
@@ -1751,9 +1949,15 @@ function resolveAmount(food,q){
   var gU=us[0],qty=q.qty,unit=q.unit,m=q.size||1,assumed=false,u=null,i;
   var firstNonG=null;for(i=0;i<us.length;i++)if(us[i].kind!=='g'){firstNonG=us[i];break}
   function pick(kind,rx){var best=null;us.forEach(function(x){if(x.kind===kind&&!best)best=x;if(rx&&rx.test(x.label)&&x.kind!=='g'&&!(best&&rx.test(best.label)))best=x});return best}
-  if(unit==='g'||unit==='ml'||unit==='kg'||unit==='l'){
-    var gr=qty*((unit==='kg'||unit==='l')?1000:1);
-    return fin(gU,gr,false,1);
+  if(unit==='g'){
+    return fin(gU,qty===null?100:qty,false,1);
+  }
+  if(unit==='ml'||unit==='kg'||unit==='l'){
+    /* ml, l and kg stay as typed: the amount is shown in that unit and converted to grams (1 ml = 1 g; no density data) */
+    var per=unit==='ml'?1:1000,qv=qty===null?(unit==='ml'?100:1):qty;
+    if(!(qv>0))qv=unit==='ml'?1:0.01;
+    var gm=qv*per;if(gm>SIZE_MAX_G){qv=SIZE_MAX_G/per;gm=SIZE_MAX_G}
+    return {qty:roundq(qv),unit:'g',unitLabel:unit,unitG:per,grams:roundq(qv*per),assumed:qty===null};
   }
   if(unit){
     var kind=unit==='slice'?'piece':unit;
@@ -1783,10 +1987,14 @@ function resolveAmount(food,q){
     if(!(qe>0))qe=u0.kind==='g'?1:0.1;
     var gram=qe*u0.grams;
     if(gram>SIZE_MAX_G){qe=SIZE_MAX_G/u0.grams;gram=SIZE_MAX_G}
-    return {qty:roundq(qe),unit:u0.kind,unitLabel:u0.label,unitG:u0.grams,grams:roundq(gram),assumed:asm};
+    var lab=u0.label;
+    /* keep the word the person typed (bowl, slice, serving...) when the food's own unit is named differently */
+    if(q.word&&u0.kind!=='g'&&lab.toLowerCase().indexOf(q.word)!==0)lab=q.word+' ('+fmt2(u0.grams)+' g)';
+    return {qty:roundq(qe),unit:u0.kind,unitLabel:lab,unitG:u0.grams,grams:roundq(gram),assumed:asm};
   }
 }
 function fillItem(it,food){
+  delete it.est;
   var a=resolveAmount(food,it.q);
   it.type='food';it.foodId=food.id;it.foodName=food.name;
   it.qty=a.qty;it.unit=a.unit;it.unitLabel=a.unitLabel;it.unitG=a.unitG;it.grams=a.grams;it.assumed=a.assumed;
@@ -1806,14 +2014,14 @@ function buildItems(seg,kg){
     var ps=parseSegment(ptxt),text=ptxt.trim();
     if(!text)return;
     if(!ps.words.length)return;
-    var q={qty:ps.qty,unit:ps.unit,size:ps.size};
+    var q={qty:ps.qty,unit:ps.unit,size:ps.size,word:ps.unitWord};
     var m=matchSeg(ps);
     if(m.split){
       /* a quantity before a pair ("half plate rajma chawal") applies to both parts */
       var foodWords={};m.split.forEach(function(ph){ph.split(' ').forEach(function(w){foodWords[w]=1})});
       var prefix=tokenizeSeg(text).filter(function(w){return !foodWords[sing(w)]&&!foodWords[w]}).join(' ');
       m.split.forEach(function(ph){
-        var m2=matchFood(ph),it={type:'unmatched',text:(prefix+' '+ph).trim(),phrase:ph,score:m2.score,flag:m2.flag,cands:m2.cands,q:{qty:q.qty,unit:q.unit,size:q.size},via:'split'};
+        var m2=matchFood(ph),it={type:'unmatched',text:(prefix+' '+ph).trim(),phrase:ph,score:m2.score,flag:m2.flag,cands:m2.cands,q:{qty:q.qty,unit:q.unit,size:q.size,word:q.word},via:'split'};
         var f=m2.foodId&&findFood(m2.foodId);if(f)fillItem(it,f);out.push(it);
       });
       return;
@@ -1822,7 +2030,7 @@ function buildItems(seg,kg){
     var f=m.foodId&&findFood(m.foodId);
     if(f){
       var oc=ownCountHit(f,ps.tokens);
-      if(oc){it.q={qty:oc.countable?oc.qty/oc.n:null,unit:null,size:ps.size};if(!oc.countable)it.flag='check'}
+      if(oc){it.q={qty:oc.countable?oc.qty/oc.n:null,unit:null,size:ps.size,word:null};if(!oc.countable)it.flag='check'}
       else if((m.via==='drop'||m.via==='fuzzy')&&(ps.unit==='slice'||ps.unit==='piece')){it.q={qty:null,unit:null,size:ps.size}}
       fillItem(it,f);
     }
@@ -1882,6 +2090,7 @@ function savedItems(sv,kg){
       var it={type:'food',text:sv.name,phrase:sv.name,foodId:s.foodId,foodName:s.foodName,qty:s.qty,unit:s.unit,unitLabel:s.unitLabel,unitG:s.unitG,grams:s.grams,per100:n,
         kcal:n.kcal*g,p:n.p*g,c:n.c*g,f:n.f*g,flag:'none',score:1,cands:[],assumed:false,q:{qty:s.qty,unit:s.unit,size:null},fromSaved:sv.name,slotHint:s.slot||null};
       if(s.adj){it.adj=s.adj;it.kcal=s.adj.kcal;it.p=s.adj.p;it.c=s.adj.c;it.f=s.adj.f}
+      if(s.est)it.est=s.est;
       out.push(it);
     }
   });
@@ -1926,6 +2135,29 @@ function typicalTime(slots,slotId){
   return null;
 }
 function pastDefaultTime(slots,slotId,mealExplicit){return (mealExplicit&&typicalTime(slots,slotId))||'12:00'}
+/* Several lines with different explicit times become separate groups (entries), one per time.
+   A line that is only a time/meal marker ("lunch 1pm") applies to the lines after it; a line with its own time stands alone;
+   other lines follow the marker above, or else the first time given. One time (or none) means one group: the whole text. */
+function splitTimeBlocks(text,slots,today,lineMap){
+  var lines=String(text).replace(/\r\n?/g,'\n').split('\n').map(function(l){return l.trim()}).filter(Boolean);
+  if(lines.length<2){if(lineMap)lineMap.push(0);return [String(text)]}
+  var info=lines.map(function(l){
+    var d=extractDate(normText(l),today),tm=extractTime(d.text),rest=extractMeal(tm.text,slots,d.meal).text;
+    return {l:l,time:tm.explicit?tm.time:null,marker:!/[a-z0-9]/i.test(foldFractions(rest))};
+  });
+  var times=[];info.forEach(function(x){if(x.time&&times.indexOf(x.time)<0)times.push(x.time)});
+  if(times.length<2){if(lineMap)lines.forEach(function(){lineMap.push(0)});return [String(text)]}
+  var groups=[],byKey={},cur=null,first=times[0];
+  function add(key,line){if(!byKey[key]){byKey[key]=[];groups.push(key)}byKey[key].push(line)}
+  var mk=0,lineKeys=[];
+  info.forEach(function(x){
+    if(x.marker){cur=x.time||('m'+(mk++));add(cur,x.l);lineKeys.push(cur);return}
+    if(x.time){add(x.time,x.l);lineKeys.push(x.time);return}
+    add(cur||first,x.l);lineKeys.push(cur||first);
+  });
+  if(lineMap)lineKeys.forEach(function(k){lineMap.push(groups.indexOf(k))});
+  return groups.map(function(k){return byKey[k].join('\n')});
+}
 function parseLog(text,ctx){
   ctx=ctx||{};
   var today=ctx.today||S.today,now=ctx.now||nowTime(),slots=ctx.slots||(S.profile?S.profile.slots:defaultSlots());
@@ -1952,6 +2184,7 @@ function parseLog(text,ctx){
   }
   var time=tm.time||(date===today?now:pastDefaultTime(slots,slot.id,ml.found&&!!ml.slot));
   var kg=ctx.kg>0?ctx.kg:(S.profile?weightOn(S.profile.id,S.profile,date):70);
+  if(ctx.metaOnly)return {text:String(text).slice(0,500),date:date,dateExplicit:!!d.date,dateAdjusted:d.adjusted,time:time,timeExplicit:tm.explicit,slotId:slot.id,slotName:slot.name,slotExplicit:ml.found&&!!ml.slot,items:[],rule:false};
   /* split: hard separators always; soft words only when the whole phrase is not one known food */
   var items=[],hard=t.split(/[\n,;+&]+/);
   function expand(seg){
@@ -1977,7 +2210,7 @@ function parseLog(text,ctx){
 /* =====================================================================
    On-device AI (optional). The rule parser above always runs first and is always the fallback.
    WebLLM is loaded lazily (dynamic import) only when the user turns AI on or downloads a model.
-   The model only extracts words, amounts and activities. Calories and nutrition always come from the food list.
+   The model extracts foods, amounts, units, time and meal. Calories come from the food list; the model's own estimate is used only for foods the list does not have (tagged AI).
    Test seam: window.__llmMock = {extract(text), [load(id,onProgress)], [has(id)], [remove(id)], [cancel()]}
    ===================================================================== */
 var LLM_MODELS=[
@@ -2023,17 +2256,12 @@ function llmAvail(){
 }
 function aiEnabled(){return UI.llmOn===true&&!!UI.modelId&&llmAvail().ok&&LLM.state!=='error'&&(LLM.state==='ready'||LLM.cached[UI.modelId]===true)}
 function aiActive(){return aiEnabled()}
-function chipLabel(){
-  var av=llmAvail();
-  if(LLM.state==='downloading'||LLM.state==='loading')return 'AI loading '+(LLM.pct||0)+'%';
-  if(!av.ok||!UI.modelId)return 'Basic parser';
-  if(UI.llmOn&&LLM.state==='ready')return 'AI ready';
-  if(aiEnabled())return 'AI ready (loads on first use)';
-  return 'AI off';
-}
+/* header chip: exactly 'AI ready' (a model is downloaded and switched on, including while it loads on first use) or 'Basic'.
+   Progress, errors and other states are shown only on the On-device AI screen. */
+function chipLabel(){return aiEnabled()?'AI ready':'Basic'}
 function updateChip(){
-  var c=$('#ai-chip');if(!c)return;var t=chipLabel();
-  c.textContent=t;c.setAttribute('aria-label','Text reading: '+t+'. Tap for on-device AI settings.');c.classList.toggle('ai-on',t.indexOf('AI ready')===0);
+  var c=$('#ai-chip');if(!c)return;var t=chipLabel(),on=t==='AI ready';
+  c.textContent=t;c.setAttribute('aria-label',on?'AI ready: on-device AI reads what you type. Tap for on-device AI settings.':'Basic: the built-in rules read what you type. Tap to set up on-device AI.');c.classList.toggle('ai-on',on);
 }
 function refreshAI(){updateChip();var be=$('#pv-ai-busy');if(be&&LLM.state==='loading')be.textContent='Starting on-device AI '+(LLM.pct||0)+'%...';if(S&&S.tab==='ai'&&S.aiRedraw&&!sheetState)S.aiRedraw()}
 function llmImport(){
@@ -2127,20 +2355,23 @@ function llmDelete(id){
   return llmImport().then(function(m){return m.deleteModelAllInfoInCache(id,llmAppConfig(m))}).then(done,function(){done()});
 }
 /* ---- the extraction call ---- */
-var LLM_UNITS=['g','ml','piece','katori','glass','cup','plate','tbsp','tsp','slice','handful','serving'];
+var LLM_UNITS=['g','ml','l','kg','piece','katori','bowl','glass','cup','plate','tbsp','tsp','slice','handful','serving'];
 function llmSchema(){
+  var num={type:['number','null']};
   return {type:'object',properties:{
     items:{type:'array',items:{type:'object',properties:{
-      type:{enum:['food','exercise']},text:{type:'string'},name:{type:'string'},qty:{type:['number','null']},
+      type:{enum:['food','exercise']},text:{type:'string'},name:{type:'string'},qty:num,
       unit:{enum:LLM_UNITS.concat([null])},size:{enum:['small','medium','large','bit',null]},
-      activity:{enum:MET.activities.map(function(a){return a.key}).concat([null])},minutes:{type:['number','null']},distance_km:{type:['number','null']}},
-      required:['type','text','name','qty','unit','size','activity','minutes','distance_km']}},
+      kcal:num,protein:num,carbs:num,fat:num,grams:num,estimated:{type:'boolean'},
+      activity:{enum:MET.activities.map(function(a){return a.key}).concat([null])},minutes:num,distance_km:num},
+      required:['type','text','name','qty','unit','size','kcal','protein','carbs','fat','grams','estimated','activity','minutes','distance_km']}},
     date:{type:['string','null']},time:{type:['string','null']},meal:{type:['string','null']}},required:['items','date','time','meal']};
 }
-var LLM_SYSTEM='Extract what the user ate or did. Copy each item\'s words exactly into text. Never give calories or nutrition. Hindi/Hinglish allowed. JSON only.';
+var LLM_SYSTEM='Extract what the user ate or did. The text may have several lines: every line is part of the same meal, so return every food from every line. Copy each item\'s words exactly into text, and keep the unit word the user typed (ml, glass, bowl, cup, tbsp, piece, g). name = the plain English food name. For food also estimate, for the amount the user stated: kcal, protein, carbs and fat (grams) and the weight in grams, and set estimated true. Hindi/Hinglish allowed. JSON only.';
+function fshot(type,text,name,qty,unit,n){return Object.assign({type:type,text:text,name:name,qty:qty,unit:unit,size:null,kcal:null,protein:null,carbs:null,fat:null,grams:null,estimated:false,activity:null,minutes:null,distance_km:null},n||{})}
 var LLM_SHOTS=[
-  ['2 roti, dal aur ek katori dahi at 1pm',{items:[{type:'food',text:'2 roti',name:'roti',qty:2,unit:'piece',size:null,activity:null,minutes:null,distance_km:null},{type:'food',text:'dal',name:'dal',qty:null,unit:null,size:null,activity:null,minutes:null,distance_km:null},{type:'food',text:'ek katori dahi',name:'curd',qty:1,unit:'katori',size:null,activity:null,minutes:null,distance_km:null}],date:null,time:'13:00',meal:null}],
-  ['walked 40 min then had chai and 2 biscuits',{items:[{type:'exercise',text:'walked 40 min',name:'walking',qty:null,unit:null,size:null,activity:'walk',minutes:40,distance_km:null},{type:'food',text:'chai',name:'tea',qty:null,unit:null,size:null,activity:null,minutes:null,distance_km:null},{type:'food',text:'2 biscuits',name:'biscuit',qty:2,unit:'piece',size:null,activity:null,minutes:null,distance_km:null}],date:null,time:null,meal:null}],
+  ['2 roti, dal aur ek katori dahi at 1pm',{items:[fshot('food','2 roti','roti',2,'piece',{kcal:210,protein:7,carbs:42,fat:2,grams:80,estimated:true}),fshot('food','dal','dal',null,null,{kcal:150,protein:8,carbs:20,fat:4,grams:150,estimated:true}),fshot('food','ek katori dahi','curd',1,'katori',{kcal:95,protein:5,carbs:7,fat:5,grams:150,estimated:true})],date:null,time:'13:00',meal:null}],
+  ['walked 40 min then had a glass of chai and 2 biscuits',{items:[fshot('exercise','walked 40 min','walking',null,null,{activity:'walk',minutes:40}),fshot('food','glass of chai','tea',1,'glass',{kcal:120,protein:4,carbs:16,fat:4,grams:250,estimated:true}),fshot('food','2 biscuits','biscuit',2,'piece',{kcal:90,protein:1,carbs:14,fat:3,grams:20,estimated:true})],date:null,time:null,meal:null}],
 ];
 function llmMessages(text,model,today){
   var qwen=model&&model.qwen,msgs=[{role:'system',content:LLM_SYSTEM+' Today is '+today+'.'}];
@@ -2194,64 +2425,109 @@ function cleanSeg(t,today,slots){
   return foldFractions(t).replace(/\s+/g,' ').trim();
 }
 var LLM_GLUE={and:1,aur:1,with:1,n:1,then:1,phir:1,plus:1,along:1,at:1,for:1,in:1,on:1,the:1,a:1,an:1,of:1,i:1,had:1,ate:1,have:1,my:1,some:1,ki:1,ka:1,ke:1,ko:1,me:1,mein:1,after:1,before:1,so:1,then:1,also:1,today:1,aaj:1};
-function llmMerge(rule,data,text,ctx){
+function llmNum(x,lo,hi){x=typeof x==='number'?x:(typeof x==='string'&&x.trim()!==''?parseFloat(x):NaN);if(!isFinite(x)||x<lo)return null;return Math.min(hi,x)}
+var AI_UNIT_G={katori:150,bowl:150,glass:250,cup:200,plate:250,tbsp:15,tsp:5,piece:50,slice:30,handful:30,serving:100};
+/* The model's nutrition guess for the amount the user stated -> {kcal,p,c,f,grams,...} or null.
+   Every number is range-checked and clamped; a guess that does not add up (calories vs macros, more than 9 kcal or more macros than grams) is corrected and flagged. */
+function llmEstimate(r,q,word){
+  var k=llmNum(r.kcal,0,5000),p=llmNum(r.protein,0,500),c=llmNum(r.carbs,0,800),f=llmNum(r.fat,0,500);
+  if(k===null&&p===null&&c===null&&f===null)return null;
+  var fix=false,P=p||0,C=c||0,F=f||0;
+  /* weight of the stated amount */
+  var unit=q.unit,qty=q.qty,grams=null,assumed=false,uw=1,lab='g',kind='g';
+  if(unit==='g'||unit==='ml'||unit==='l'||unit==='kg'){
+    var per=unit==='l'||unit==='kg'?1000:1;qty=qty>0?qty:(unit==='l'||unit==='kg'?1:100);assumed=!(q.qty>0);
+    grams=Math.min(5000,qty*per);qty=grams/per;uw=per;lab=unit==='g'?'g':unit;
+  }else{
+    var gAi=llmNum(r.grams,1,5000);
+    if(unit){
+      qty=qty>0?qty:1;assumed=!(q.qty>0);
+      var dg=AI_UNIT_G[word||unit]||AI_UNIT_G[unit]||50,ug=gAi!==null?Math.min(3*dg,q.qty>0?gAi/qty:gAi):dg;if(gAi>3*dg*qty)fix=true;
+      grams=Math.min(5000,qty*ug);qty=roundq(qty);uw=grams/qty;kind=UNITW[word||unit]||unit;lab=(word||unit)+' ('+fmt2(uw)+' g)';
+    }else{grams=gAi!==null?gAi:100;assumed=true;qty=grams;uw=1}
+  }
+  grams=Math.max(1,grams);
+  var sum=P+C+F;if(sum>grams){var sc=grams/sum;P*=sc;C*=sc;F*=sc;fix=true}
+  var atw=4*P+4*C+9*F;
+  if(k===null){k=atw;fix=true}
+  else if(sum>0&&Math.abs(k-atw)>0.35*Math.max(k,atw)+60){k=atw;fix=true}
+  if(k>(sum>0?9.2:4)*grams){k=(sum>0?9.2:4)*grams;fix=true}   /* no macros given: at most 4 kcal/g */
+  return {kcal:k,p:P,c:C,f:F,grams:roundq(grams),qty:roundq(qty),unit:kind,unitLabel:lab,unitG:roundq(uw),assumed:assumed,fixed:fix};
+}
+/* Build the preview rows from the model's answer. The model only names the foods, amounts, units, time and meal.
+   Nutrition: the food list is searched with the NAME the model gave; only when nothing matches is the model's own estimate used (tagged 'AI'). */
+function llmBuild(rule,data,text,ctx){
   if(!data||!Array.isArray(data.items))return null;
   var today=ctx.today||S.today,slots=ctx.slots||S.profile.slots,kg=ctx.kg>0?ctx.kg:weightOn(S.profile.id,S.profile,rule.date);
   var nt=normText(text),out=[],rest=nt,dropped=0,saved=ctx.saved||(S.profile?loadSaved(S.profile.id):[]);
-  var ruleTexts=(rule.items||[]).map(function(i){return normText(i.text||'')});
   function wordRx(w){return new RegExp('(^|[^a-z0-9\\u0900-\\u097f])('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')(?=$|[^a-z0-9\\u0900-\\u097f])')}
-  data.items.slice(0,20).forEach(function(r){
+  function unmatched(rt,name,m){return {type:'unmatched',text:rt,phrase:name||rt,score:m?m.score:0,flag:'none',cands:m?m.cands:[],q:{qty:null,unit:null,size:null,word:null},via:'ai'}}
+  var srcLine=null;   /* which non-blank line of the text an item came from (used to split a multi-time text after the one model call) */
+  function oneItem(r){
     if(!r||typeof r!=='object'){dropped++;return}
     var type=r.type==='exercise'?'exercise':r.type==='food'?'food':null,rt=typeof r.text==='string'?normText(r.text):'';
-    /* the item's words must be really in what the user wrote (whole words, at least 2 letters/digits) and each piece of the input can be used once */
-    if(!type||!rt||rt.replace(/[^a-z0-9\u0900-\u097f]/g,'').length<2){dropped++;return}
+    /* item words must be in the input (whole words); each piece used once */
+    if(!type||!rt||rt.replace(/[^a-z0-9ऀ-ॿ]/g,'').length<2){dropped++;return}
     var m0=wordRx(rt).exec(rest);
     if(!m0){dropped++;return}
-    var at0=m0.index+m0[1].length;rest=rest.slice(0,at0)+' \u0001 '+rest.slice(at0+rt.length);
-    var added=ruleTexts.indexOf(rt)<0,n0=out.length;
-    function mark(){for(var k=n0;k<out.length;k++){var o=out[k];if(o&&(o.type==='food'||o.type==='exercise')&&(o.changedByAI||added)){o.flag='check';o.via='ai'}}}
+    var at0=m0.index+m0[1].length;srcLine=rest.slice(0,at0).split('\n').slice(0,-1).filter(function(l){return l.trim()}).length;rest=rest.slice(0,at0)+' \u0001 '+rest.slice(at0+rt.length);
     var svh=null;
     if(saved.length){[rt,extractTime(extractDate(rt,today).text).text.trim()].forEach(function(c){if(!svh&&c)svh=savedFor(c,saved)})}
     if(svh){savedItems(svh,kg).forEach(function(x){out.push(x)});return}
     var seg=cleanSeg(rt,today,slots);if(!seg)seg=rt;
-    var unit=LLM_UNITS.indexOf(r.unit)>=0?r.unit:null,size={small:0.75,large:1.3,bit:0.5,medium:1}[r.size]||null;
     if(type==='exercise'){
       var rx=parseExercise(seg,kg),key=rx?rx.actKey:(EXBYKEY[r.activity]?r.activity:null),exChanged=!rx;
-      if(!key){out.push({type:'unmatched',text:rt,phrase:rt,score:0,flag:'none',cands:[],q:{qty:null,unit:null,size:null},via:'ai'});return}
+      if(!key){out.push(unmatched(rt,rt,null));return}
       var a=EXBYKEY[key],mins=null,dist=rx&&rx.distanceKm!=null?rx.distanceKm:null,assumed=false;
-      if(rx&&!rx.assumed)mins=rx.minutes;                      /* a duration the rules read from the typed words always wins */
+      if(rx&&!rx.assumed)mins=rx.minutes;                      /* a duration typed in the words always wins */
       else if(typeof r.minutes==='number'&&isFinite(r.minutes)&&r.minutes>0){mins=Math.max(1,Math.min(600,Math.round(r.minutes*10)/10));exChanged=true}
       if(dist===null&&typeof r.distance_km==='number'&&r.distance_km>0&&r.distance_km<=1000){dist=r.distance_km;exChanged=true}
       if(mins===null){if(dist!==null&&a.kmh)mins=Math.max(1,Math.min(600,Math.round(dist/a.kmh*600)/10));else{mins=MET.defaultMinutes;assumed=true}}
-      out.push({type:'exercise',text:rt,phrase:rt,actKey:key,label:a.label,met:a.met,minutes:mins,distanceKm:dist,steps:rx?rx.steps:null,assumed:assumed,kg:kg,kcal:a.met*kg*mins/60,flag:assumed?'check':'none',score:1,cands:[],q:null,via:rx&&!exChanged?'rule':'ai',changedByAI:exChanged});
-      mark();return;
+      out.push({type:'exercise',text:rt,phrase:rt,actKey:key,label:a.label,met:a.met,minutes:mins,distanceKm:dist,steps:rx?rx.steps:null,assumed:assumed,kg:kg,kcal:a.met*kg*mins/60,flag:assumed?'check':'none',score:1,cands:[],q:null,via:'ai'});
+      return;
     }
-    var base=buildItems(seg,kg);
-    if(!base.length){out.push({type:'unmatched',text:rt,phrase:rt,score:0,flag:'none',cands:[],q:{qty:null,unit:null,size:null},via:'ai'});return}
-    if(base.length>1){base.forEach(function(b){out.push(b)});mark();return}
-    var it=base[0];
-    if(it.type==='exercise'){out.push(it);mark();return}
-    if((!it.foodId||it.score<0.8)&&typeof r.name==='string'&&r.name.trim()){
-      var m=matchFood(r.name.slice(0,60)),f2=m.foodId&&findFood(m.foodId);
-      if(f2&&m.score>(it.score||0)){it.foodId=m.foodId;it.score=m.score;it.flag=m.flag;it.cands=m.cands;it.changedByAI=true}
+    /* typed amount/unit win; the model only fills what is missing */
+    var ps=parseSegment(seg),aiUnit=LLM_UNITS.indexOf(r.unit)>=0?r.unit:null,lq=llmClampQty(r.qty,aiUnit);
+    var q={qty:null,unit:null,size:null,word:null};
+    q.qty=ps.qty!==null?ps.qty:lq;
+    if(ps.unit){q.unit=ps.unit;q.word=ps.unitWord}
+    else if(ps.qty===null&&aiUnit){q.unit=UNITW[aiUnit]||aiUnit;q.word=UNIT_SHOW[aiUnit]||aiUnit}
+    q.size=ps.size!==null?ps.size:({small:0.75,large:1.3,bit:0.5,medium:1}[r.size]||null);
+    var name=typeof r.name==='string'&&r.name.trim()?r.name.trim().slice(0,60):(ps.phrase||seg);
+    var m=matchFood(name),mu=ps.phrase?matchFood(ps.phrase):m;
+    if(mu.foodId&&mu.score>=0.8&&mu.foodId!==m.foodId){if(m.foodId)m.flag='check';else if(!m.split)m=mu}
+    if(m.split){
+      m.split.forEach(function(ph){
+        var m2=matchFood(ph),it2=Object.assign(unmatched(rt,ph,m2),{score:m2.score,flag:m2.flag,cands:m2.cands,q:{qty:q.qty,unit:q.unit,size:q.size,word:q.word}});
+        var f2=m2.foodId&&findFood(m2.foodId);if(f2)fillItem(it2,f2);out.push(it2);
+      });
+      return;
     }
-    var f=it.foodId&&findFood(it.foodId);
+    var it=Object.assign(unmatched(rt,m.phrase||name,m),{flag:m.flag,q:q}),f=m.foodId&&findFood(m.foodId);
+    if(f&&!(m.score>=0.8)&&llmEstimate(r,q,q.word))f=null;   /* a weak table match (score < 0.8) loses to the AI estimate; it stays under 'Not this?' */
     if(f){
-      /* an amount or unit the rules read from the typed words is never replaced by the model's */
-      var ps=parseSegment(seg),q=it.q||{qty:null,unit:null,size:null},lq=llmClampQty(r.qty,unit);
-      var typedAmt=ps.qty!==null||ps.unit!==null||q.qty!==null||q.unit!==null;   /* words with a typed amount keep it as the rules read it */
-      if(!typedAmt&&lq!==null){q.qty=lq;if(unit)q.unit=unit;it.changedByAI=true}
-      else if(!typedAmt&&unit){q.unit=unit;it.changedByAI=true}
-      if(ps.size===null&&q.size==null&&size){q.size=size;it.changedByAI=true}
-      it.q=q;fillItem(it,f);
+      var oc=ownCountHit(f,ps.tokens);   /* "egg omelette 2 eggs": the 2 counts the eggs inside one omelette, not omelettes */
+      if(oc){it.q={qty:oc.countable?oc.qty/oc.n:null,unit:null,size:q.size,word:null};if(!oc.countable)it.flag='check'}
+      else if((m.via==='drop'||m.via==='fuzzy')&&(ps.unit==='slice'||ps.unit==='piece'))it.q={qty:null,unit:null,size:q.size,word:null};
+      fillItem(it,f);out.push(it);return;
     }
-    out.push(it);mark();
-  });
+    /* not in the food list: use the model's estimate (never saved without the confirm sheet) */
+    var es=llmEstimate(r,q,q.word);
+    if(es){
+      var nm=name.replace(/\s+/g,' ');nm=nm.charAt(0).toUpperCase()+nm.slice(1);
+      it.type='food';it.foodId='ai_'+nm.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,40);it.foodName=nm.slice(0,120);
+      it.qty=es.qty;it.unit=es.unit;it.unitLabel=es.unitLabel;it.unitG=es.unitG;it.grams=es.grams;it.assumed=es.assumed;
+      it.per100={kcal:es.kcal*100/es.grams,p:es.p*100/es.grams,c:es.c*100/es.grams,f:es.f*100/es.grams,fib:0};
+      it.kcal=es.kcal;it.p=es.p;it.c=es.c;it.f=es.f;it.est='ai';it.flag='check';it.score=0.5;it.estFixed=es.fixed;
+    }
+    out.push(it);
+  }
+  data.items.slice(0,20).forEach(function(r){var n0=out.length;srcLine=null;oneItem(r);for(var k=n0;k<out.length;k++)if(srcLine!==null)out[k].line=srcLine});
   if(!out.length)return null;
   /* anything the user wrote that no valid item covers stays visible as a "not found" row */
-  rest=cleanSeg(rest,today,slots).replace(/[^a-zऀ-ॿ ]+/g,' ');
+  rest=rest.split('\n').map(function(l){return cleanSeg(l,today,slots)}).join(' ').replace(/[^a-zऀ-ॿ ]+/g,' ');   /* line by line: each line may carry its own time / meal word */
   var left=rest.split(/\s+/).filter(function(w){return w.length>=2&&!LLM_GLUE[w]&&!STOPW[w]&&!UNITW[w]&&!NUMW[w]&&!SIZEW[w]});
-  if(left.length)out.push({type:'unmatched',text:left.join(' '),phrase:left.join(' '),score:0,flag:'none',cands:[],q:{qty:null,unit:null,size:null},via:'ai'});
+  if(left.length)out.push(unmatched(left.join(' '),left.join(' '),null));
   var res=Object.assign({},rule,{items:out.slice(0,40),ai:true,aiDropped:dropped});
   if(!rule.dateExplicit&&typeof data.date==='string'&&/^\d{4}-\d\d-\d\d$/.test(data.date)&&isDate(data.date)&&data.date<=today&&data.date>=addDays(today,-60)){res.date=data.date;res.dateAi=true}
   if(!rule.timeExplicit&&typeof data.time==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(data.time)){res.time=data.time;res.timeAi=true}
@@ -2261,24 +2537,25 @@ function llmMerge(rule,data,text,ctx){
   }
   return res;
 }
-/* Rule parse first; if a model is loaded and any row is below 0.8 confidence (or force), ask the model and fall back on any problem. */
+/* AI first: with a model downloaded and switched on, every typed or spoken log goes to the model. The built-in rule parser is only the fallback
+   (no model, switched off, load error, timeout, cancel, unusable answer). In AI mode the sentence itself is never looked up in the food list. */
 function parseLogAI(text,ctx,opts){
   ctx=ctx||{};opts=opts||{};
-  var rule=opts.rule||parseLog(text,ctx);
-  if(!aiEnabled())return Promise.resolve({res:rule,rule:rule,used:false,reason:'off'});
-  if(!opts.force&&rule.items.length&&!rule.items.some(lowConf))return Promise.resolve({res:rule,rule:rule,used:false,reason:'confident'});
-  /* first use loads the model (it is not loaded at app start); a load that fails or is cancelled keeps the rule result */
+  function fallback(reason){return {res:parseLog(text,ctx),rule:null,used:false,reason:reason}}
+  if(!aiEnabled())return Promise.resolve(fallback('off'));
+  var meta=parseLog(ctx.metaText||text,Object.assign({},ctx,{metaOnly:true}));
+  /* the first use loads the model (it is not loaded at app start); a load that fails or is cancelled keeps the rule result */
   return llmEnsure().then(function(ok){
-    if(!ok)return {res:rule,rule:rule,used:false,reason:LLM.state==='error'?'loadfail':'cancelled'};
+    if(!ok)return fallback(LLM.state==='error'?'loadfail':'cancelled');
     return llmRun(String(text).slice(0,500),ctx.today||S.today).then(function(r){
-      if(!r.data)return {res:rule,rule:rule,used:false,reason:r.reason};
-      var m=null;try{m=llmMerge(rule,r.data,text,ctx)}catch(e){m=null}
-      if(!m)return {res:rule,rule:rule,used:false,reason:'empty'};
-      return {res:m,rule:rule,used:true,reason:'ok'};
+      if(!r.data)return fallback(r.reason);
+      var m=null;try{m=llmBuild(meta,r.data,text,ctx)}catch(e){m=null}
+      if(!m)return fallback('empty');
+      return {res:m,rule:meta,used:true,reason:'ok'};
     });
   });
 }
-window.Journable={parseLog:parseLog,matchFood:matchFood,parseLogAI:parseLogAI,llmMerge:llmMerge,aiActive:aiEnabled,appConfig:function(){return llmImport().then(llmAppConfig)},version:'3.1'};
+window.TrackMe=window.Journable={parseLog:parseLog,splitTimeBlocks:splitTimeBlocks,matchFood:matchFood,parseLogAI:parseLogAI,llmMerge:llmBuild,llmBuild:llmBuild,aiActive:aiEnabled,appConfig:function(){return llmImport().then(llmAppConfig)},version:'1.1'};
 /* ---------- On-device AI screen (model manager) ---------- */
 function mbText(mb){return mb>=1000?(Math.round(mb/100)/10)+' GB':Math.round(mb)+' MB'}
 function onMobileData(){var c=navigator.connection;return !!c&&(c.type==='cellular'||c.saveData===true)}
@@ -2310,7 +2587,7 @@ function viewAI(root){
         refreshAI();
       }});
     box.appendChild(h('section',{class:'card'},h('h2',{text:'On-device AI'}),
-      h('p',{class:'muted',text:'Optional. It reads long or unusual sentences more carefully, on this phone. The model is downloaded once; after that nothing you type leaves your phone. Calories and nutrition always come from the built-in food list, never from the AI, and you always check the list before saving.'}),
+      h('p',{class:'muted',text:'Optional. When it is downloaded and switched on, it reads everything you type, on this phone. The model is downloaded once; after that nothing you type leaves your phone. Calories come from the built-in food list; only when a food is not in the list the AI gives an estimate, tagged AI, and you always check the list before saving.'}),
       h('label',{class:'check-row'},tog,h('span',{text:'Use on-device AI'})),
       h('p',{class:'small muted',id:'ai-state',text:'Status: '+chipLabel()+(UI.modelId&&llmModel(UI.modelId)?' ('+llmModel(UI.modelId).name+')':'')+'.'})));
     if(LLM.err)box.appendChild(h('section',{class:'banner error',id:'ai-err',role:'alert'},h('b',{text:'That did not work. '}),LLM.err));
@@ -2415,7 +2692,7 @@ function viewPhone(root){
     llmHas(id).then(function(has){var m=llmModel(id);setRow('model',has?'pass':'info',has?(m?m.name:id)+' is downloaded'+(LLM.state==='ready'?' and loaded.':'.'):'No model downloaded yet (optional). Open On-device AI to download one.')});
   })();
   function report(){
-    var lines=['Journable check, '+new Date().toISOString(),'Address: '+location.protocol+'//'+location.host+location.pathname,'Browser: '+navigator.userAgent];
+    var lines=['TrackMe check, '+new Date().toISOString(),'Address: '+location.protocol+'//'+location.host+location.pathname,'Browser: '+navigator.userAgent];
     rows.forEach(function(r){lines.push((r.status==='pass'?'PASS':r.status==='fail'?'FAIL':'INFO')+'  '+r.label+': '+r.detail)});
     lines.push('Chip: '+chipLabel());if(out.textContent)lines.push('Test sentence: '+out.textContent);
     return lines.join('\n');
@@ -2489,12 +2766,12 @@ function persistText(){
 /* ---------- ADD FOOD ---------- */
 function newAddCtx(o){
   o=o||{};var e=o.entry;
-  if(e){var base=findFood(e.foodId)||{id:e.foodId,kind:'custom',est:false,units:[{label:e.unitLabel,grams:e.unitG}],group:'',alias:''};
+  if(e){var base=findFood(e.foodId)||{id:e.foodId,kind:'custom',est:false,units:[],group:e.est==='ai'?'AI estimate':'',alias:''};
     /* editing keeps the nutrition snapshot stored on the entry, not today's database values */
     var f=Object.assign({},base,{id:e.foodId,name:e.foodName,per100:e.per100});
     var us=unitsFor(f),u=us.filter(function(x){return x.kind===e.unit&&x.label===(e.unitLabel||x.label)})[0];
     if(!u)u={kind:e.unit,label:e.unitLabel||e.unit,grams:e.unitG||1};
-    return {editId:e.id,editDate:e.date,food:f,unit:u,qty:e.qty,date:e.date,time:e.time,slot:e.slot,slotName:e.slotName,query:'',mode:'form',createdAt:e.createdAt,logId:e.logId,adj:e.adj,orig:{foodId:e.foodId,qty:e.qty,unit:e.unit,unitLabel:e.unitLabel,grams:e.grams}};}
+    return {editId:e.id,editDate:e.date,food:f,unit:u,qty:e.qty,date:e.date,time:e.time,slot:e.slot,slotName:e.slotName,query:'',mode:'form',createdAt:e.createdAt,logId:e.logId,adj:e.adj,est:e.est,orig:{foodId:e.foodId,qty:e.qty,unit:e.unit,unitLabel:e.unitLabel,grams:e.grams}};}
   var t=o.date&&o.date!==S.today?'12:00':nowTime();
   return {editId:null,food:null,unit:null,qty:1,date:o.date||S.viewDate,time:t,slot:o.slot||nextSlotId(S.profile,o.date||S.viewDate),query:'',mode:'search'};
 }
@@ -2584,6 +2861,14 @@ function addSearch(root,ctx){
         h('span',{class:'muted small',style:'display:block',text:r0(it.per100.kcal)+' kcal - P '+r1(it.per100.p)+' / C '+r1(it.per100.c)+' / F '+r1(it.per100.f)+' g per 100 g'})));
     });
   }
+  /* which meal the food goes to (these chips used to sit on Today) */
+  var mealChips=h('div',{class:'chips',role:'group','aria-label':'Add food to a meal',id:'add-meals'});
+  function drawMeals(){
+    mealChips.replaceChildren();
+    S.profile.slots.forEach(function(sl){mealChips.appendChild(h('button',{type:'button',class:'chip','data-add-slot':sl.id,'aria-pressed':ctx.slot===sl.id?'true':'false',text:'Add to '+sl.name,onclick:function(){ctx.slot=sl.id;drawMeals()}}))});
+  }
+  drawMeals();
+  root.appendChild(h('div',{class:'card'},mealChips));
   root.appendChild(h('div',{class:'card'},h('label',{for:'q',style:'margin-top:0'},'Search food'),inp,topRow,offOut,status,results,
     h('div',{style:'margin-top:10px'},botBtn,h('p',{class:'muted small',id:'off-notice',text:'Your search words are sent to openfoodfacts.org.'})),
     h('button',{type:'button',class:'btn',style:'margin-top:10px',id:'custom-food-btn',text:'Add a custom food',onclick:function(){ctx.mode='custom';render(true)}})));
@@ -2643,9 +2928,10 @@ function offSearch(q,handle){
 /* "Edit as text": retype one entry in plain words ("2 roti", "dal 1 katori"); the words are read by the same parser as the log box. */
 var UNIT_WORD={g:'g',ml:'ml',katori:'katori',glass:'glass',cup:'cup',plate:'plate',tbsp:'tbsp',tsp:'tsp',slice:'slice',handful:'handful',serving:'serving'};
 function entryText(ctx){
-  var f=ctx.food,short=String(f.name||'').split(/[(,\/]/)[0].trim().toLowerCase(),u=ctx.unit.kind,q=fmtQty(ctx.qty);
-  if(u==='g'||u==='ml')return q+u+' '+short;
-  return q+' '+(UNIT_WORD[u]?UNIT_WORD[u]+' ':'')+short;
+  var f=ctx.food,short=String(f.name||'').split(/[(,\/]/)[0].trim().toLowerCase(),u=ctx.unit.kind,q=fmtQty(ctx.qty),lab=String(ctx.unit.label||'').split(/[\s(]/)[0].toLowerCase();
+  if(u==='g')return q+(lab&&UNIT_SHOW[lab]?lab:'g')+' '+short;
+  var w=lab&&UNIT_SHOW[lab]?UNIT_SHOW[lab]:UNIT_WORD[u];
+  return q+' '+(w?w+' ':'')+short;
 }
 function readOneFood(text,ctx){
   var res=parseLog(text,{today:S.today,now:nowTime(),viewDate:ctx.date,date:ctx.date,saved:[],kg:70}),it=null,nf=0,nx=0;
@@ -2683,6 +2969,8 @@ function editAsText(ctx){
 }
 function addForm(root,ctx){
   var f=ctx.food,units=unitsFor(f),err=h('p',{class:'err',role:'alert'}),prev=h('div',{id:'preview','aria-live':'polite'});
+  /* an entry's own unit (as typed: bowl, ml...) stays selectable next to the usual alternatives */
+  if(ctx.editId&&!units.some(function(u){return u.kind===ctx.unit.kind&&u.label===ctx.unit.label}))units.splice(1,0,ctx.unit);
   function pendingBox(){
     var box=h('div',{id:'pending-box',class:'small muted',style:'margin-top:6px'},h('span',{text:'Not saved to My foods yet (it is saved when you add this entry). '}),
       h('button',{type:'button',class:'btn sm',id:'save-to-myfoods',text:'Save to my foods',onclick:function(){
@@ -2724,7 +3012,7 @@ function addForm(root,ctx){
     var g=grams(),ok=isFinite(g)&&g>0&&g<=5000;prev.replaceChildren();
     if(!ok){prev.appendChild(h('p',{class:'muted',text:'Enter an amount between 0 and 5000 g.'}));return}
     var n={kcal:f.per100.kcal*g/100,p:f.per100.p*g/100,c:f.per100.c*g/100,f:f.per100.f*g/100};
-    prev.appendChild(h('p',null,h('b',{id:'pv-kcal',text:r0(n.kcal)+' kcal'}),' for '+r0(g*10)/10+' g'));
+    prev.appendChild(h('p',null,h('b',{id:'pv-kcal',text:r0(n.kcal)+' kcal'}),' for '+(function(){var lb=ctx.unit.kind==='g'?ctx.unit.label:'g';return lb==='ml'||lb==='g'?r0(g*10)/10+' '+lb:lb==='l'||lb==='kg'?fmtQty(ctx.qty)+' '+lb:r0(g*10)/10+' g'})()));
     prev.appendChild(h('p',{class:'muted',id:'pv-macros',text:'Protein '+r1(n.p)+' g, carbs '+r1(n.c)+' g, fat '+r1(n.f)+' g'}));
   }
   function submit(){
@@ -2741,6 +3029,8 @@ function addForm(root,ctx){
     var e={id:ctx.editId||uuid(),date:ctx.date,time:ctx.time,slot:ctx.slot,slotName:curSlotName(),foodId:f.id,foodName:f.name,qty:Math.round(ctx.qty*100)/100,unit:ctx.unit.kind,unitLabel:ctx.unit.label,unitG:ctx.unit.grams,
       grams:Math.round(g*100)/100,per100:{kcal:f.per100.kcal,p:f.per100.p,c:f.per100.c,f:f.per100.f,fib:f.per100.fib},updatedAt:Date.now(),createdAt:ctx.createdAt||Date.now()};
     if(ctx.logId)e.logId=ctx.logId;
+    /* an AI estimate keeps its AI tag while it is still the same entry (amount edits only scale it) */
+    if(ctx.est&&ctx.orig&&ctx.orig.foodId===f.id)e.est=ctx.est;
     /* hand-adjusted calories stay unless the food or the amount changed; then the user is asked first */
     if(ctx.adj){
       var o=ctx.orig||{},changed=o.foodId!==f.id||Math.abs((o.grams||0)-e.grams)>0.005;
@@ -2756,7 +3046,7 @@ function addForm(root,ctx){
   }
   if(ctx.editId)root.appendChild(editAsText(ctx));
   root.appendChild(h('div',{class:'card'},
-    h('div',{class:'row between'},h('div',{class:'grow'},foodLine(f)),ctx.editId?null:h('button',{type:'button',class:'btn sm',text:'Change food',onclick:function(){ctx.food=null;render(true)}})),
+    h('div',{class:'row between'},h('div',{class:'grow'},foodLine(f),ctx.est==='ai'&&!ctx.adj?h('span',{class:'tag ai',id:'ai-tag',title:'Calories and macros estimated by AI',text:'AI'}):null),ctx.editId?null:h('button',{type:'button',class:'btn sm',text:'Change food',onclick:function(){ctx.food=null;render(true)}})),
     f.check?h('p',{class:'small',id:'check-warning',role:'note',text:'Check values: the energy does not match protein, carbs and fat. Online values are entered by volunteers, so please compare with the pack.'}):null,
     ctx.pendingShared?pendingBox():null,
     ctx.editId?null:h('button',{type:'button',class:'btn sm',id:'edit-food',style:'margin-top:6px',text:'Edit this food',onclick:function(){S.myFoods={mode:'edit',id:f.id,returnToAdd:true};S.tab='myfoods';render(true)}}),
@@ -2916,58 +3206,107 @@ function viewHistory(root){
   if(!S.histAll&&dates.length>30)root.appendChild(h('button',{type:'button',class:'btn',text:'Show older days',onclick:function(){S.histAll=true;render()}}));
 }
 
-/* ---------- WEIGHT ---------- */
-function viewWeight(root){
-  var p=S.profile,ws=loadWeights(p.id);
-  var err=h('p',{class:'err',role:'alert'});
-  var kg=h('input',{type:'number',id:'w-kg',inputmode:'decimal',step:'0.1',min:'20',max:'300',value:String(ws.length?ws[ws.length-1].kg:p.startKg)});
-  var dt=h('input',{type:'date',id:'w-date',value:S.today,max:S.today});
-  root.appendChild(h('div',{class:'card'},h('div',{class:'field-grid'},h('div',null,h('label',{for:'w-kg',style:'margin-top:0'},'Weight (kg)'),kg),h('div',null,h('label',{for:'w-date',style:'margin-top:0'},'Date'),dt)),err,
-    h('button',{type:'button',id:'w-save',class:'btn primary',style:'margin-top:10px',text:'Save weight',onclick:function(){
-      err.textContent='';var v=parseFloat(kg.value);
-      if(!isFinite(v)||v<20||v>300){err.textContent='Weight must be between 20 and 300 kg.';return}
-      if(!isDate(dt.value)||dt.value>S.today){err.textContent='Pick a valid date that is not in the future.';return}
-      var a=loadWeights(p.id).filter(function(x){return x.date!==dt.value});a.push({date:dt.value,kg:Math.round(v*10)/10,updatedAt:Date.now()});
-      saveWeights(p.id,a);render();toast('Weight saved');}})));
-  /* range + chart */
-  var seg=h('div',{class:'seg',role:'group','aria-label':'Chart range'});
-  [[30,'30 days'],[90,'90 days'],[0,'All']].forEach(function(r){seg.appendChild(h('button',{type:'button','aria-pressed':S.range===r[0]?'true':'false',text:r[1],onclick:function(){S.range=r[0];render()}}))});
-  var avg=ws.map(function(w){var lo=addDays(w.date,-6),xs=ws.filter(function(x){return x.date>=lo&&x.date<=w.date});return xs.reduce(function(a,x){return a+x.kg},0)/xs.length});
-  var idx=ws.map(function(_,i){return i}).filter(function(i){return !S.range||ws[i].date>=addDays(S.today,-S.range)});
-  var card=h('section',{class:'card'},h('div',{class:'row between'},h('h2',{text:'Trend'}),seg));
-  if(!idx.length)card.appendChild(h('p',{class:'muted',text:ws.length?'No weights in this range.':'No weights logged yet. Add your first one above.'}));
-  else{card.appendChild(weightChart(ws,avg,idx));
-    var last=ws[idx[idx.length-1]],first=ws[idx[0]],stats=h('ul',{class:'plain'});
-    var ch=last.kg-p.startKg;
-    stats.appendChild(h('li',{id:'w-change',text:'Change since your starting weight ('+p.startKg+' kg): '+(ch>0?'+':'')+r1(ch)+' kg'}));
-    var span=(parseD(last.date)-parseD(first.date))/864e5;
-    if(idx.length>1&&span>=7){var rate=(avg[idx[idx.length-1]]-avg[idx[0]])/span*7;stats.appendChild(h('li',{id:'w-rate',text:'Average pace: '+(rate>0?'+':'')+(Math.round(rate*100)/100)+' kg per week (7-day averages)'}))}
-    else stats.appendChild(h('li',{class:'muted',text:'Log weights over at least a week to see your weekly pace.'}));
-    card.appendChild(stats);
-    card.appendChild(h('p',{class:'small muted',text:'Dots are single weigh-ins; the line is the 7-day average.'}));}
-  root.appendChild(card);
-  if(ws.length){var ul=h('ul',{class:'plain'});
-    ws.slice(-10).reverse().forEach(function(w){ul.appendChild(h('li',{class:'entry'},h('div',{class:'main',text:fmtDate(w.date)+' - '+w.kg+' kg'}),h('button',{type:'button',class:'btn sm danger','aria-label':'Delete weight on '+fmtDate(w.date),text:'Delete',onclick:function(){
-      saveWeights(p.id,loadWeights(p.id).filter(function(x){return x.date!==w.date}));render();toast('Weight deleted','Undo',function(){var a=loadWeights(p.id).filter(function(x){return x.date!==w.date});a.push(w);saveWeights(p.id,a);render()})}})))});
-    root.appendChild(h('section',{class:'card'},h('h2',{text:'Recent weigh-ins'}),ul))}
+/* ---------- WEIGHT TRACKER ---------- */
+var WT_RANGES=[['week','Week',7],['month','Month',30],['year','Year',365],['all','All time',0]];
+function fmtLongDate(d){var t=parseD(d);return t.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+/* "nice" axis: ticks at a round step that cover [lo,hi] */
+function niceAxis(lo,hi){
+  var span=Math.max(hi-lo,1),steps=[0.5,1,2,2.5,5,10,20,25,50],st=steps[steps.length-1],i;
+  for(i=0;i<steps.length;i++){if(span/steps[i]<=5){st=steps[i];break}}
+  var a=Math.floor(lo/st)*st,b=Math.ceil(hi/st)*st,ticks=[],v;
+  if(b-a<st*2)b=a+st*2;
+  for(v=a;v<=b+1e-9;v+=st)ticks.push(Math.round(v*100)/100);
+  return {lo:a,hi:b,ticks:ticks};
 }
-function weightChart(ws,avg,idx){
-  var W=340,H=210,L=40,R=10,T=12,B=30,pts=idx.map(function(i){return {d:ws[i].date,kg:ws[i].kg,a:avg[i]}});
-  var ys=[];pts.forEach(function(q){ys.push(q.kg,q.a)});
-  var lo=Math.min.apply(null,ys),hi=Math.max.apply(null,ys);if(hi-lo<1){lo-=0.5;hi+=0.5}
-  var pd=(hi-lo)*0.1;lo-=pd;hi+=pd;
-  var t0=parseD(pts[0].d).getTime(),t1=parseD(pts[pts.length-1].d).getTime(),dx=t1-t0;
-  function X(d){return dx?L+(parseD(d).getTime()-t0)/dx*(W-L-R):(L+W-R)/2}
-  function Y(v){return T+(H-T-B)*(1-(v-lo)/(hi-lo))}
-  var sv=s('svg',{class:'chart',viewBox:'0 0 '+W+' '+H,role:'img','aria-label':'Weight chart, '+pts.length+' weigh-ins from '+pts[0].d+' to '+pts[pts.length-1].d+'. Latest '+pts[pts.length-1].kg+' kg.'});
-  for(var g=0;g<4;g++){var v=lo+(hi-lo)*g/3;sv.appendChild(s('line',{class:'grid',x1:L,x2:W-R,y1:Y(v),y2:Y(v)}));sv.appendChild(s('text',{x:L-4,y:Y(v)+4,'text-anchor':'end',text:(Math.round(v*10)/10)+''}))}
-  if(pts.length>1)sv.appendChild(s('polyline',{class:'avg',points:pts.map(function(q){return X(q.d)+','+Y(q.a)}).join(' ')}));
-  pts.forEach(function(q){sv.appendChild(s('circle',{class:'raw',cx:X(q.d),cy:Y(q.kg),r:pts.length>60?2:3.5}))});
-  sv.appendChild(s('text',{x:L,y:H-10,text:fmtDate(pts[0].d)}));
-  if(pts.length>1)sv.appendChild(s('text',{x:W-R,y:H-10,'text-anchor':'end',text:fmtDate(pts[pts.length-1].d)}));
-  var tb=h('table',{class:'sr-only'},h('caption',{text:'Weight log'}),h('tr',null,h('th',{text:'Date'}),h('th',{text:'kg'}),h('th',{text:'7-day average kg'})));
-  pts.forEach(function(q){tb.appendChild(h('tr',null,h('td',{text:q.d}),h('td',{text:String(q.kg)}),h('td',{text:String(r1(q.a))})))});
-  return h('div',null,sv,tb);
+function weightChartSvg(pts,target,win,fallbackKg){
+  var W=340,H=220,L=36,R=12,T=12,B=28,vals=pts.map(function(q){return q.kg});
+  if(target!=null)vals.push(target);
+  if(!vals.length)vals.push(fallbackKg);
+  var lo=Math.min.apply(null,vals),hi=Math.max.apply(null,vals),pad=Math.max((hi-lo)*0.15,1);
+  var ax=niceAxis(lo-pad,hi+pad);
+  var t0=parseD(win[0]).getTime(),t1=parseD(win[1]).getTime();if(t1<=t0)t1=t0+864e5;
+  function X(d){return L+(parseD(d).getTime()-t0)/(t1-t0)*(W-L-R)}
+  function Y(v){return T+(H-T-B)*(1-(v-ax.lo)/(ax.hi-ax.lo))}
+  var sv=s('svg',{class:'wtchart',id:'wt-chart',viewBox:'0 0 '+W+' '+H,role:'img','aria-label':'Weight chart: '+pts.length+(pts.length===1?' weigh-in':' weigh-ins')+' from '+fmtDM(win[0])+' to '+fmtDM(win[1])+(target!=null?'. Target '+target+' kg.':'.')});
+  ax.ticks.forEach(function(v){
+    sv.appendChild(s('line',{class:'grid',x1:L,x2:W-R,y1:Y(v),y2:Y(v)}));
+    sv.appendChild(s('text',{class:'ytick',x:L-5,y:Y(v)+3.5,'text-anchor':'end',text:String(v)}));
+  });
+  var n=5,long=(t1-t0)/864e5>75;
+  for(var k=0;k<n;k++){
+    var tm=t0+(t1-t0)*k/(n-1),dd=new Date(tm),x=L+(W-L-R)*k/(n-1);
+    sv.appendChild(s('line',{class:'grid',x1:x,x2:x,y1:T,y2:H-B}));
+    var lbl=long?dd.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}):dd.getDate()+' '+dd.toLocaleDateString('en-GB',{month:'short'});
+    sv.appendChild(s('text',{class:'xtick',x:k===0?x:k===n-1?x:x,y:H-B+14,'text-anchor':k===0?'start':k===n-1?'end':'middle',text:lbl}));
+  }
+  sv.appendChild(s('line',{class:'axis',x1:L,x2:L,y1:T,y2:H-B}));sv.appendChild(s('line',{class:'axis',x1:L,x2:W-R,y1:H-B,y2:H-B}));
+  if(target!=null){
+    sv.appendChild(s('line',{class:'tgt',id:'wt-target-line',x1:L,x2:W-R,y1:Y(target),y2:Y(target)}));
+    sv.appendChild(s('text',{class:'tgt-label',x:W-R-2,y:Y(target)-4,'text-anchor':'end',text:'Target '+target}));
+  }
+  if(pts.length>1)sv.appendChild(s('polyline',{class:'ln',id:'wt-line',points:pts.map(function(q){return X(q.date).toFixed(1)+','+Y(q.kg).toFixed(1)}).join(' ')}));
+  pts.forEach(function(q){sv.appendChild(s('circle',{class:'pt',cx:X(q.date).toFixed(1),cy:Y(q.kg).toFixed(1),r:pts.length>60?2:3.5}))});
+  return sv;
+}
+function openWeightSheet(p,w,opener){
+  var editing=!!w;
+  openSheet({title:editing?'Edit weight':'Add weight',opener:opener,id:'wt-sheet',build:function(body,close){
+    var ws=loadWeights(p.id),err=h('p',{class:'err',role:'alert',id:'w-err'});
+    var kg=h('input',{type:'number',id:'w-kg',inputmode:'decimal',step:'0.1',min:'20',max:'300',value:String(editing?w.kg:(ws.length?ws[ws.length-1].kg:p.startKg)),'data-autofocus':'1'});
+    var dt=h('input',{type:'date',id:'w-date',value:editing?w.date:S.today,max:S.today});
+    var tp=timePicker({value:editing&&w.time?w.time:nowTime(),label:'Time',idPrefix:'wt'});
+    body.appendChild(h('label',{for:'w-kg',style:'margin-top:0'},'Weight (kg)'));body.appendChild(kg);
+    body.appendChild(h('label',{for:'w-date'},'Date'));body.appendChild(dt);
+    body.appendChild(h('label',null,'Time'));body.appendChild(tp.el);body.appendChild(err);
+    function save(){
+      err.textContent='';var v=parseFloat(kg.value);
+      if(!isFinite(v)||v<20||v>300){err.textContent='Weight must be between 20 and 300 kg.';kg.focus();return}
+      if(!isDate(dt.value)||dt.value>S.today){err.textContent='Pick a valid date that is not in the future.';return}
+      var tv=tp.get();if(!tv){tp.validate();return}
+      var a=loadWeights(p.id).filter(function(x){return x.date!==dt.value&&!(editing&&x.date===w.date)});
+      a.push({date:dt.value,kg:Math.round(v*10)/10,time:tv,updatedAt:Date.now()});
+      saveWeights(p.id,a);close(false);render();toast(editing?'Weight updated':'Weight saved');
+    }
+    var row=h('div',{class:'row',style:'margin-top:12px'},h('button',{type:'button',id:'w-save',class:'btn primary grow',text:'Save weight',onclick:save}),
+      editing?h('button',{type:'button',id:'w-delete',class:'btn danger','aria-label':'Delete weight on '+fmtDate(w.date),text:'Delete',onclick:function(){
+        var old=w;saveWeights(p.id,loadWeights(p.id).filter(function(x){return x.date!==old.date}));close(false);render();
+        toast('Weight deleted','Undo',function(){var a=loadWeights(p.id).filter(function(x){return x.date!==old.date});a.push(old);saveWeights(p.id,a);render()});
+      }}):null,
+      h('button',{type:'button',class:'btn',id:'w-cancel',text:'Cancel',onclick:function(){close()}}));
+    body.appendChild(row);
+  }});
+}
+function viewWeight(root){
+  var p=S.profile,ws=loadWeights(p.id),rk=S.wtRange||'month';
+  var rg=WT_RANGES.filter(function(r){return r[0]===rk})[0]||WT_RANGES[1];
+  root.appendChild(h('div',{class:'wt-head'},h('h2',{text:'Your weight'}),h('button',{type:'button',class:'icon-btn',id:'wt-add','aria-label':'Add weight',onclick:function(ev){openWeightSheet(p,null,ev.currentTarget)}},icon(ICONS.plus))));
+  var cur=ws.length?ws[ws.length-1].kg:p.startKg,tg=p.targetWeightKg!=null?p.targetWeightKg:null;
+  root.appendChild(h('div',{class:'wt-cards'},
+    h('section',{class:'card','aria-label':'Current weight'},h('span',{class:'muted small',text:'Current weight'}),h('span',{class:'big',id:'wt-current',text:fmt2(cur)+' kg'})),
+    h('section',{class:'card','aria-label':'Target weight'},h('span',{class:'muted small',text:'Target weight'}),h('span',{class:'big',id:'wt-target',text:tg!==null?fmt2(tg)+' kg':'-'}))));
+  var seg=h('div',{class:'wt-tabs',role:'group','aria-label':'Chart range',id:'wt-range'});
+  WT_RANGES.forEach(function(r){seg.appendChild(h('button',{type:'button','data-range':r[0],'aria-pressed':rk===r[0]?'true':'false',text:r[1],onclick:function(){S.wtRange=r[0];render()}}))});
+  root.appendChild(seg);
+  var inR=ws.filter(function(w){return !rg[2]||w.date>=addDays(S.today,-(rg[2]-1))});
+  var win=rg[2]?[addDays(S.today,-(rg[2]-1)),S.today]:(inR.length?[inR[0].date,inR[inR.length-1].date]:[addDays(S.today,-29),S.today]);
+  if(win[0]===win[1])win=[addDays(win[0],-3),addDays(win[1],3)];   /* a single point (All time): show a few days around it */
+  var card=h('section',{class:'card',id:'wt-chart-card'},weightChartSvg(inR,tg,win,cur));
+  if(!inR.length)card.appendChild(h('p',{class:'muted small',id:'wt-empty',text:ws.length?'No weights in this range.':'No weights logged yet. Tap + to add your first one.'}));
+  else{
+    var ch=inR[inR.length-1].kg-p.startKg;
+    card.appendChild(h('p',{class:'small muted',id:'w-change',text:'Change since your starting weight ('+fmt2(p.startKg)+' kg): '+(ch>0?'+':'')+fmt2(Math.round(ch*10)/10)+' kg'}));
+  }
+  root.appendChild(card);
+  root.appendChild(h('h2',{style:'margin:14px 2px 6px',text:'Weight entries'}));
+  var list=h('ul',{class:'plain wt-list',id:'wt-list'});
+  inR.slice().reverse().forEach(function(w){
+    var btn=h('button',{type:'button',class:'wt-item','data-date':w.date,'aria-label':'Edit weight '+fmt2(w.kg)+' kg on '+fmtLongDate(w.date),onclick:function(ev){openWeightSheet(p,w,ev.currentTarget)}},
+      h('b',{text:fmt2(w.kg)+' kg'}),h('span',{class:'muted small',text:fmtLongDate(w.date)+(w.time?' '+fmt12(w.time):'')}));
+    list.appendChild(h('li',null,btn));
+  });
+  var card2=h('section',{class:'card'},list);
+  if(!inR.length)card2.appendChild(h('p',{class:'muted',text:'No entries in this range.'}));
+  root.appendChild(card2);
 }
 
 function viewGoals(root){
@@ -2990,7 +3329,8 @@ function viewGoals(root){
       h('div',null,h('label',{for:'f-sex'},'Sex',h('span',{class:'hint',text:'Used in the calorie formula'})),selct('sex',[['m','Male'],['f','Female']],p.sex)),
       h('div',null,h('label',{for:'f-dob'},'Date of birth'),inp('dob','date',p.dob,{max:S.today})),
       h('div',null,h('label',{for:'f-height'},'Height (cm)'),inp('height','number',p.heightCm,{inputmode:'decimal',step:'any',min:'100',max:'230'})),
-      h('div',null,h('label',{for:'f-weight'},existing?'Starting weight (kg)':'Weight (kg)'),inp('weight','number',p.startKg,{inputmode:'decimal',step:'0.1',min:'20',max:'300'}))),
+      h('div',null,h('label',{for:'f-weight'},existing?'Starting weight (kg)':'Weight (kg)'),inp('weight','number',p.startKg,{inputmode:'decimal',step:'0.1',min:'20',max:'300'})),
+      h('div',null,h('label',{for:'f-target'},'Target weight (kg)',h('span',{class:'hint',text:'Optional. Shown in the Weight tracker'})),inp('target','number',p.targetWeightKg,{inputmode:'decimal',step:'0.1',min:'20',max:'300'}))),
     h('label',{for:'f-activity'},model3?'How active are you in everyday life?':'How active are you?'),selct('activity',model3?EVERYDAY:ACTIVITY,p.activity),
     h('p',{class:'muted small',id:'activity-note-help',text:model3?'Do not count workouts here. Workouts you log are added to your day separately.':'These already include your workouts, so don\'t add workout calories on top.'}),
     h('p',{class:'muted small',id:'activity-heavy-help',text:'Doing heavy physical work? If the number still looks low, set your own calories under Advanced.'}),
@@ -3011,13 +3351,14 @@ function viewGoals(root){
   function readForm(){
     function n(id){var t=F[id].value.trim();return t===''?null:parseFloat(t)}
     var o={};[['ovkcal','kcal'],['ovp','p'],['ovc','c'],['ovf','f']].forEach(function(k){var v=n(k[0]);if(v!=null&&isFinite(v))o[k[1]]=v});
-    return {name:F.name.value.trim(),sex:F.sex.value,dob:F.dob.value,heightCm:n('height'),startKg:n('weight'),activity:parseFloat(F.activity.value),goal:F.goal.value,rateKgWk:parseFloat(F.rate.value),proteinGPerKg:n('protein'),fatPct:n('fat'),override:o};
+    return {name:F.name.value.trim(),sex:F.sex.value,dob:F.dob.value,heightCm:n('height'),startKg:n('weight'),targetWeightKg:n('target'),activity:parseFloat(F.activity.value),goal:F.goal.value,rateKgWk:parseFloat(F.rate.value),proteinGPerKg:n('protein'),fatPct:n('fat'),override:o};
   }
   function validate(q){
     if(!q.name)return 'Please enter a name.';
     if(!isDate(q.dob)||q.dob>S.today||ageOn(q.dob,S.today)<10||ageOn(q.dob,S.today)>110)return 'Enter a valid date of birth (age 10 to 110).';
     if(!(q.heightCm>=100&&q.heightCm<=230))return 'Height must be between 100 and 230 cm.';
     if(!(q.startKg>=20&&q.startKg<=300))return 'Weight must be between 20 and 300 kg.';
+    if(q.targetWeightKg!=null&&!(q.targetWeightKg>=20&&q.targetWeightKg<=300))return 'Target weight must be between 20 and 300 kg, or empty.';
     if(!(q.proteinGPerKg>=0.5&&q.proteinGPerKg<=4)){adv.open=true;return 'Protein must be between 0.5 and 4 g per kg.'}
     if(!(q.fatPct>=10&&q.fatPct<=50)){adv.open=true;return 'Fat must be between 10 and 50 percent of calories.'}
     var o=q.override;if('kcal' in o&&(o.kcal<500||o.kcal>10000)){adv.open=true;return 'Calories per day should be between 500 and 10000.'}
@@ -3035,6 +3376,17 @@ function viewGoals(root){
       kv('Daily calorie target','pv-target',r0(c.target)+' kcal'),
       kv('Protein','pv-p',r0(c.p)+' g'),kv('Carbs','pv-c',r0(c.c)+' g'),kv('Fat','pv-f',r0(c.f)+' g')));
     var nt=targetNote(c,q);if(nt)pv.appendChild(noteEl(nt));
+    if(existing){
+      /* the numbers that used to sit on Today (for the day you were looking at): target, burn, deficit, fibre */
+      var vd=S.viewDate||S.today,c2=calc(q,weightOn(existing.id,q,vd),vd),tt=sumEntries(entriesOn(existing.id,vd)),cnt=existing.exerciseAdds?sumEx(exOn(existing.id,vd)):0,def=c2.tdee+cnt-tt.kcal;
+      pv.appendChild(h('h3',{style:'margin-top:12px',id:'sofar-title',text:vd===S.today?'Today so far':fmtDate(vd)}));
+      pv.appendChild(h('dl',{class:'kv',id:'totals','aria-live':'polite','aria-atomic':'true'},
+        kv('Daily target','t-target',r0(c2.target)+' kcal'),
+        kv('Calories you burn per day','t-tdee',r0(c2.tdee)+' kcal'),
+        kv('Eaten vs what you burn (deficit)','t-deficit',r0(Math.abs(def))+' kcal '+(def>=0?'under':'over'),def<0),
+        kv('Fibre eaten','t-fibre',r1(tt.fib)+' g')));
+      pv.appendChild(h('p',{class:'small muted',id:'deficit-help',text:vd===S.today?'The day is not over yet, so this number shrinks as you eat. A deficit means you have eaten less than you burn per day.':'A deficit means you ate less than you burn per day.'}));
+    }
     pv.appendChild(h('p',{class:'small muted',text:'Estimates from the Mifflin-St Jeor formula. 1 kg of body weight is about 7700 kcal.'}));
   }
   root.appendChild(form);
@@ -3044,6 +3396,7 @@ function viewGoals(root){
   root.appendChild(h('div',{class:'card'},err,h('button',{type:'button',id:'save-profile',class:'btn primary',style:'width:100%',text:existing?'Save changes':'Create profile',onclick:function(){
     err.textContent='';var q=readForm(),bad=validate(q);if(bad){err.textContent=bad;return}
     var now=Date.now(),base=existing?S.profile:{slots:defaultSlots()},np=Object.assign({},base,q,{id:existing?existing.id:'p_'+uuid().replace(/[^\w-]/g,'').slice(0,12),updatedAt:now,createdAt:existing?existing.createdAt:now,activityModel:existing?Math.max(2,existing.activityModel||2):3,exerciseAdds:existing?existing.exerciseAdds===true:true});
+    if(q.targetWeightKg==null||!isFinite(q.targetWeightKg))delete np.targetWeightKg;
     if(existing&&q.activity!==existing.activity)np.activityNote=null;
     if(!existing){np.waterGoalCups=8;np.cupMl=250;np.m3Dismissed=false}
     saveProfile(np);
@@ -3066,7 +3419,7 @@ function download(obj,name){
   document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},3000);
 }
 function doExport(pids,label){
-  download(buildExport(pids),'diet-tracker-'+label+'-'+todayStr()+'.json');
+  download(buildExport(pids),'trackme-backup-'+todayStr()+'.json');
   meta.lastExport=Date.now();saveMeta();S.exportedSinceDelete=true;showBanners();toast('Backup file downloaded');
 }
 function safeId(x){return typeof x==='string'&&/^[\w-]{1,64}$/.test(x)}
@@ -3091,6 +3444,7 @@ function cleanProfile(p){
   var o={},ov=p.override||{};['kcal','p','c','f'].forEach(function(k){if(numIn(ov[k],0,20000))o[k]=ov[k]});
   return {id:p.id,name:p.name.trim().slice(0,40),sex:p.sex,dob:p.dob,heightCm:p.heightCm,startKg:p.startKg,activity:actVal,activityModel:isNew&&am>2?am:2,activityNote:note,goal:p.goal,rateKgWk:p.rateKgWk===0.25?0.25:0.5,
     proteinGPerKg:numIn(p.proteinGPerKg,0.5,4)?p.proteinGPerKg:1.6,fatPct:numIn(p.fatPct,10,50)?p.fatPct:25,override:o,slots:(function(s){return s.length?s:defaultSlots()})(cleanSlots(p.slots)),
+    targetWeightKg:numIn(p.targetWeightKg,20,300)?p.targetWeightKg:undefined,
     exerciseAdds:isNew&&am>=3&&p.exerciseAdds===true,m3Dismissed:p.m3Dismissed===true,waterGoalCups:numIn(p.waterGoalCups,1,30)?Math.round(p.waterGoalCups):8,cupMl:numIn(p.cupMl,50,1000)?Math.round(p.cupMl):250,
     createdAt:numIn(p.createdAt,0,9e15)?p.createdAt:Date.now(),updatedAt:numIn(p.updatedAt,0,9e15)?p.updatedAt:0};
 }
@@ -3106,10 +3460,17 @@ function cleanEntry(e){
 function cleanEntryFull(e){
   var c=cleanEntry(e);if(!c)return null;
   if(typeof e.logId==='string'&&safeId(e.logId))c.logId=e.logId;
+  if(e.est==='ai')c.est='ai';
+  if(e.imp==='pdf')c.imp='pdf';
   var a=e.adj;if(a&&typeof a==='object'&&numIn(a.kcal,0,20000)&&numIn(a.p,0,20000)&&numIn(a.c,0,20000)&&numIn(a.f,0,20000))c.adj={kcal:a.kcal,p:a.p,c:a.c,f:a.f};
   return c;
 }
-function cleanWeight(w){return w&&isDate(w.date)&&numIn(w.kg,20,300)?{date:w.date,kg:w.kg,updatedAt:numIn(w.updatedAt,0,9e15)?w.updatedAt:0}:null}
+function cleanWeight(w){
+  if(!w||!isDate(w.date)||!numIn(w.kg,20,300))return null;
+  var o={date:w.date,kg:w.kg,updatedAt:numIn(w.updatedAt,0,9e15)?w.updatedAt:0};
+  if(typeof w.time==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(w.time))o.time=w.time;   /* optional: older weights have no time */
+  return o;
+}
 function cleanFood(f){
   if(!f||typeof f.id!=='string'||!/^c_[\w-]{1,64}$/.test(f.id)||typeof f.name!=='string'||!f.name.trim()||!f.per100)return null;
   var n=f.per100,out={};for(var k of ['kcal','p','c','f','fib']){if(!numIn(n[k],0,1000))return null;out[k]=n[k]}
@@ -3373,30 +3734,113 @@ function openRenameSaved(sv,opener){
 }
 
 /* ---------- Weekly summary ---------- */
-function weekStats(p,mon){
-  var days=[],i;for(i=0;i<7;i++)days.push(addDays(mon,i));
-  var infos=days.map(function(d){return dayInfo(p,d)}),logged=infos.filter(function(x,k){return x.ents.length&&days[k]<=S.today});
-  var n=logged.length;function avg(f){return n?logged.reduce(function(a,x){return a+f(x)},0)/n:null}
-  var ws=loadWeights(p.id),inWeek=ws.filter(function(w){return w.date>=mon&&w.date<=addDays(mon,6)}),before=ws.filter(function(w){return w.date<mon}),wchange=null;
-  if(inWeek.length){var base=before.length?before[before.length-1].kg:inWeek[0].kg;wchange=inWeek[inWeek.length-1].kg-base}
-  return {days:days,n:n,food:avg(function(x){return x.tot.kcal}),ex:avg(function(x){return x.exTotal}),rem:avg(function(x){return x.left}),c:avg(function(x){return x.tot.c}),p:avg(function(x){return x.tot.p}),f:avg(function(x){return x.tot.f}),wchange:wchange,wn:inWeek.length};
+/* ---------- WEEKLY SUMMARY ---------- */
+var WK_TABS=13;   /* This week ... 12 weeks ago */
+function wkTabName(i){return i===0?'This week':i===1?'Last week':i+' weeks ago'}
+function fmtDM(d){var t=parseD(d);return t.getDate()+' '+t.toLocaleDateString('en-GB',{month:'short'})}
+function fmtDMY(d){var t=parseD(d);return t.toLocaleDateString('en-GB',{weekday:'short'})+' '+t.getDate()+' '+t.toLocaleDateString('en-GB',{month:'short'})+' '+t.getFullYear()}
+function fmtVol(ml){return ml>=1000?(Math.round(ml/10)/100)+'L':Math.round(ml)+'ml'}
+/* numbers for one Monday-to-Sunday week. A day is "tracked" when it has any food entry. */
+function weekData(p,mon){return rangeData(p,mon,7)}
+function rangeData(p,mon,n){
+  var days=[],i,ws=loadWeights(p.id),water=loadWater(p.id);
+  for(i=0;i<n;i++){
+    var d=addDays(mon,i),info=d<=S.today?dayInfo(p,d):null,tracked=!!(info&&info.ents.length),c=info?info.c:null;
+    var wt=ws.filter(function(w){return w.date===d})[0]||null,wr=water[d];
+    days.push({date:d,tracked:tracked,food:tracked?info.tot.kcal:null,exercise:tracked?info.exTotal:null,rem:tracked?info.left:null,goal:c?c.target:null,
+      carbs:tracked?info.tot.c:null,protein:tracked?info.tot.p:null,fat:tracked?info.tot.f:null,gc:c?c.c:null,gp:c?c.p:null,gf:c?c.f:null,
+      weight:wt,cups:wr&&wr.cups>0?wr.cups:null});
+  }
+  var tr=days.filter(function(x){return x.tracked});
+  function sum(f){return tr.reduce(function(a,x){return a+f(x)},0)}
+  return {mon:mon,days:days,n:tr.length,food:sum(function(x){return x.food}),exercise:sum(function(x){return x.exercise}),rem:sum(function(x){return x.rem}),
+    carbs:sum(function(x){return x.carbs}),protein:sum(function(x){return x.protein}),fat:sum(function(x){return x.fat}),
+    gc:sum(function(x){return x.gc}),gp:sum(function(x){return x.gp}),gf:sum(function(x){return x.gf}),
+    goal:tr.length?tr[tr.length-1].goal:null,last:tr.length?tr[tr.length-1]:null};
+}
+/* the report module (PDF export and import) is loaded only when asked for; it works through this small API */
+var REPORT=null;
+function loadReportModule(){
+  if(window.TMReport)return Promise.resolve(window.TMReport);
+  if(REPORT)return REPORT;
+  REPORT=new Promise(function(res,rej){var sc=document.createElement('script');sc.src='report.js';sc.onload=function(){window.TMReport?res(window.TMReport):rej(new Error('report module missing'))};sc.onerror=function(){rej(new Error('could not load the report module'))};document.head.appendChild(sc)}).catch(function(e){REPORT=null;throw e});
+  return REPORT;
+}
+function reportFail(e){toast('Could not start the report tool ('+String(e&&e.message||e).slice(0,60)+').')}
+function TMApi(){
+  return {h:h,openSheet:openSheet,toast:toast,S:S,render:render,addDays:addDays,parseD:parseD,ymd:ymd,isDate:isDate,uuid:uuid,r0:r0,r1:r1,fmt2:fmt2,fmtQty:fmtQty,qtyText:qtyText,
+    rangeData:rangeData,dayInfo:dayInfo,mondayOf:mondayOf,calc:calc,weightOn:weightOn,loadWeights:loadWeights,saveWeights:saveWeights,loadWater:loadWater,cupsOn:cupsOn,setCups:setCups,
+    entriesOn:entriesOn,exOn:exOn,putEntry:putEntry,removeEntry:removeEntry,putEx:putEx,removeEx:removeEx,exKcal:exKcal,typicalTime:typicalTime,slotNameOf:slotNameOf,
+    shortUnit:shortUnit,todayStr:todayStr,fmt12:fmt12,sumEntries:sumEntries};
 }
 function viewWeekly(root){
-  var p=S.profile;if(!S.weekStart)S.weekStart=mondayOf(S.today);
-  var mon=S.weekStart,st=weekStats(p,mon),nextOk=addDays(mon,7)<=S.today;
-  root.appendChild(h('section',{class:'card',id:'wk-head'},h('div',{class:'cal-head'},
-    h('h2',{id:'wk-title',style:'margin:0',text:parseD(mon).toLocaleDateString(undefined,{day:'numeric',month:'short'})+' to '+parseD(addDays(mon,6)).toLocaleDateString(undefined,{day:'numeric',month:'short'})}),
-    h('div',{class:'row',style:'flex-wrap:nowrap'},
-      h('button',{type:'button',class:'icon-btn',id:'wk-prev','aria-label':'Previous week',onclick:function(){S.weekStart=addDays(mon,-7);render()}},icon(ICONS.chevL)),
-      h('button',{type:'button',class:'icon-btn',id:'wk-next','aria-label':'Next week',disabled:!nextOk,onclick:function(){S.weekStart=addDays(mon,7);render()}},icon(ICONS.chevR))))));
-  root.appendChild(weekChart(p,null,{days:st.days,title:'Food and exercise',exercise:true,id:'wk-chart'}));
-  function v(x,unit){return x===null?'-':r0(x)+unit}
-  root.appendChild(h('section',{class:'card',id:'wk-stats'},h('h2',{text:'Averages'}),
-    h('p',{class:'muted small',text:'Averages use the days with food logged.'}),
-    h('dl',{class:'kv'},kv('Days logged','wk-days',st.n+' of 7'),kv('Food','wk-food',v(st.food,' kcal/day')),kv('Exercise','wk-ex',v(st.ex,' kcal/day')),
-      kv('Remaining','wk-rem',st.rem===null?'-':fmtRem(st.rem)+' kcal/day',st.rem!==null&&st.rem<0),
-      kv('Carbs','wk-c',v(st.c,' g/day')),kv('Protein','wk-p',v(st.p,' g/day')),kv('Fat','wk-f',v(st.f,' g/day')),
-      kv('Weight change','wk-weight',st.wchange===null?'No weight logged this week':(st.wchange>0?'+':st.wchange<0?'-':'')+fmt2(Math.abs(Math.round(st.wchange*10)/10))+' kg'))));
+  var p=S.profile,idx=Math.max(0,Math.min(WK_TABS-1,S.weekIdx||0)),mon=addDays(mondayOf(S.today),-7*idx);
+  var wd=weekData(p,mon),prev=weekData(p,addDays(mon,-7));
+  /* tabs */
+  var tabs=h('div',{class:'wk-tabs',role:'tablist','aria-label':'Choose a week',id:'wk-tabs'});
+  for(var t=0;t<WK_TABS;t++)(function(t){
+    tabs.appendChild(h('button',{type:'button',class:'wk-tab',role:'tab','data-week':String(t),'aria-selected':t===idx?'true':'false',text:wkTabName(t),onclick:function(){S.weekIdx=t;render()}}));
+  })(t);
+  root.appendChild(tabs);
+  root.appendChild(h('div',{class:'row',style:'margin:0 0 8px;justify-content:flex-end'},h('button',{type:'button',class:'btn sm',id:'wk-export',text:'Export report (PDF)',onclick:function(ev){loadReportModule().then(function(R){R.openExport(TMApi(),ev.target)},reportFail)}})));
+  var act=tabs.children[idx];setTimeout(function(){if(act&&tabs.isConnected)tabs.scrollLeft=Math.max(0,act.offsetLeft-12)},0);
+  function dayCells(x){var dt=parseD(x.date);return [h('td',{text:dt.toLocaleDateString('en-GB',{weekday:'short'})}),h('td',{text:fmtDM(x.date)})]}
+  function cols(){return h('colgroup',null,h('col',{class:'cd'}),h('col',{class:'cdt'}),h('col'),h('col'),h('col'))}
+  function sg(n){n=r0(n);if(n===0)n=0;return (n>0?'+':n<0?'-':'')+Math.abs(n)}
+  /* summary card */
+  var tot=r0(wd.rem),under=tot>=0;
+  var big=wd.n?h('p',{class:'wk-big '+(under?'good':'bad'),id:'wk-budget'},h('b',{text:String(Math.abs(tot))+' calories'}),' '+(under?'under':'over')+' budget this week'):h('p',{class:'wk-big',id:'wk-budget',text:'No food logged this week'});
+  root.appendChild(h('section',{class:'card',id:'wk-summary'},h('p',{class:'wk-range',id:'wk-range',text:fmtDMY(mon)+' - '+fmtDMY(addDays(mon,6))}),big,
+    h('p',{class:'muted',id:'wk-tracked',text:wd.n+' out of 7 days tracked this week'})));
+  /* calories */
+  var ct=h('table',{class:'wk-tbl',id:'wk-cal'},cols(),h('thead',null,h('tr',null,h('th',{text:'Day'}),h('th',{text:'Date'}),h('th',{class:'n',text:'Food'}),h('th',{class:'n',text:'Exercise'}),h('th',{class:'n',text:'Remaining'}))));
+  var cb=h('tbody');
+  wd.days.forEach(function(x){
+    var dc=dayCells(x);
+    cb.appendChild(h('tr',{'data-date':x.date},dc[0],dc[1],h('td',{class:'n',text:x.tracked?String(r0(x.food)):'-'}),h('td',{class:'n',text:x.tracked?String(r0(x.exercise)):'-'}),
+      h('td',{class:'n '+(x.tracked?(x.rem>=0?'pos':'neg'):''),text:x.tracked?String(r0(x.rem)):'-'})));
+  });
+  cb.appendChild(h('tr',{class:'tot',id:'wk-total'},h('td',{colspan:'2',text:'Total'}),h('td',{class:'n',text:wd.n?String(r0(wd.food)):'-'}),h('td',{class:'n',text:wd.n?String(r0(wd.exercise)):'-'}),
+    h('td',{class:'n '+(wd.n?(tot>=0?'pos':'neg'):''),text:wd.n?String(tot):'-'})));
+  var both=wd.n&&prev.n;
+  cb.appendChild(h('tr',{class:'vs',id:'wk-vs'},h('td',{colspan:'2',text:'Versus last week'}),h('td',{class:'n',text:both?sg(wd.food-prev.food):'-'}),h('td',{class:'n',text:both?sg(wd.exercise-prev.exercise):'-'}),h('td',{class:'n',text:both?sg(wd.rem-prev.rem):'-'})));
+  ct.appendChild(cb);
+  var goalDay=wd.goal!==null?wd.goal:calc(p,weightOn(p.id,p,S.today),S.today).target;
+  root.appendChild(h('section',{class:'card',id:'wk-cal-card'},h('h2',{text:'Calories'}),ct,h('p',{class:'wk-foot',id:'wk-goal-note',text:'* Based on a daily goal of '+r0(goalDay)+' calories'})));
+  /* macros */
+  function mac(v,g){var d=g-v,r=r0(Math.abs(d));return [String(r0(v))+'g',(d>=0?r+'g under':r+'g over')]}
+  var mt=h('table',{class:'wk-tbl',id:'wk-mac'},cols(),h('thead',null,h('tr',null,h('th',{text:'Day'}),h('th',{text:'Date'}),h('th',{class:'n',text:'Carbs'}),h('th',{class:'n',text:'Protein'}),h('th',{class:'n',text:'Fat'}))));
+  var mb=h('tbody');
+  function macCell(v,g){var m=mac(v,g);return h('td',{class:'n'},m[0],h('span',{class:'sub',text:m[1]}))}
+  wd.days.forEach(function(x){
+    var dc=dayCells(x);
+    mb.appendChild(h('tr',{'data-date':x.date},dc[0],dc[1],x.tracked?macCell(x.carbs,x.gc):h('td',{class:'n',text:'-'}),x.tracked?macCell(x.protein,x.gp):h('td',{class:'n',text:'-'}),x.tracked?macCell(x.fat,x.gf):h('td',{class:'n',text:'-'})));
+  });
+  mb.appendChild(h('tr',{class:'tot',id:'wk-mac-total'},h('td',{colspan:'2',text:'Total'}),wd.n?macCell(wd.carbs,wd.gc):h('td',{class:'n',text:'-'}),wd.n?macCell(wd.protein,wd.gp):h('td',{class:'n',text:'-'}),wd.n?macCell(wd.fat,wd.gf):h('td',{class:'n',text:'-'})));
+  mt.appendChild(mb);
+  var cg=wd.last?{target:wd.last.goal,c:wd.last.gc,p:wd.last.gp,f:wd.last.gf}:calc(p,weightOn(p.id,p,S.today),S.today);
+  var sh=cg.target>0?[4*cg.c/cg.target*100,4*cg.p/cg.target*100,9*cg.f/cg.target*100].map(function(x){return Math.round(x)}):[0,0,0];
+  if(Math.abs(sh[0]+sh[1]+sh[2]-100)<=2)sh[2]=100-sh[0]-sh[1];
+  root.appendChild(h('section',{class:'card',id:'wk-mac-card'},h('h2',{text:'Macronutrients'}),mt,
+    h('p',{class:'wk-foot',id:'wk-split-note',text:'* Based on a daily macronutrient split of '+sh[0]+'% carbohydrates, '+sh[1]+'% protein, '+sh[2]+'% fat'})));
+  /* weight */
+  var wt=h('table',{class:'wk-tbl',id:'wk-weight'},cols(),h('thead',null,h('tr',null,h('th',{text:'Day'}),h('th',{text:'Date'}),h('th',{colspan:'2',text:'Time'}),h('th',{class:'n',text:'Weight'}))));
+  var wb=h('tbody');
+  wd.days.forEach(function(x){
+    var dc=dayCells(x),w=x.weight;
+    wb.appendChild(h('tr',{'data-date':x.date},dc[0],dc[1],h('td',{colspan:'2',text:w&&w.time?fmt12(w.time):'-'}),h('td',{class:'n',text:w?fmt2(w.kg)+' kg':'-'})));
+  });
+  wt.appendChild(wb);
+  root.appendChild(h('section',{class:'card',id:'wk-weight-card'},h('h2',{text:'Weight'}),wt));
+  /* water */
+  var wa=h('table',{class:'wk-tbl',id:'wk-water'},cols(),h('thead',null,h('tr',null,h('th',{text:'Day'}),h('th',{text:'Date'}),h('th',{class:'n',text:'Cups'}),h('th',{class:'n',text:'Volume'}),h('th',{class:'n',text:'Remaining cups'}))));
+  var wab=h('tbody');
+  wd.days.forEach(function(x){
+    var dc=dayCells(x),c=x.cups;
+    wab.appendChild(h('tr',{'data-date':x.date},dc[0],dc[1],h('td',{class:'n',text:c!==null?String(c):'-'}),h('td',{class:'n',text:c!==null?fmtVol(c*p.cupMl):'-'}),h('td',{class:'n',text:c!==null?String(Math.max(0,p.waterGoalCups-c)):'-'})));
+  });
+  wa.appendChild(wab);
+  root.appendChild(h('section',{class:'card',id:'wk-water-card'},h('h2',{text:'Water'}),wa));
 }
 
 /* ---------- Backup & restore ---------- */
@@ -3406,6 +3850,10 @@ function viewBackup(root){
   root.appendChild(h('section',{class:'card',id:'persist-card'},h('h2',{text:'Keep your journal safe'}),h('p',{class:'small',id:'persist-line',text:persistText()}),
     h('p',{class:'small muted',text:'Clearing site data in Chrome deletes the journal. A backup file is the only copy that survives that.'}),
     h('button',{type:'button',class:'btn sm',text:'Check my phone',onclick:function(){goto('phone')}})));
+  root.appendChild(h('section',{class:'card',id:'report-import-card'},h('h2',{text:'Import a report (PDF)'}),
+    h('p',{class:'muted small',text:'Bring in days from a report PDF made by this app or a similar one. It is read on this phone only. You see everything before anything is saved. Goals in the report are not imported.'}),
+    h('label',{class:'btn',for:'report-file',id:'report-file-label'},'Choose a report PDF'),
+    h('input',{type:'file',id:'report-file',accept:'application/pdf,.pdf',class:'sr-only',onchange:function(ev){var f=ev.target.files&&ev.target.files[0];ev.target.value='';if(f)loadReportModule().then(function(R){R.openImport(TMApi(),f)},reportFail)}})));
   root.appendChild(h('section',{class:'card'},h('h2',{text:'Old Diet Tracker backups'}),
     h('p',{class:'muted',text:'A backup file made with the older Diet Tracker page can be imported above. Nothing in it is lost: your people, meals, weights and foods come across.'})));
 }
@@ -3416,9 +3864,17 @@ function viewSettings(root){
   [['system','System'],['light','Light'],['dark','Dark']].forEach(function(t){
     seg.appendChild(h('button',{type:'button','data-theme-opt':t[0],'aria-pressed':UI.theme===t[0]?'true':'false',text:t[1],onclick:function(){UI.theme=t[0];saveUI();applyTheme();render()}}));
   });
+  var fseg=h('div',{class:'seg seg4',role:'group','aria-label':'Text size',id:'fontsize-seg'}),sample=h('p',{class:'size-sample',id:'size-sample',text:'This is how your text will look. 2 roti, dal and curd: 480 kcal.'});
+  FONT_SIZES.forEach(function(f){
+    fseg.appendChild(h('button',{type:'button','data-size-opt':f[0],'aria-pressed':UI.fontSize===f[0]?'true':'false',text:f[1],onclick:function(){
+      UI.fontSize=f[0];saveUI();applyFontSize();
+      fseg.querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-size-opt')===f[0]?'true':'false')});
+    }}));
+  });
+  root.appendChild(h('section',{class:'card',id:'fontsize-card'},h('h2',{text:'Text size'}),h('p',{class:'muted small',text:'Changes the size of all text in the app on this device. Medium is the default.'}),fseg,sample));
   root.appendChild(h('section',{class:'card',id:'theme-card'},h('h2',{text:'Theme'}),h('p',{class:'muted small',text:'System follows your phone. Light and Dark override it on this device.'}),seg));
-  root.appendChild(h('section',{class:'card',id:'parser-card'},h('h2',{text:'Text reading'}),h('p',{text:'Basic parser (built-in rules).'}),
-    h('p',{class:'muted small',text:'Your words are matched to the food list on this phone. On-device AI is planned for a later update.'})));
+  root.appendChild(h('section',{class:'card',id:'parser-card'},h('h2',{text:'Text reading'}),h('p',{id:'parser-mode',text:aiEnabled()?'On-device AI reads what you type.':'Basic (built-in rules).'}),
+    h('p',{class:'muted small',text:'With an on-device AI model downloaded and switched on, the AI reads your words first. Otherwise the built-in rules read them. Either way you check the result before anything is saved.'})));
   var vseg=h('div',{class:'seg',role:'group','aria-label':'Voice language',id:'voice-seg'});
   [['en-IN','English (India)'],['hi-IN','Hindi']].forEach(function(t){vseg.appendChild(h('button',{type:'button','data-voice-lang':t[0],'aria-pressed':UI.voiceLang===t[0]?'true':'false',text:t[1],onclick:function(){UI.voiceLang=t[0];saveUI();render()}}))});
   root.appendChild(h('section',{class:'card',id:'voice-card'},h('h2',{text:'Voice typing'}),
@@ -3435,14 +3891,26 @@ function viewSettings(root){
 
 /* ---------- About ---------- */
 function viewAbout(root){
-  root.appendChild(h('section',{class:'card about'},h('div',{class:'row'},brandIcon(56),h('div',null,h('h2',{style:'margin:0',text:'Journable'}),h('p',{class:'muted small',style:'margin:0',text:'Version 3.1. Works offline once installed.'}))),
+  root.appendChild(h('section',{class:'card about'},h('div',{class:'row'},brandIcon(56),h('div',null,h('h2',{style:'margin:0',text:'TrackMe'}),h('p',{class:'muted small',style:'margin:0',text:'Version 1.1. Works offline once installed.'}))),
     h('p',{text:'A private food journal. Type what you ate in plain words, check what was understood, and save. Your journal stays in this browser on this device.'}),
     h('p',{class:'muted small',text:'Estimates only, not medical advice. Use Backup & restore regularly: clearing site data deletes the journal.'})));
+  root.appendChild(h('section',{class:'card',id:'whatsnew-card'},h('h2',{text:'What\'s new in 1.1'}),
+    h('ul',{id:'whatsnew',class:'bullets'},
+      h('li',{text:'The app is now called TrackMe.'}),
+      h('li',{text:'Text size setting, a simpler Today screen, and a summary that stays pinned and shrinks as you scroll. Swipe left or right to change the day.'}),
+      h('li',{text:'Weekly summary tables and a Weight tracker with a chart and an optional target weight.'}),
+      h('li',{text:'Tap a meal to see its items, nutrition facts and, with the on-device AI, a short health note.'}),
+      h('li',{text:'With the on-device AI on, everything you type is read by the AI first. Foods not in the list get an estimate tagged AI. Units stay as you typed them.'}),
+      h('li',{text:'Type several lines at once: they become one meal (or one meal per time if you give different times).'}))));
+  root.appendChild(h('section',{class:'card',id:'install-help'},h('h2',{text:'Install'}),
+    h('p',{class:'small',text:'In Chrome on Android: menu, then Install app (or Add to Home screen). It then opens full screen and works offline.'}),
+    h('p',{class:'small muted',text:'If you installed this app before it was renamed, the home-screen icon keeps its old name and icon until you remove it and install it again (your journal stays in the browser; make a backup first if you reinstall).'})));
   root.appendChild(h('section',{class:'card',id:'credit'},h('h2',{text:'Credits'}),
     h('p',{class:'small',id:'ifct-credit',text:'Food data: IFCT 2017, ICMR-National Institute of Nutrition (via npm ifct2017-compositions); cooked-dish values are estimates.'}),
     h('p',{class:'small',id:'off-credit',text:'Open Food Facts, ODbL (openfoodfacts.org): used when you add a food from the online search. Values are entered by volunteers.'}),
+    h('p',{class:'small',id:'pdf-credit',text:'PDF import (optional): pdf.js by Mozilla, Apache-2.0 licence. PDF export is made by a small writer inside this app.'}),
     h('p',{class:'small',id:'ai-credit',text:'On-device AI (optional): WebLLM by MLC AI, Apache-2.0 licence. Models: Qwen3 by Alibaba Cloud, Apache-2.0 licence; Llama 3.2 by Meta, under the Llama 3.2 Community Licence. Built with Llama.'}),
-    h('p',{class:'small muted',text:'The AI only extracts words and amounts. Calories and nutrition always come from the food data above.'})));
+    h('p',{class:'small muted',text:'The AI reads your words and amounts. Calories come from the food data above; the AI estimates them only for foods that are not in it, and those rows are tagged AI.'})));
 }
 
 
