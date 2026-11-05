@@ -2,6 +2,74 @@
 
 All notable changes to TrackMe (the app folder is still called `journable/`). Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). From now on every change ends with an entry here.
 
+## [Unreleased] (1.1.4)
+
+### Added
+- **Fixed household sizes.** small katori 100 ml, katori 150 ml (unchanged), large katori 200 ml, bowl 275 ml, cup 150 ml, glass 250 ml, tbsp 15 ml, tsp 5 ml. "small katori dal" is 100 g, "large katori dal" 200 g, "1 bowl rice" 238 g (the food's own bowl portion still wins: "oats 1 bowl" 250 g). A cup is 150 ml for every food (a cup of cooked rice 130 g instead of 160 g, a cup of milk 155 g instead of 248 g, a raw rice cup 125 g instead of 200 g). Level-teaspoon weights that were within 5% of the new value keep their old grams (4.5 g ghee/oil tsp).
+- **Per-unit data.** The food database now stores nutrition per 1 g (liquids per 1 ml) and a density for foods with a volume portion; a katori/cup/glass/spoon weight is "size x density" and cannot disagree with its label. Liquids typed in ml use their density: "200 ml milk" is 206.4 g, 123 kcal (was 200 g, 119 kcal). The app, saved entries, packs and backups still use per-100 g numbers, so nothing stored changes.
+- **Cooked vegetables.** 31 boiled vegetables from USDA FoodData Central SR Legacy (spinach, cauliflower, okra, brinjal, carrot, pumpkin, peas, cabbage, onion, French beans, broccoli, karela, drumstick pods and leaves, lauki, ash gourd, mushroom, capsicum, mustard greens, beet greens, mooli, knol khol, lotus root, zucchini, chow chow, potato, sweet potato, beetroot, arvi, suran, raw banana) tagged "USDA", found by "boiled spinach" or "palak boiled"; raw names rank as before ("cabbage", "mushroom", "sweet potato", "tinda" still find the raw item first; review fix). Carbohydrate is by difference minus fibre, to match the IFCT numbers (IFCT carbs exclude fibre). 8 more (tinda, parwal, kundru, ridge gourd / turai, snake gourd, cluster beans, methi, bathua) are estimates derived from the IFCT raw value by a boiling factor from USDA pairs, named "- estimate", tagged "estimate" and explained in their basis text.
+- **More piece sizes.** "1 brinjal", capsicum red/yellow, radish, mooli, baby corn, green tomato, kundru, parwal, tinda, zucchini, raw plantain, raw mango, round cucumber. Weights are household averages (estimates, marked ~). A per-piece nutrition view `food_pieces` is in the database.
+- **Counts of boiled vegetables are pieces.** "1 boiled potato" is one medium potato (136 g), "2 boiled carrots", "1 boiled onion", "1 boiled sweet potato", "3 boiled bhindi", "2 boiled mushrooms", "1 boiled beetroot" use the piece weight from the USDA file instead of a katori.
+- About: credit line for USDA FoodData Central; README Credits and Household sizes sections; version 1.1.4.
+
+### Changed
+- Weights of dish and raw-food katori portions are unchanged, but their labels now carry the estimate mark: "1 katori (~150 g)". Searching "milk" shows "kcal per 100 ml".
+- Editing a saved entry whose unit label matches a portion with a different weight keeps the entry's own weight.
+- "1 small katori rice" is shown as "1 x small katori (87 g)" (and "large katori" likewise), not "0.67 x katori".
+- "boiled potato" finds the boiled potato (it found the boiled sweet potato); the import script stops with a clear message, before touching the database, when a USDA CSV file is missing.
+- Data scripts: `scripts/units.mjs` (migration, re-runnable, backup `data/trackme.pre-units.db`), `scripts/import_cooked.mjs` + `scripts/cooked_list.mjs`; `seed_portions.mjs` works on both table shapes; `db_check.mjs` now has 74 checks.
+
+### Drinks and liquids (added to 1.1.4, unreleased)
+- **New group "Beverages and liquids"** (28 rows, stored per 1 ml with a density): plain water (0 kcal; also pani, paani, jal), soda water, honey (tsp 5 ml, tbsp 15 ml), juices (orange fresh, apple, mango, mixed fruit; "juice" alone gives orange with the others as alternatives), soda / cola / soft drink (coke, pepsi, sprite ...), beer, whisky / rum / vodka / gin, wine, green tea, nimbu pani and lemon water, sharbat (rooh afza type), filter and cold coffee, badam milk, milkshake, protein shake with water and with milk, smoothie, kheer / payasam / rice pudding, kadhi, soups (vegetable, tomato, chicken, dal). Sourced rows (water, honey, orange juice, beer, spirits, wine, green tea, soda water) are USDA FoodData Central SR Legacy records with the fdcId in the row note; every other row is tagged estimate and says how it was built. Script: `scripts/data_v115.mjs` (idempotent, runs after units and import_cooked; `node scripts/data_v115.mjs <USDA csv folder>` only verifies the numbers).
+- **Liquids show ml, not grams.** "1 cup milk (150 ml)", "1 glass water (250 ml)", "1 x can (330 ml)" in the preview, Today, the check sheet and the food list; the saved grams are unchanged (ml = grams / density at display time). The unit picker has an explicit **ml** choice for every liquid; the entry is stored exactly like a typed "200 ml".
+- New unit words: bottle (500 ml), can (330 ml), shot (30 ml), pint (568 ml); a food's own row wins (beer bottle 650 ml, wine glass 150 ml, wine bottle 750 ml). "bottle gourd" is still a vegetable.
+
+### Changed (v1.1.5 data)
+- "water" is plain water, no longer the water chestnut (and "beer" is no longer beetroot, "coke" no longer jaggery, "kheer" no longer cucumber).
+- A guess for a misspelt word now needs 5 or more letters and the same first letter; otherwise the row stays "Not found" with Search all foods / Search online / Make custom food.
+- Liquid cooking oils (sunflower/groundnut/soybean, mustard, coconut) use 0.92 g/ml (USDA 218 g per cup) instead of 0.867: "100 ml oil" is now 92 g (828 kcal, was 87 g / 780 kcal). The tbsp stays the 13 g label weight and the tsp 4.5 g. Ghee and vanaspati keep 0.867 (USDA butter oil 205 g per cup, shortening 205 g).
+- Boiled sweet potato density 1.386 -> 0.845 g/ml (USDA cup of pieces 200 g instead of the 328 g mashed cup): "1 katori boiled sweet potato" is 127 g (was 208 g); "1 boiled sweet potato" is still the 151 g piece. Drumstick leaves (boiled) stay 0.178 g/ml: it is the USDA measured cup of chopped cooked leaves (42 g).
+- The words "bottle", "can", "shot" and "pint" are units only after a number.
+- `db_check.mjs` now has 82 checks; `seed_portions.mjs` keeps the liquid rows' portions.
+
+### Earlier in this release (1.1.2 / 1.1.3)
+
+### Changed
+- **Quantity basis is spelled out.** Food search results, the alternatives in the check sheet and "Search all foods" now say what the numbers are for, for example "105 kcal per 100 g; 105 kcal for 1 medium banana (100 g)". Meal detail > Nutrition facts says "For the whole meal: N items, about X g eaten."
+- **Portions.** About 136 foods that only had per-100 g values now offer typical household quantities in the unit picker (nuts and dry fruit per piece, fruit per piece or slice, eggs, raw rice / flour / dal per katori or cup, spoons of spices, common vegetables per piece, plates of rice, a cutting-chai glass ...). All of them are estimates (rounded, marked "~", sources and reasons in the database), not IFCT values. Per-piece weights used for typed counts ("4 cashews") are unchanged.
+- Food data now lives in one SQLite file, `data/trackme.db`, and the site is built by `node scripts/build.mjs` into the top folder of the repository (there is no `dist/` any more). The app itself and its stored data are unchanged.
+- The `trackme-site.zip` holds the same site files as before.
+
+### Fixed
+- **Typed counts of raw fruit and vegetables use the piece, not a katori.** "10 strawberries" was 10 katori (1 kg, 246 kcal), "10 cherries" 1 kg, "1 dried apricot" 100 g, "1 guava" a katori. A raw food's own portion ("1 medium guava", "10 grapes") now comes before the generic "1 katori (chopped)", so these read 120 g, 80 g, 8 g and 1 medium guava; "1 katori guava" still gives the katori. Red seeded and black oval grapes gain the "10 grapes (~50 g)" portion the other grapes have ("10 grapes" matched the red ones and was 1 kg).
+
+### Fixed (v1.1.3 review items)
+- **"1 mango" is a ripe mango** (about 180 g pulp, estimate), not Mangosteen; "mango" and "aam" rank a ripe mango first, "mangosteen" still finds mangosteen. Mango, ripe, paheri gets the same piece portion as the other mango rows.
+- **A plain count means the raw item.** "5 bhindi" is 5 okra pods (~10 g each, estimate), not 5 katori of Bhindi sabzi; "2 country eggs" is 2 eggs (90 g), not 200 g of omelette; "2 green chillies" is 10 g, not 200 g. Dishes still win when you type a dish word ("bhindi sabzi", "omelette", "egg curry") or a unit ("1 katori").
+- **Counts of small pieces stay pieces up to 200.** "25 grapes" is 25 grapes (125 g), not 25 g; same for almonds, raisins, cashews, peanuts, chillies. Plain numbers for other foods ("rice 100") are still grams.
+- **More names found:** jeera (cumin seeds), chikoo (sapota), amla (gooseberry), mosambi (Lime, sweet, pulp), sesame / til (white gingelly seeds; "til" no longer finds Tilapia), peanuts / groundnut / moongphali (Ground nut), watermelon / tarbooz, bhindi / okra (Ladies finger). New estimated portions: 1 peanut (~0.8 g), 1 bhindi (~10 g), 1 tsp brown sesame.
+- **The basis line keeps the estimate mark and the unit:** "for 1 katori raw (~125 g)", "for 1 glass (250 ml)".
+
+## [1.1.1] - 2026-11-05
+
+Fixes from a real-phone report (six lines: "Protein oats (100 g)", "Almonds soaked (3 nuts)", "Cashews (4 nuts)", "Anjeer, soaked (2 figs)", "Dates, soaked (2 dates)", "Milk (200 ml) at 8 AM"; the chip said AI ready, the sheet said the AI could not read it, and the rules made bad rows).
+
+### Fixed
+- **AI failures are explained.** The check sheet says why ("AI could not read this: the AI took too long / stopped with an error (...) / gave an answer that could not be read / named no food in your text") with a **Retry** button. On-device AI keeps a copyable **Last AI problem** (model, load ms, generate ms, tokens, reason, the text; kept in memory only).
+- **Loading and reading are separate.** Loading the model shows progress and Cancel and has no timeout; the reading timeout grows with the number of lines (15 s + 9 s per line, +20 s for the very first call).
+- **Line-by-line retry.** If the whole-text call fails (and the text has 2 to 8 lines), each line is asked once and the answers are merged into the same meal; a line the AI still cannot read keeps the built-in rules' row (marked Check) and the sheet says "read 5 of 6 lines".
+- **Tolerant validation of the AI answer.** Brackets, capitals, punctuation and modifier words no longer make a valid item "invented"; numbers may be strings; unit and type are case-insensitive. When the AI names only the food ("Cashews") and leaves out the amount, the amount you typed next to it ("(4 nuts)", "200 ml") is used, so the AI's own unit (for example "g" for nuts) never replaces yours. A `<think>` block and trailing commas in the AI's JSON are tolerated.
+- **Commas inside names.** A comma fragment that is only a descriptor (soaked, dried, raw, cooked ...) belongs to the item before it on the same line, so "Anjeer, soaked (2 figs)" is one item. Other commas still split items, also in multi-line text ("rice, dal" on one of several lines is rice and dal; an earlier 1.1.1 build kept the line whole and lost the rice).
+- **Count units.** "(4 nuts)", "(2 figs)", "(2 dates)", "4 cashews" are pieces with per-piece weights (cashew 1.5 g, fig 25.5 g, date 7 g, walnut 4 g, pistachio 0.7 g, raisin 0.5 g) and are shown as typed ("4 nuts"), never "400 g" or "2 x katori (200 g)". Calibrated to the report: 4 cashews 35 kcal, 2 figs 42, 2 dates 40, 4 almonds 29.
+- **Modifier words** (soaked, dried, raw, peeled, chopped, toasted, ...) no longer cause "Not found" ("Almonds soaked" finds almonds).
+- **Online search.** `world.openfoodfacts.org/cgi/search.pl` currently answers 503 ("temporarily unavailable"), and `search.openfoodfacts.org` sends no CORS header to browsers, so on a phone both failed. Search now tries world, then search, then `in.openfoodfacts.org/cgi/search.pl` (CORS open, answers), says what went wrong (server busy with the HTTP code, no answer in 12 s, request blocked or offline, unreadable answer) and offers **Retry**. CSP `connect-src` gains `in.openfoodfacts.org`. Only the food name is sent; the service worker still ignores cross-origin requests.
+- Food data: "Protein oats (dry, packaged)" (380 kcal per 100 g, as in the report) is found for "protein oats"; "1 medium banana" is 100 g (105 kcal), was 120 g.
+
+### Changed
+- The button **"Not this?" is now "Change item"** (check sheet, tests, docs).
+- Version 1.1.1 (About, "What's new in 1.1.1", `Journable.version`).
+- Tests: see `tests/CHANGES.md`. New suite `tests/test_v111.py`.
+
 ## [1.1.0] - 2026-11-04
 
 ### Added

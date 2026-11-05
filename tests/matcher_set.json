@@ -1,0 +1,654 @@
+[
+ {
+  "phrase": "rice",
+  "expect": "Plain rice, cooked (white)"
+ },
+ {
+  "phrase": "chawal",
+  "expect": "Plain rice, cooked (white)"
+ },
+ {
+  "phrase": "bhaat",
+  "expect": "Plain rice, cooked (white)"
+ },
+ {
+  "phrase": "white rice",
+  "expect": "Plain rice, cooked (white)"
+ },
+ {
+  "phrase": "cooked rice",
+  "expect": "Plain rice, cooked (white)"
+ },
+ {
+  "phrase": "plain rice",
+  "expect": "Plain rice, cooked (white)"
+ },
+ {
+  "phrase": "steamed rice",
+  "expect": "Plain rice, cooked (white)"
+ },
+ {
+  "phrase": "brown rice",
+  "expect": "Brown rice, cooked"
+ },
+ {
+  "phrase": "roti",
+  "expect": "Roti / phulka"
+ },
+ {
+  "phrase": "chapati",
+  "expect": "Roti / phulka"
+ },
+ {
+  "phrase": "phulka",
+  "expect": "Roti / phulka"
+ },
+ {
+  "phrase": "rotis",
+  "expect": "Roti / phulka"
+ },
+ {
+  "phrase": "chappati",
+  "expect": "Roti / phulka"
+ },
+ {
+  "phrase": "chapatti",
+  "expect": "Roti / phulka"
+ },
+ {
+  "phrase": "tawa roti",
+  "expect": "Roti / phulka"
+ },
+ {
+  "phrase": "wheat roti",
+  "expect": "Roti / phulka"
+ },
+ {
+  "phrase": "dal",
+  "expect": "Dal (toor)"
+ },
+ {
+  "phrase": "daal",
+  "expect": "Dal (toor)"
+ },
+ {
+  "phrase": "toor dal",
+  "expect": "Dal (toor)"
+ },
+ {
+  "phrase": "arhar dal",
+  "expect": "Dal (toor)"
+ },
+ {
+  "phrase": "dhal",
+  "expect": "Dal (toor)"
+ },
+ {
+  "phrase": "moong dal",
+  "expect": "Moong dal, cooked"
+ },
+ {
+  "phrase": "dal tadka",
+  "expect": "Dal tadka"
+ },
+ {
+  "phrase": "dal makhani",
+  "expect": "Dal makhani"
+ },
+ {
+  "phrase": "milk",
+  "expect": "Cow milk, toned"
+ },
+ {
+  "phrase": "doodh",
+  "expect": "Cow milk, toned"
+ },
+ {
+  "phrase": "dudh",
+  "expect": "Cow milk, toned"
+ },
+ {
+  "phrase": "toned milk",
+  "expect": "Cow milk, toned"
+ },
+ {
+  "phrase": "cow milk",
+  "expect": "Cow milk, toned"
+ },
+ {
+  "phrase": "glass milk",
+  "expect": "Cow milk, toned"
+ },
+ {
+  "phrase": "whole milk",
+  "expect": "Cow milk, whole"
+ },
+ {
+  "phrase": "buffalo milk",
+  "expect": "Buffalo milk, whole"
+ },
+ {
+  "phrase": "bhains ka doodh",
+  "expect": "Buffalo milk, whole"
+ },
+ {
+  "phrase": "egg",
+  "expect": "Egg, boiled"
+ },
+ {
+  "phrase": "eggs",
+  "expect": "Egg, boiled"
+ },
+ {
+  "phrase": "anda",
+  "expect": "Egg, boiled"
+ },
+ {
+  "phrase": "boiled egg",
+  "expect": "Egg, boiled"
+ },
+ {
+  "phrase": "boiled eggs",
+  "expect": "Egg, boiled"
+ },
+ {
+  "phrase": "ande",
+  "expect": "Egg, boiled"
+ },
+ {
+  "phrase": "omelette",
+  "expect": "Egg omelette"
+ },
+ {
+  "phrase": "omelet",
+  "expect": "Egg omelette"
+ },
+ {
+  "phrase": "egg bhurji",
+  "expect": "Egg bhurji"
+ },
+ {
+  "phrase": "ghee",
+  "expect": "Ghee"
+ },
+ {
+  "phrase": "desi ghee",
+  "expect": "Ghee"
+ },
+ {
+  "phrase": "clarified butter",
+  "expect": "Ghee"
+ },
+ {
+  "phrase": "banana",
+  "expect": "Banana, ripe"
+ },
+ {
+  "phrase": "kela",
+  "expect": "Banana, ripe"
+ },
+ {
+  "phrase": "bananas",
+  "expect": "Banana, ripe"
+ },
+ {
+  "phrase": "ripe banana",
+  "expect": "Banana, ripe"
+ },
+ {
+  "phrase": "apple",
+  "expect": "Apple"
+ },
+ {
+  "phrase": "seb",
+  "expect": "Apple"
+ },
+ {
+  "phrase": "apples",
+  "expect": "Apple"
+ },
+ {
+  "phrase": "orange",
+  "expect": "Orange (pulp)"
+ },
+ {
+  "phrase": "santra",
+  "expect": "Orange (pulp)"
+ },
+ {
+  "phrase": "curd",
+  "expect": "Curd / dahi"
+ },
+ {
+  "phrase": "dahi",
+  "expect": "Curd / dahi"
+ },
+ {
+  "phrase": "yogurt",
+  "expect": "Curd / dahi"
+ },
+ {
+  "phrase": "yoghurt",
+  "expect": "Curd / dahi"
+ },
+ {
+  "phrase": "plain curd",
+  "expect": "Curd / dahi"
+ },
+ {
+  "phrase": "tea",
+  "expect": "Chai (milk tea"
+ },
+ {
+  "phrase": "chai",
+  "expect": "Chai (milk tea"
+ },
+ {
+  "phrase": "masala chai",
+  "expect": "Chai (milk tea"
+ },
+ {
+  "phrase": "ginger chai",
+  "expect": "Chai (milk tea"
+ },
+ {
+  "phrase": "cup of tea",
+  "expect": "Chai (milk tea"
+ },
+ {
+  "phrase": "adrak chai",
+  "expect": "Chai (milk tea"
+ },
+ {
+  "phrase": "black tea",
+  "expect": "Tea, black"
+ },
+ {
+  "phrase": "green tea",
+  "expect": "Green tea"
+ },
+ {
+  "phrase": "coffee",
+  "expect": "Coffee, black"
+ },
+ {
+  "phrase": "black coffee",
+  "expect": "Coffee, black"
+ },
+ {
+  "phrase": "paneer",
+  "expect": "Paneer (fresh"
+ },
+ {
+  "phrase": "cottage cheese",
+  "expect": "Paneer (fresh"
+ },
+ {
+  "phrase": "paneer bhurji",
+  "expect": "Paneer bhurji"
+ },
+ {
+  "phrase": "palak paneer",
+  "expect": "Palak paneer"
+ },
+ {
+  "phrase": "paneer butter masala",
+  "expect": "Paneer butter masala"
+ },
+ {
+  "phrase": "butter",
+  "expect": "Butter (salted)"
+ },
+ {
+  "phrase": "makhan",
+  "expect": "Butter (salted)"
+ },
+ {
+  "phrase": "cooking oil",
+  "expect": "Cooking oil"
+ },
+ {
+  "phrase": "refined oil",
+  "expect": "Cooking oil"
+ },
+ {
+  "phrase": "sunflower oil",
+  "expect": "Cooking oil"
+ },
+ {
+  "phrase": "mustard oil",
+  "expect": "Mustard oil"
+ },
+ {
+  "phrase": "sarson oil",
+  "expect": "Mustard oil"
+ },
+ {
+  "phrase": "coconut oil",
+  "expect": "Coconut oil"
+ },
+ {
+  "phrase": "sugar",
+  "expect": "Sugar, white"
+ },
+ {
+  "phrase": "cheeni",
+  "expect": "Sugar, white"
+ },
+ {
+  "phrase": "jaggery",
+  "expect": "Jaggery (cane)"
+ },
+ {
+  "phrase": "gur",
+  "expect": "Jaggery (cane)"
+ },
+ {
+  "phrase": "poha",
+  "expect": "Poha"
+ },
+ {
+  "phrase": "pohe",
+  "expect": "Poha"
+ },
+ {
+  "phrase": "upma",
+  "expect": "Upma"
+ },
+ {
+  "phrase": "idli",
+  "expect": "Idli"
+ },
+ {
+  "phrase": "idlis",
+  "expect": "Idli"
+ },
+ {
+  "phrase": "dosa",
+  "expect": "Plain dosa"
+ },
+ {
+  "phrase": "plain dosa",
+  "expect": "Plain dosa"
+ },
+ {
+  "phrase": "masala dosa",
+  "expect": "Masala dosa"
+ },
+ {
+  "phrase": "sambar",
+  "expect": "Sambar"
+ },
+ {
+  "phrase": "sambhar",
+  "expect": "Sambar"
+ },
+ {
+  "phrase": "rasam",
+  "expect": "Rasam"
+ },
+ {
+  "phrase": "uttapam",
+  "expect": "Uttapam"
+ },
+ {
+  "phrase": "uttappam",
+  "expect": "Uttapam"
+ },
+ {
+  "phrase": "paratha",
+  "expect": "Paratha (plain"
+ },
+ {
+  "phrase": "parantha",
+  "expect": "Paratha (plain"
+ },
+ {
+  "phrase": "plain paratha",
+  "expect": "Paratha (plain"
+ },
+ {
+  "phrase": "aloo paratha",
+  "expect": "Aloo paratha"
+ },
+ {
+  "phrase": "potato paratha",
+  "expect": "Aloo paratha"
+ },
+ {
+  "phrase": "puri",
+  "expect": "Puri"
+ },
+ {
+  "phrase": "poori",
+  "expect": "Puri"
+ },
+ {
+  "phrase": "samosa",
+  "expect": "Samosa"
+ },
+ {
+  "phrase": "samose",
+  "expect": "Samosa"
+ },
+ {
+  "phrase": "khichdi",
+  "expect": "Khichdi"
+ },
+ {
+  "phrase": "khichri",
+  "expect": "Khichdi"
+ },
+ {
+  "phrase": "rajma",
+  "expect": "Rajma"
+ },
+ {
+  "phrase": "chole",
+  "expect": "Chole"
+ },
+ {
+  "phrase": "chana masala",
+  "expect": "Chole"
+ },
+ {
+  "phrase": "chhole",
+  "expect": "Chole"
+ },
+ {
+  "phrase": "chicken biryani",
+  "expect": "Chicken biryani"
+ },
+ {
+  "phrase": "veg biryani",
+  "expect": "Veg biryani"
+ },
+ {
+  "phrase": "vegetable biryani",
+  "expect": "Veg biryani"
+ },
+ {
+  "phrase": "pulao",
+  "expect": "Veg pulao"
+ },
+ {
+  "phrase": "chicken curry",
+  "expect": "Chicken curry"
+ },
+ {
+  "phrase": "mutton curry",
+  "expect": "Mutton curry"
+ },
+ {
+  "phrase": "egg curry",
+  "expect": "Egg curry"
+ },
+ {
+  "phrase": "bhindi",
+  "expect": "Bhindi sabzi"
+ },
+ {
+  "phrase": "okra",
+  "expect": "Bhindi sabzi"
+ },
+ {
+  "phrase": "bhindi sabzi",
+  "expect": "Bhindi sabzi"
+ },
+ {
+  "phrase": "aloo gobi",
+  "expect": "Aloo gobi"
+ },
+ {
+  "phrase": "aloo gobhi",
+  "expect": "Aloo gobi"
+ },
+ {
+  "phrase": "aloo sabzi",
+  "expect": "Aloo sabzi"
+ },
+ {
+  "phrase": "sabzi",
+  "expect": "Mixed vegetable sabzi"
+ },
+ {
+  "phrase": "sabji",
+  "expect": "Mixed vegetable sabzi"
+ },
+ {
+  "phrase": "mixed veg",
+  "expect": "Mixed vegetable sabzi"
+ },
+ {
+  "phrase": "mix veg sabzi",
+  "expect": "Mixed vegetable sabzi"
+ },
+ {
+  "phrase": "potato",
+  "expect": "Potato, raw"
+ },
+ {
+  "phrase": "aloo",
+  "expect": "Potato, raw"
+ },
+ {
+  "phrase": "tomato",
+  "expect": "Tomato, ripe"
+ },
+ {
+  "phrase": "tamatar",
+  "expect": "Tomato, ripe"
+ },
+ {
+  "phrase": "onion",
+  "expect": "Onion"
+ },
+ {
+  "phrase": "pyaz",
+  "expect": "Onion"
+ },
+ {
+  "phrase": "lassi",
+  "expect": "Lassi, sweet"
+ },
+ {
+  "phrase": "sweet lassi",
+  "expect": "Lassi, sweet"
+ },
+ {
+  "phrase": "buttermilk",
+  "expect": "Chaas / buttermilk"
+ },
+ {
+  "phrase": "chaas",
+  "expect": "Chaas / buttermilk"
+ },
+ {
+  "phrase": "chhach",
+  "expect": "Chaas / buttermilk"
+ },
+ {
+  "phrase": "raita",
+  "expect": "Cucumber raita"
+ },
+ {
+  "phrase": "cucumber raita",
+  "expect": "Cucumber raita"
+ },
+ {
+  "phrase": "oatmeal",
+  "expect": "Oats cooked"
+ },
+ {
+  "phrase": "oats porridge",
+  "expect": "Oats cooked"
+ },
+ {
+  "phrase": "bread",
+  "expect": "Bread, white"
+ },
+ {
+  "phrase": "toast",
+  "expect": "Bread, white"
+ },
+ {
+  "phrase": "slice of bread",
+  "expect": "Bread, white"
+ },
+ {
+  "phrase": "bread slice",
+  "expect": "Bread, white"
+ },
+ {
+  "phrase": "biscuit",
+  "expect": "Biscuit, Marie"
+ },
+ {
+  "phrase": "marie biscuit",
+  "expect": "Biscuit, Marie"
+ },
+ {
+  "phrase": "pav",
+  "expect": "Pav (bread"
+ },
+ {
+  "phrase": "bhujia",
+  "expect": "Namkeen"
+ },
+ {
+  "phrase": "namkeen",
+  "expect": "Namkeen"
+ },
+ {
+  "phrase": "almonds",
+  "expect": "Almonds"
+ },
+ {
+  "phrase": "badam",
+  "expect": "Almonds"
+ },
+ {
+  "phrase": "thepla",
+  "expect": "Thepla"
+ },
+ {
+  "phrase": "besan chilla",
+  "expect": "Besan chilla"
+ },
+ {
+  "phrase": "chilla",
+  "expect": "Besan chilla"
+ },
+ {
+  "phrase": "cheela",
+  "expect": "Besan chilla"
+ },
+ {
+  "phrase": "curd rice",
+  "expect": "Curd rice"
+ },
+ {
+  "phrase": "dahi chawal",
+  "expect": "Curd rice"
+ }
+]
