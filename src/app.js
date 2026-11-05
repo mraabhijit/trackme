@@ -2436,7 +2436,16 @@ function llmMessages(text,model,today){
   msgs.push({role:'user',content:text+(qwen?' /no_think':'')});
   return msgs;
 }
+/* WebLLM's reload() swallows an abort and resolves with no model inside, so a "ready" engine can answer ModelNotLoadedError: reload once and ask again */
 function llmGenerate(text,today){
+  return llmGenerate1(text,today).catch(function(e){
+    if(!/ModelNotLoaded|not loaded/i.test(String(e&&(e.name+' '+e.message)||e)))throw e;
+    var id=LLM.modelId;LLM.notLoaded=(LLM.notLoaded||0)+1;
+    llmFreeEngine();LLM.state='idle';
+    return llmLoad(id,{cached:true}).then(function(ok){if(!ok)throw e;return llmGenerate1(text,today)});
+  });
+}
+function llmGenerate1(text,today){
   var mk=llmMock();
   if(mk&&mk.extract){LLM.lastUsage=mk.usage||null;return Promise.resolve(mk.extract(text))}
   var eng=LLM.engine,model=llmModel(LLM.modelId);
