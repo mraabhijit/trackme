@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Diet Tracker</title>
+<style>
+:root{--bg:#f4f6f3;--card:#fff;--text:#1b2320;--muted:#56625c;--line:#d5ddd8;--accent:#1c7352;--accent-text:#fff;--accent-soft:#e0f1e9;--over:#b3261e;--over-soft:#fbe5e3;--warn-soft:#fff2cc;--warn-text:#5b4300;--track:#dde4e0;--focus:#0b57d0}
+@media (prefers-color-scheme:dark){:root{--bg:#111513;--card:#1b211e;--text:#e9efeb;--muted:#a5b2ab;--line:#33403a;--accent:#5fcf9f;--accent-text:#06150e;--accent-soft:#1f3a2f;--over:#ff8f86;--over-soft:#4a2320;--warn-soft:#3d3210;--warn-text:#ffe08a;--track:#2c3732;--focus:#8ab4f8}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-wrap:anywhere}
+#app{max-width:600px;margin:0 auto;padding:12px 12px 96px}
+h1{font-size:1.4rem;margin:4px 0 10px;line-height:1.2}
+h2{font-size:1.1rem;margin:0 0 8px}
+h3{font-size:1rem;margin:0}
+p{margin:6px 0}
+.muted{color:var(--muted)}
+.small{font-size:.875rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 12px;min-width:0}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0}
+.row.between{justify-content:space-between}
+.grow{flex:1 1 0;min-width:0}
+.btn,button,select,input,textarea{font:inherit;color:inherit}
+.btn{min-height:44px;min-width:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn.primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:600}
+.btn.danger{border-color:var(--over);color:var(--over)}
+.btn.danger.solid{background:var(--over);color:var(--card)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn.sm{min-height:44px;padding:6px 10px}
+input[type=text],input[type=number],input[type=date],input[type=time],input[type=search],select{min-height:44px;width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card)}
+input[type=file]{width:100%;max-width:100%;min-height:44px;font-size:.875rem}
+nav.tabs button[disabled]{opacity:.45;cursor:not-allowed}
+.sticky-actions{position:sticky;bottom:calc(58px + env(safe-area-inset-bottom));background:var(--bg);padding:8px 0 6px;z-index:5;border-top:1px solid var(--line)}
+.sticky-actions .err{margin:0 0 6px}
+.lead{font-size:1.05rem}
+details>summary{min-height:44px;cursor:pointer;font-weight:700;display:flex;align-items:center}
+label{display:block;font-weight:600;margin:10px 0 4px}
+.hint{font-weight:400;color:var(--muted);font-size:.875rem;display:block}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+@media (max-width:420px){.field-grid{grid-template-columns:1fr}}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:44px;padding:6px 12px;border-radius:22px;border:2px solid var(--line);background:var(--card);cursor:pointer;max-width:100%;text-align:left}
+.chip[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft);font-weight:600}
+.chip[aria-pressed=true]::before{content:"\2713\00a0"}
+.tag{display:inline-block;font-size:.75rem;padding:1px 8px;border-radius:10px;background:var(--warn-soft);color:var(--warn-text);border:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+.tag.alt{background:var(--accent-soft);color:var(--text)}
+.banner{border-radius:10px;padding:10px 12px;margin:0 0 10px;border:1px solid}
+.banner.error{background:var(--over-soft);border-color:var(--over);color:var(--text)}
+.banner.info{background:var(--warn-soft);border-color:var(--line);color:var(--warn-text)}
+.err{color:var(--over);font-weight:600;margin:6px 0}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;z-index:10;padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs .inner{display:flex;width:100%;max-width:600px}
+nav.tabs button{flex:1 1 0;min-width:0;min-height:56px;border:0;background:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.75rem;color:var(--muted);padding:4px 0}
+nav.tabs button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+nav.tabs button[aria-current=page]{color:var(--accent);font-weight:700}
+nav.tabs button[aria-current=page] span{text-decoration:underline;text-underline-offset:3px}
+footer{max-width:600px;margin:0 auto;padding:0 14px 104px;font-size:.8125rem;color:var(--muted)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.strip{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:8px}
+.strip button{min-height:52px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;padding:2px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.8125rem;line-height:1.2}
+.strip button b{font-size:1rem}
+.strip button[aria-pressed=true]{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.sum{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.ring{width:140px;height:140px;flex:none}
+.ring-track{stroke:var(--track)}
+.ring-val{stroke:var(--accent)}
+.ring-val.over{stroke:var(--over)}
+.ring text{fill:var(--text);text-anchor:middle}
+.kv{margin:0;flex:1 1 160px;min-width:0}
+.kv div{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid var(--line)}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font-weight:700;text-align:right}
+.bad{color:var(--over)}
+.macro{margin:8px 0}
+.macro .bar{height:10px;background:var(--track);border-radius:5px;overflow:hidden;margin-top:3px}
+.macro .bar i{display:block;height:100%;background:var(--accent)}
+.macro.over .bar i{background:var(--over)}
+.slot h3{display:flex;justify-content:space-between;gap:8px}
+input.tp-in{width:3.6rem;min-width:0;text-align:center;font-size:1.25rem;min-height:48px;padding:6px 4px;flex:none}
+.tp{display:block}
+.tp-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tp-colon{font-size:1.5rem;font-weight:700}
+.tp .btn{min-width:44px}
+.tp-ap[aria-pressed=true]{background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:700}
+.tp-err{margin:4px 0 0;min-height:0}
+.tpbox{margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--accent-soft)}
+.time-text{font-weight:700}
+.entry.col{display:block}
+.entry.col .top{display:flex;gap:8px;justify-content:space-between;align-items:baseline}
+.entry.col .top b{min-width:0}
+.entry.col .bot{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+.slotrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.slotrow input[type=text]{flex:1 1 100%;min-width:0;width:100%}
+.slotrow .spacer{flex:1 1 0}
+.btn.icon{padding:0;width:44px}
+ul.plain{list-style:none;margin:0;padding:0}
+.entry{display:flex;gap:6px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.entry .main{flex:1 1 0;min-width:0}
+.entry .kc{font-weight:700;white-space:nowrap}
+.result{display:block;width:100%;text-align:left;min-height:48px;padding:8px 10px;border:0;border-top:1px solid var(--line);background:none;cursor:pointer}
+.result:hover,.result:focus-visible{background:var(--accent-soft)}
+.stepper{display:flex;gap:6px;align-items:center}
+.stepper input{text-align:center;width:6.5em;flex:none}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:.8125rem;font-weight:600;border:1px solid var(--line)}
+.badge.under{background:var(--accent-soft)}.badge.on{background:var(--warn-soft);color:var(--warn-text)}.badge.over{background:var(--over-soft);color:var(--over)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:72px;background:#222;color:#fff;padding:10px 14px;border-radius:10px;z-index:20;display:flex;gap:12px;align-items:center;max-width:calc(100% - 24px)}
+.toast button{background:none;border:0;color:#9fd8ff;font-weight:700;cursor:pointer;min-height:44px;min-width:44px}
+svg.chart{width:100%;height:auto;display:block}
+svg.chart text{fill:var(--muted);font-size:11px}
+svg.chart .bar{fill:var(--accent)}svg.chart .bar.over{fill:var(--over)}
+svg.chart .tl{stroke:var(--text);stroke-dasharray:4 3;stroke-width:1.5}
+svg.chart .grid{stroke:var(--line)}
+svg.chart .raw{fill:var(--muted)}
+svg.chart .avg{fill:none;stroke:var(--accent);stroke-width:2.5}
+.seg{display:inline-flex;gap:6px}
+.seg button{min-height:44px;padding:4px 14px;border:2px solid var(--line);border-radius:22px;background:var(--card);cursor:pointer}
+.seg button[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft);font-weight:700}
+table.hid{border-collapse:collapse}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="banners"></div>
+  <main id="view" aria-live="off"></main>
+</div>
+<footer id="credit"><p>Food data: IFCT 2017, ICMR-National Institute of Nutrition (via npm ifct2017-compositions); cooked-dish values are estimates</p><p id="off-credit" hidden>Food data: Open Food Facts, ODbL (openfoodfacts.org), for foods you added from the online search. Values are entered by volunteers.</p><p>Estimates only, not medical advice. Your data stays in this browser; use Export to back it up.</p></footer>
+<nav class="tabs" aria-label="Main"><div class="inner" id="tabs"></div></nav>
+<div id="toasts" role="status" aria-live="polite"></div>
+<script id="foods" type="application/json">[["d_plain_rice_cooked_white","Plain rice, cooked (white)",132.0,2.94,28.98,0.19,1.04,1,"Staples","chawal bhat",[["1 katori (150 ml)",130],["1 cup cooked",160]],1,1],["d_roti_phulka_whole_wheat_no_ghee","Roti / phulka (whole wheat, no ghee)",274.54,9.06,55.0,1.31,9.74,1,"Staples","chapati chapatti phulka fulka",[["1 roti (~35 g cooked)",35]],1,1],["d_idli_steamed_rice_urad_dal_3_1","Idli (steamed, rice + urad dal 3:1)",158.33,5.33,32.47,0.37,2.31,1,"Staples","urad black gram",[["1 idli (~40 g)",40]],1,1],["d_dal_toor_cooked_light_tadka","Dal (toor), cooked, light tadka",110.27,7.23,18.41,0.52,3.02,1,"Dals and curries","daal dhal lentil toor arhar tur",[["1 katori (150 ml)",150]],1,1],["d_moong_dal_cooked_light_tadka","Moong dal, cooked, light tadka",108.6,7.96,17.53,0.45,3.12,1,"Dals and curries","daal dhal lentil moong mung green gram",[["1 katori (150 ml)",150]],0,1],["d_khichdi_moong_dal_rice_cooked","Khichdi (moong dal + rice, cooked)",100.0,4.0,17.0,1.8,1.5,1,"Dals and curries","khichri moong mung green gram",[["1 katori (200 g)",200]],0,1],["d_sambar","Sambar",70.0,3.0,9.0,2.5,2.0,1,"Dals and curries","",[["1 katori (150 ml)",150]],0,1],["d_rasam","Rasam",25.0,1.0,4.0,0.8,0.5,1,"Dals and curries","",[["1 katori (150 ml)",150]],0,1],["d_mixed_vegetable_sabzi_dry_1_tsp_oil","Mixed vegetable sabzi (dry, 1 tsp oil)",90.0,2.2,10.0,4.5,2.5,1,"Sabzi","",[["1 katori (120 g)",120]],0,1],["d_aloo_sabzi_dry_potato_curry","Aloo sabzi (dry potato curry)",120.0,2.0,16.0,5.5,2.0,1,"Sabzi","potato batata",[["1 katori (120 g)",120]],0,1],["d_rajma_kidney_bean_curry","Rajma (kidney bean curry)",120.0,6.0,15.0,4.0,4.0,1,"Dals and curries","kidney beans",[["1 katori (150 g)",150]],0,1],["d_chole_chickpea_curry","Chole (chickpea curry)",140.0,6.0,18.0,5.0,5.0,1,"Dals and curries","chana masala chickpea",[["1 katori (150 g)",150]],0,1],["d_palak_paneer","Palak paneer",160.0,8.0,6.0,12.0,2.0,1,"Paneer dishes","cottage cheese",[["1 katori (150 g)",150]],0,1],["d_paneer_butter_masala","Paneer butter masala",200.0,7.0,9.0,15.0,1.5,1,"Paneer dishes","cottage cheese makhan",[["1 katori (150 g)",150]],0,1],["d_chicken_curry_home_style_with_oil","Chicken curry (home style, with oil)",150.0,14.0,4.0,9.0,1.0,1,"Non-veg dishes","",[["1 katori (150 g)",150]],0,1],["d_egg_curry_boiled_eggs_in_gravy","Egg curry (boiled eggs in gravy)",130.0,8.0,4.0,9.0,1.0,1,"Non-veg dishes","anda",[["1 katori (150 g)",150]],0,1],["d_mutton_curry","Mutton curry",180.0,13.0,3.0,13.0,1.0,1,"Non-veg dishes","",[["1 katori (150 g)",150]],0,1],["d_chicken_biryani","Chicken biryani",180.0,8.0,22.0,6.5,1.0,1,"Rice dishes","biriyani",[["1 plate (300 g)",300]],0,1],["d_poha_flattened_rice_cooked_with_1_tsp_oil","Poha (flattened rice, cooked, with 1 tsp oil)",130.0,2.5,22.0,3.5,1.2,1,"Breakfast","flattened rice pohe",[["1 katori (100 g)",100]],1,1],["d_upma_semolina_cooked_1_tsp_oil","Upma (semolina, cooked, 1 tsp oil)",120.0,3.0,20.0,3.5,1.0,1,"Breakfast","rava sooji",[["1 katori (150 g)",150]],0,1],["d_plain_dosa_rice_urad_batter","Plain dosa (rice + urad batter)",170.0,4.0,27.0,5.0,1.0,1,"Breakfast","dosai urad black gram",[["1 dosa (~75 g)",75]],1,1],["d_paratha_plain_with_oil","Paratha (plain, with oil)",260.0,7.0,42.0,9.0,4.0,1,"Breakfast","",[["1 paratha (~80 g)",80]],0,1],["d_puri_deep_fried","Puri (deep fried)",400.0,7.0,48.0,20.0,4.0,1,"Breakfast","",[["1 puri (~25 g)",25]],0,1],["d_samosa_fried_potato_filling","Samosa (fried, potato filling)",260.0,5.0,30.0,14.0,3.0,1,"Snacks","",[["1 samosa (~70 g)",70]],0,1],["d_cow_milk_whole","Cow milk, whole",72.9,3.26,4.94,4.48,0.0,0,"Dairy","doodh dudh",[["1 glass (250 ml)",258],["1 cup (240 ml)",248]],1,1],["d_buffalo_milk_whole","Buffalo milk, whole",107.3,3.68,8.39,6.58,0.0,0,"Dairy","doodh dudh",[["1 glass (250 ml)",258],["1 cup (240 ml)",248]],0,1],["d_chai_milk_tea_with_1_tsp_sugar","Chai (milk tea with 1 tsp sugar)",55.0,2.4,7.2,2.2,0.0,1,"Beverages","tea",[["1 cup (150 ml)",150]],1,1],["d_curd_dahi_whole_milk","Curd / dahi (whole milk)",61.0,3.5,4.7,3.3,0.0,1,"Dairy","yogurt yoghurt",[["1 katori (150 g)",150]],1,1],["d_paneer_fresh_cottage_cheese","Paneer (fresh cottage cheese)",257.9,18.86,12.41,14.78,0.0,0,"Dairy","cottage cheese",[["2 tbsp crumbled (~30 g)",30],["1 small cube (~25 g)",25]],1,1],["d_egg_boiled_whole","Egg, boiled (whole)",147.7,13.43,0.0,10.54,0.0,0,"Eggs","anda",[["1 egg (~50 g)",50]],1,1],["d_egg_omelette_plain_2_eggs","Egg omelette (plain, 2 eggs)",169.7,16.53,0.0,11.6,0.0,0,"Eggs","anda",[["2-egg omelette (~100 g)",100]],0,1],["d_banana_ripe","Banana, ripe",105.2,1.23,23.63,0.33,1.94,0,"Fruit","kela",[["1 medium banana (~120 g)",120]],1,1],["d_apple","Apple",62.4,0.29,13.11,0.64,2.59,0,"Fruit","seb",[["1 medium apple (~170 g)",170]],1,1],["d_orange_pulp","Orange (pulp)",37.3,0.7,7.92,0.13,1.29,0,"Fruit","",[["1 medium orange (~130 g)",130]],0,1],["d_potato_raw","Potato, raw",69.8,1.54,14.89,0.23,1.71,0,"Vegetables","",[["1 medium potato (~150 g)",150]],0,1],["d_tomato_ripe","Tomato, ripe",19.6,0.9,2.71,0.47,1.77,0,"Vegetables","tamatar",[["1 medium tomato (~120 g)",120]],0,1],["d_onion","Onion",48.0,1.5,9.56,0.24,2.45,0,"Vegetables","pyaz",[["1 medium onion (~110 g)",110]],0,1],["d_green_peas_fresh","Green peas, fresh",81.3,7.25,11.88,0.13,6.32,0,"Vegetables","",[["1 katori (100 g)",100]],0,1],["d_sugar_white","Sugar, white",387.0,0.0,100.0,0.0,0.0,1,"Fats and sugars","cheeni shakkar",[["1 tsp (4 g)",4],["1 tbsp (12 g)",12]],0,1],["d_jaggery_cane","Jaggery (cane)",353.7,1.85,84.87,0.16,0.0,0,"Fats and sugars","gur gud",[["1 tsp (5 g)",5]],0,1],["d_coconut_fresh_grated","Coconut, fresh, grated",408.9,3.84,6.3,41.38,10.42,0,"Nuts and seeds","",[["1 tbsp grated (10 g)",10]],0,1],["d_almonds","Almonds",609.2,18.41,3.04,58.49,13.06,0,"Nuts and seeds","badam",[["10 almonds (~12 g)",12]],0,1],["d_cow_milk_toned_3_fat","Cow milk, toned (3% fat)",59.6,3.26,4.94,3.0,0.0,1,"Dairy","doodh dudh toned",[["1 glass (250 ml)",258],["1 cup (240 ml)",248]],1,1],["d_cow_milk_double_toned_1_5_fat","Cow milk, double toned (1.5% fat)",46.1,3.26,4.94,1.5,0.0,1,"Dairy","doodh dudh toned",[["1 glass (250 ml)",258],["1 cup (240 ml)",248]],0,1],["d_dal_tadka_with_ghee_oil","Dal tadka (with ghee/oil)",136.6,7.0,17.8,3.8,2.9,1,"Dals and curries","daal dhal lentil",[["1 katori (150 g)",150]],1,1],["d_bhindi_sabzi_okra_dry","Bhindi sabzi (okra, dry)",105.6,2.8,6.3,7.3,5.4,1,"Sabzi","okra ladyfinger",[["1 katori (100 g)",100]],0,1],["d_aloo_gobi_dry","Aloo gobi (dry)",110.8,2.2,10.2,6.5,3.2,1,"Sabzi","potato batata cauliflower",[["1 katori (120 g)",120]],0,1],["d_paneer_bhurji","Paneer bhurji",233.5,13.1,10.7,15.3,0.8,1,"Paneer dishes","cottage cheese scrambled",[["1 katori (100 g)",100]],0,1],["d_egg_bhurji","Egg bhurji",180.1,11.6,2.4,13.8,0.6,1,"Eggs","anda scrambled",[["1 katori (100 g)",100]],0,1],["d_masala_dosa_with_potato_filling","Masala dosa (with potato filling)",141.4,2.9,20.7,5.3,1.6,1,"Breakfast","dosai",[["1 masala dosa (~175 g)",175]],0,1],["d_uttapam_rice_urad_with_onion_tomato","Uttapam (rice + urad, with onion/tomato)",175.9,4.5,27.5,4.9,2.3,1,"Breakfast","urad black gram",[["1 uttapam (~110 g)",110]],0,1],["d_veg_biryani","Veg biryani",142.0,2.8,23.2,3.9,1.7,1,"Rice dishes","biriyani",[["1 plate (300 g)",300],["1 katori (150 g)",150]],0,1],["d_veg_pulao","Veg pulao",142.5,3.0,24.8,3.2,1.6,1,"Rice dishes","pilaf pulav",[["1 katori (150 g)",150],["1 plate (250 g)",250]],0,1],["d_curd_rice","Curd rice",110.0,3.2,16.8,3.2,0.5,1,"Rice dishes","chawal bhat yogurt yoghurt",[["1 katori (150 g)",150]],0,1],["d_besan_chilla","Besan chilla",206.4,9.9,22.7,8.0,7.3,1,"Breakfast","cheela",[["1 chilla (~90 g)",90]],0,1],["d_thepla_methi","Thepla (methi)",324.5,8.5,45.6,11.3,9.4,1,"Staples","methi paratha",[["1 thepla (~50 g)",50]],0,1],["d_aloo_paratha_stuffed_with_oil","Aloo paratha (stuffed, with oil)",233.4,5.4,35.1,7.4,5.8,1,"Breakfast","potato batata",[["1 paratha (~90 g)",90]],0,1],["d_roti_with_ghee_1_tsp","Roti with ghee (1 tsp)",345.8,8.0,48.7,12.6,8.6,1,"Staples","chapati chapatti phulka fulka clarified butter desi",[["1 roti (~40 g)",39.5]],0,1],["d_dal_makhani","Dal makhani",125.6,5.2,10.3,6.8,4.8,1,"Dals and curries","daal dhal lentil dal makhani",[["1 katori (150 g)",150]],0,1],["d_cucumber_raita","Cucumber raita",51.4,2.9,4.4,2.6,0.5,1,"Dairy","dahi",[["1 katori (100 g)",100]],0,1],["d_brown_rice_cooked","Brown rice, cooked",141.5,3.7,29.9,0.5,1.8,1,"Staples","chawal bhat",[["1 katori (150 ml)",130],["1 cup cooked",160]],0,1],["d_chaas_buttermilk_spiced","Chaas / buttermilk (spiced)",15.2,0.9,1.2,0.8,0.0,1,"Beverages","buttermilk chhach",[["1 glass (250 ml)",250]],0,1],["d_lassi_sweet","Lassi, sweet",56.4,1.4,9.9,1.3,0.0,1,"Beverages","dahi drink",[["1 glass (250 ml)",260]],0,1],["d_oats_cooked_with_toned_milk","Oats cooked with toned milk",108.5,4.7,14.5,3.5,1.6,1,"Breakfast","doodh dudh porridge oatmeal toned",[["1 bowl (~250 g)",250]],0,1],["d_bread_white_slice","Bread, white (slice)",265.0,9.0,49.0,3.2,2.7,1,"Staples","toast",[["1 slice (~25 g)",25]],0,1],["d_pav_bread_roll","Pav (bread roll)",270.0,8.0,50.0,3.5,2.5,1,"Staples","bun",[["1 pav (~40 g)",40]],0,1],["d_biscuit_marie","Biscuit, Marie",435.0,7.0,76.0,11.0,2.0,1,"Snacks","cookie",[["1 biscuit (~7 g)",7]],0,1],["d_namkeen_bhujia_mix","Namkeen / bhujia mix",500.0,12.0,45.0,30.0,5.0,1,"Snacks","bhujia mixture",[["1 handful (~30 g)",30]],0,1],["d_coffee_black_no_sugar","Coffee, black (no sugar)",1.0,0.1,0.0,0.0,0.0,1,"Beverages","kaapi",[["1 cup (150 ml)",150]],0,1],["d_tea_black_no_milk_no_sugar","Tea, black (no milk, no sugar)",1.0,0.0,0.2,0.0,0.0,1,"Beverages","",[["1 cup (150 ml)",150]],0,1],["d_ghee","Ghee",900.0,0.0,0.0,100.0,0.0,1,"Fats and oils","clarified butter desi",[["1 tsp (4.5 g)",4.5],["1 tbsp (13 g)",13]],1,1],["d_cooking_oil_refined_sunflower_groundnut_soybean","Cooking oil (refined / sunflower / groundnut / soybean)",900.0,0.0,0.0,100.0,0.0,1,"Fats and oils","tel",[["1 tsp (4.5 g)",4.5],["1 tbsp (13 g)",13]],1,1],["d_mustard_oil","Mustard oil",900.0,0.0,0.0,100.0,0.0,1,"Fats and oils","tel sarson",[["1 tsp (4.5 g)",4.5],["1 tbsp (13 g)",13]],0,1],["d_coconut_oil","Coconut oil",900.0,0.0,0.0,100.0,0.0,1,"Fats and oils","tel",[["1 tsp (4.5 g)",4.5],["1 tbsp (13 g)",13]],0,1],["d_vanaspati_dalda","Vanaspati (dalda)",900.0,0.0,0.0,100.0,0.0,1,"Fats and oils","dalda margarine",[["1 tsp (4.5 g)",4.5],["1 tbsp (13 g)",13]],0,1],["d_butter_salted","Butter (salted)",720.0,0.9,0.1,81.0,0.0,1,"Fats and oils","makhan",[["1 tsp (4.5 g)",4.5],["1 tbsp (14 g)",14],["1 slice (10 g)",10]],1,1],["i_amaranth_seed_black","Amaranth seed, black",356.1,14.59,59.98,5.74,7.02,0,"Cereals and Millets","",[],0,0],["i_amaranth_seed_pale_brown","Amaranth seed, pale brown",355.9,13.27,61.46,5.56,7.47,0,"Cereals and Millets","",[],0,0],["i_bajra","Bajra",348.0,10.96,61.78,5.43,11.49,0,"Cereals and Millets","",[],0,0],["i_barley","Barley",315.7,10.94,61.29,1.3,15.64,0,"Cereals and Millets","",[],0,0],["i_jowar","Jowar",334.1,9.97,67.68,1.73,10.22,0,"Cereals and Millets","",[],0,0],["i_maize_dry","Maize, dry",334.1,8.8,64.77,3.77,12.24,0,"Cereals and Millets","",[],0,0],["i_maize_tender_local","Maize, tender, local",120.0,3.57,22.69,1.4,3.67,0,"Cereals and Millets","",[],0,0],["i_maize_tender_sweet","Maize, tender, sweet",96.8,4.16,16.42,1.35,3.3,0,"Cereals and Millets","",[],0,0],["i_quinoa","Quinoa",328.4,13.11,53.65,5.5,14.66,0,"Cereals and Millets","",[],0,0],["i_ragi","Ragi",320.7,7.16,66.82,1.92,11.18,0,"Cereals and Millets","",[],0,0],["i_rice_flakes","Rice flakes",353.7,7.44,76.75,1.14,3.46,0,"Cereals and Millets","",[],0,0],["i_rice_puffed","Rice puffed",361.9,7.47,77.68,1.62,2.56,0,"Cereals and Millets","",[],0,0],["i_rice_raw_brown","Rice, raw, brown",353.7,9.16,74.8,1.24,4.43,0,"Cereals and Millets","",[],0,0],["i_rice_parboiled_milled","Rice, parboiled, milled",351.6,7.81,77.16,0.55,3.74,0,"Cereals and Millets","",[],0,0],["i_rice_raw_milled","Rice, raw, milled",356.4,7.94,78.24,0.52,2.81,0,"Cereals and Millets","",[],0,0],["i_samai","Samai",346.3,10.13,65.55,3.89,7.72,0,"Cereals and Millets","",[],0,0],["i_varagu","Varagu",331.7,8.92,66.19,2.55,6.39,0,"Cereals and Millets","",[],0,0],["i_wheat_flour_refined","Wheat flour, refined",351.8,10.36,74.27,0.76,2.76,0,"Cereals and Millets","",[],0,0],["i_wheat_flour_atta","Wheat flour, atta",320.3,10.57,64.17,1.53,11.36,0,"Cereals and Millets","",[],0,0],["i_wheat_whole","Wheat, whole",321.9,10.59,64.72,1.47,11.23,0,"Cereals and Millets","",[],0,0],["i_wheat_bulgur","Wheat, bulgur",341.8,10.84,69.06,1.45,8.81,0,"Cereals and Millets","",[],0,0],["i_wheat_semolina","Wheat, semolina",333.7,11.38,68.43,0.74,9.72,0,"Cereals and Millets","",[],0,0],["i_wheat_vermicelli","Wheat, vermicelli",332.7,9.7,70.39,0.45,9.28,0,"Cereals and Millets","",[],0,0],["i_wheat_vermicelli_roasted","Wheat, vermicelli, roasted",340.1,10.37,71.42,0.49,9.55,0,"Cereals and Millets","",[],0,0],["i_bengal_gram_dal","Bengal gram, dal",329.1,21.55,46.72,5.31,15.15,0,"Grain Legumes","",[],0,0],["i_bengal_gram_whole","Bengal gram, whole",287.0,18.77,39.56,5.11,25.22,0,"Grain Legumes","",[],0,0],["i_black_gram_dal","Black gram, dal",324.1,23.06,51.0,1.69,11.93,0,"Grain Legumes","",[],0,0],["i_black_gram_whole","Black gram, whole",291.3,21.97,43.99,1.58,20.41,0,"Grain Legumes","",[],0,0],["i_cowpea_brown","Cowpea, brown",320.3,20.36,54.62,1.15,11.54,0,"Grain Legumes","",[],0,0],["i_cowpea_white","Cowpea, white",320.3,21.25,53.77,1.14,11.7,0,"Grain Legumes","",[],0,0],["i_field_bean_black","Field bean, black",276.1,19.93,43.46,0.92,23.4,0,"Grain Legumes","",[],0,0],["i_field_bean_brown","Field bean, brown",283.0,19.9,45.24,0.98,22.4,0,"Grain Legumes","",[],0,0],["i_field_bean_white","Field bean, white",280.4,19.84,44.53,0.94,22.99,0,"Grain Legumes","",[],0,0],["i_green_gram_dal","Green gram, dal",325.8,23.88,52.59,1.35,9.37,0,"Grain Legumes","",[],0,0],["i_green_gram_whole","Green gram, whole",293.7,22.53,46.13,1.14,17.04,0,"Grain Legumes","",[],0,0],["i_horse_gram_whole","Horse gram, whole",329.6,21.73,57.24,0.62,7.88,0,"Grain Legumes","",[],0,0],["i_lentil_dal","Lentil dal",322.4,24.35,52.53,0.75,10.43,0,"Grain Legumes","",[],0,0],["i_lentil_whole_brown","Lentil whole, brown",299.0,22.49,48.47,0.64,16.82,0,"Grain Legumes","",[],0,0],["i_lentil_whole_yellowish","Lentil whole, yellowish",297.8,22.87,47.91,0.61,16.66,0,"Grain Legumes","",[],0,0],["i_moth_bean","Moth bean",308.6,19.75,52.09,1.76,15.12,0,"Grain Legumes","",[],0,0],["i_peas_dry","Peas, dry",303.3,20.43,48.93,1.89,17.01,0,"Grain Legumes","",[],0,0],["i_rajmah_black","Rajmah, black",298.0,19.01,49.59,1.62,17.74,0,"Grain Legumes","",[],0,0],["i_rajmah_brown","Rajmah, brown",297.6,19.5,48.83,1.68,16.95,0,"Grain Legumes","",[],0,0],["i_rajmah_red","Rajmah, red",299.2,19.91,48.61,1.77,16.57,0,"Grain Legumes","",[],0,0],["i_red_gram_dal","Red gram, dal",330.8,21.7,55.23,1.56,9.06,0,"Grain Legumes","",[],0,0],["i_red_gram_whole","Red gram, whole",273.9,20.47,42.48,1.38,22.84,0,"Grain Legumes","",[],0,0],["i_ricebean","Ricebean",302.3,19.97,51.26,0.74,13.37,0,"Grain Legumes","",[],0,0],["i_soya_bean_brown","Soya bean, brown",381.5,35.58,12.79,19.82,21.55,0,"Grain Legumes","",[],0,0],["i_soya_bean_white","Soya bean, white",377.4,37.8,10.16,19.42,22.63,0,"Grain Legumes","",[],0,0],["i_agathi_leaves","Agathi leaves",70.5,8.01,5.21,1.35,8.6,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_amaranth_leaves_green","Amaranth leaves, green",30.6,3.29,2.28,0.65,4.41,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_amaranth_leaves_red_mix","Amaranth leaves, red mix",33.5,3.93,2.37,0.63,4.91,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_amaranth_leaves_red_and_green_mix","Amaranth leaves, red and green mix",31.5,3.09,2.87,0.53,4.6,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_amaranth_spinosus_leaves_green_mix","Amaranth spinosus, leaves, green mix",26.3,3.54,1.61,0.36,5.1,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_amaranth_spinosus_leaves_red_and_green_mix","Amaranth spinosus, leaves, red and green mix",23.7,2.8,1.45,0.34,5.57,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_basella_leaves","Basella leaves",19.6,1.57,2.01,0.45,2.21,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_bathua_leaves","Bathua leaves",27.7,2.5,2.56,0.44,4.01,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_beet_greens","Beet greens",34.7,2.38,3.86,0.75,3.64,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_betel_leaves_big_kolkata","Betel leaves, big (kolkata)",48.3,2.51,7.37,0.75,2.12,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_betel_leaves_small","Betel leaves, small",43.7,2.62,6.16,0.75,1.97,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_brussels_sprouts","Brussels sprouts",44.2,4.26,5.09,0.5,4.29,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_cabbage_chinese","Cabbage, Chinese",17.9,1.58,2.36,0.13,2.01,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_cabbage_collard_greens","Cabbage, collard greens",30.1,3.63,2.79,0.27,2.98,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_cabbage_green","Cabbage, green",21.5,1.36,3.25,0.12,2.76,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_cabbage_violet","Cabbage, violet",23.2,1.39,3.54,0.21,2.21,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_cauliflower_leaves","Cauliflower leaves",35.4,3.9,3.39,0.42,3.43,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_colocasia_leaves_green","Colocasia leaves, green",43.5,3.42,3.69,1.38,5.6,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_drumstick_leaves","Drumstick leaves",67.4,6.41,5.62,1.64,8.21,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_fenugreek_leaves","Fenugreek leaves",34.4,3.68,2.17,0.83,4.9,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_garden_cress","Garden cress",49.7,5.62,4.48,0.8,2.6,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_gogu_leaves_green","Gogu leaves, green",36.3,1.86,4.06,1.09,4.59,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_gogu_leaves_red","Gogu leaves, red",36.6,1.85,4.24,1.07,3.89,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_knol_khol_leaves","Knol-Khol, leaves",42.5,3.12,6.16,0.35,2.76,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_lettuce","Lettuce",21.7,1.54,3.01,0.27,1.79,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_mustard_leaves","Mustard leaves",30.4,3.52,2.41,0.51,3.92,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_pak_choi_leaves","Pak Choi leaves",16.0,1.41,1.78,0.25,1.91,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_parsley","Parsley",72.9,5.55,9.43,1.14,3.87,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_ponnaganni","Ponnaganni",50.9,5.29,5.17,0.71,6.74,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_pumpkin_leaves_tender","Pumpkin leaves, tender",44.2,4.21,4.75,0.74,2.25,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_radish_leaves","Radish leaves",26.1,2.22,2.77,0.51,1.82,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_rumex_leaves","Rumex leaves",19.6,1.62,2.33,0.33,1.27,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_spinach","Spinach",24.4,2.14,2.05,0.64,2.38,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_tamarind_leaves_tender","Tamarind leaves, tender",71.5,5.84,10.04,0.49,10.7,0,"Green Leafy Vegetables","",[["1 katori (50 g, chopped)",50]],0,0],["i_ash_gourd","Ash gourd",17.4,0.79,2.84,0.14,3.37,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_bamboo_shoot_tender","Bamboo shoot, tender",16.3,1.33,1.67,0.35,1.55,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_bean_scarlet_tender","Bean scarlet, tender",42.8,2.86,5.16,0.99,4.5,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_bitter_gourd_jagged_teeth_ridges_elongate","Bitter gourd, jagged, teeth ridges, elongate",20.8,1.44,2.82,0.24,3.78,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_bitter_gourd_jagged_teeth_ridges_short","Bitter gourd, jagged, teeth ridges, short",18.9,1.34,2.53,0.24,3.49,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_bitter_gourd_jagged_smooth_ridges_elongate","Bitter gourd, jagged, smooth ridges, elongate",19.4,1.61,2.29,0.26,3.72,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_bottle_gourd_elongate_pale_green","Bottle gourd, elongate, pale green",11.0,0.53,1.68,0.13,2.12,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_bottle_gourd_round_pale_green","Bottle gourd, round, pale green",13.6,0.42,2.53,0.12,2.1,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_bottle_gourd_elongate_dark_green","Bottle gourd, elongate, dark green",12.9,0.49,2.25,0.13,2.11,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_1","Brinjal-1",27.2,1.77,3.49,0.39,3.57,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_2","Brinjal-2",23.7,1.82,2.71,0.34,4.01,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_3","Brinjal-3",24.4,1.36,3.38,0.33,4.26,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_4","Brinjal-4",23.9,1.51,3.19,0.31,4.04,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_5","Brinjal-5",26.5,1.38,4.02,0.29,4.13,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_6","Brinjal-6",23.2,1.46,3.29,0.29,3.68,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_7","Brinjal-7",23.4,1.4,3.1,0.37,3.32,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_8","Brinjal-8",28.0,1.82,3.75,0.33,4.01,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_9","Brinjal-9",25.3,1.47,3.52,0.35,4.0,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_10","Brinjal-10",27.7,1.68,4.08,0.25,3.9,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_11","Brinjal-11",25.1,1.43,3.53,0.31,4.12,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_12","Brinjal-12",22.2,1.6,2.73,0.27,3.89,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_13","Brinjal-13",29.6,1.49,4.51,0.31,3.92,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_14","Brinjal-14",25.3,1.56,3.27,0.35,3.87,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_15","Brinjal-15",27.2,1.58,3.96,0.29,3.99,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_16","Brinjal-16",24.6,1.26,3.46,0.34,3.74,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_17","Brinjal-17",21.7,1.18,2.89,0.36,3.94,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_18","Brinjal-18",27.7,1.47,4.1,0.33,4.38,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_19","Brinjal-19",23.9,1.26,3.39,0.31,3.97,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_20","Brinjal-20",23.7,1.44,3.15,0.34,3.73,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_21","Brinjal-21",27.0,1.36,3.93,0.35,3.85,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_brinjal_all_varieties","Brinjal - all varieties",25.3,1.48,3.52,0.32,3.98,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_broad_beans","Broad beans",29.4,3.85,2.11,0.15,8.63,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_capsicum_green","Capsicum, green",16.3,1.11,1.84,0.34,2.06,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_capsicum_red","Capsicum, red",19.8,1.47,2.14,0.47,2.19,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_capsicum_yellow","Capsicum, yellow",18.6,1.35,1.95,0.41,2.19,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_cauliflower","Cauliflower",22.9,2.15,2.03,0.44,3.71,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_celery_stalk","Celery stalk",16.5,0.98,2.33,0.24,2.09,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_cho_cho_marrow","Cho-cho-marrow",18.9,0.66,3.47,0.15,1.55,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_cluster_beans","Cluster beans",40.2,3.55,4.91,0.37,4.83,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_colocasia_stem_black","Colocasia, stem, black",23.9,0.76,3.83,0.34,3.01,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_colocasia_stem_green","Colocasia, stem, green",19.4,0.91,2.86,0.22,2.33,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_corn_baby","Corn, Baby",73.1,2.69,11.66,1.33,6.09,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_cucumber_green_elongate","Cucumber, green, elongate",19.6,0.71,3.48,0.16,2.14,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_cucumber_green_short","Cucumber, green, short",17.4,0.83,2.82,0.18,2.13,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_cucumber_orange_round","Cucumber, orange, round",19.6,0.98,3.01,0.24,2.46,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_drumstick","Drumstick",29.4,2.62,3.76,0.12,6.83,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_field_beans_tender_broad","Field beans, tender, broad",30.8,3.06,2.75,0.64,5.64,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_field_beans_tender_lean","Field beans, tender, lean",33.5,3.71,2.85,0.6,6.19,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_french_beans_country","French beans, country",24.4,2.49,2.68,0.26,4.38,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_french_beans_hybrid","French beans, hybrid",22.2,2.12,2.63,0.19,4.18,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_jack_fruit_raw","Jack fruit, raw",26.3,1.98,3.48,0.35,7.69,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_jack_fruit_seed_mature","Jack fruit, seed, mature",77.0,5.79,11.81,0.44,8.63,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_knol_khol","Knol - Khol",16.0,1.58,1.39,0.35,2.75,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_kovai_big","Kovai, big",17.4,1.39,2.01,0.24,3.0,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_kovai_small","Kovai, small",19.1,1.22,2.41,0.24,3.25,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_ladies_finger","Ladies finger",27.5,2.08,3.62,0.22,4.08,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_mango_green_raw","Mango, green, raw",49.0,0.69,10.59,0.08,3.01,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_onion_stalk","Onion, stalk",25.6,2.07,2.99,0.26,5.21,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_papaya_raw","Papaya, raw",23.9,0.5,4.4,0.23,2.28,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_parwar","Parwar",24.1,1.4,3.54,0.3,2.61,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_peas_fresh","Peas, fresh",81.3,7.25,11.88,0.13,6.32,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_plantain_flower","Plantain, flower",21.3,1.47,2.15,0.63,5.25,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_plantain_green","Plantain, green",79.8,1.18,17.58,0.23,3.6,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_plantain_stem","Plantain, stem",39.4,0.35,8.64,0.16,2.12,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_pumpkin_green_cylindrical","Pumpkin, green, cylindrical",24.6,0.87,4.22,0.18,2.53,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_pumpkin_orange_round","Pumpkin, orange, round",23.2,0.84,4.0,0.16,2.56,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_red_gram_tender_fresh","Red gram, tender, fresh",124.3,8.09,19.46,0.92,5.9,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_ridge_gourd","Ridge gourd",13.1,0.91,1.72,0.14,1.81,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_ridge_gourd_smooth_skin","Ridge gourd, smooth skin",15.3,0.98,2.24,0.13,1.85,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_snake_gourd_long_pale_green","Snake gourd, long, pale green",12.4,0.98,1.27,0.25,2.27,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_snake_gourd_long_dark_green","Snake gourd, long, dark green",12.0,0.89,1.23,0.25,2.27,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_snake_gourd_short","Snake gourd, short",14.6,0.54,2.15,0.26,2.29,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_tinda_tender","Tinda, tender",13.9,1.02,1.9,0.17,2.0,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_tomato_green","Tomato, green",20.8,1.12,3.18,0.27,1.62,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_tomato_ripe_hybrid","Tomato, ripe, hybrid",18.9,0.76,3.2,0.25,1.58,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_tomato_ripe_local","Tomato, ripe, local",19.6,0.9,2.71,0.47,1.77,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_zucchini_green","Zucchini, green",20.1,1.1,2.33,0.51,2.3,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_zucchini_yellow","Zucchini, yellow",18.9,1.31,2.2,0.44,1.84,0,"Other Vegetables","",[["1 katori (100 g, chopped)",100]],0,0],["i_apple_big","Apple, big",62.4,0.29,13.11,0.64,2.59,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_apple_green","Apple, green",51.1,0.46,10.65,0.5,2.54,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_apple_small","Apple, small",63.8,0.31,13.95,0.53,2.06,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_apple_small_kashmir","Apple, small, Kashmir",64.3,0.27,13.99,0.6,2.07,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_apricot_dried","Apricot, dried",315.7,3.17,72.63,0.74,3.32,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_apricot_processed","Apricot, processed",56.4,1.47,10.93,0.64,0.59,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_avocado_fruit","Avocado fruit",144.4,2.95,1.75,13.86,6.69,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_bael_fruit","Bael fruit",136.0,2.63,28.21,0.57,6.31,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_banana_ripe_montham","Banana, ripe, montham",110.7,1.25,24.95,0.32,2.21,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_banana_ripe_poovam","Banana, ripe, poovam",106.4,1.49,23.41,0.35,2.33,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_banana_ripe_red","Banana, ripe, red",111.6,1.29,25.21,0.29,1.98,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_banana_ripe_robusta","Banana, ripe, robusta",105.2,1.23,23.63,0.33,1.94,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_black_berry","Black berry",54.3,0.92,10.64,0.63,4.35,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_cherries_red","Cherries, red",59.8,1.49,11.87,0.46,2.12,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_currants_black","Currants, black",54.3,1.51,9.93,0.53,4.07,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_custard_apple","Custard apple",98.9,1.62,20.38,0.67,5.1,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_dates_dry_pale_brown","Dates, dry, pale brown",320.3,2.45,74.91,0.35,8.95,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_dates_dry_dark_brown","Dates, dry, dark brown",310.9,2.38,72.67,0.35,9.1,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_dates_processed","Dates, processed",286.1,1.18,67.95,0.41,6.52,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_fig","Fig",81.5,2.03,16.28,0.37,4.64,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_goosberry","Goosberry",23.7,0.34,4.39,0.16,7.75,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_grapes_seeded_round_black","Grapes, seeded, round, black",60.7,0.76,13.23,0.32,1.35,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_grapes_seeded_round_green","Grapes, seeded, round, green",56.2,0.77,12.19,0.29,1.25,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_grapes_seeded_round_red","Grapes, seeded, round, red",58.3,0.95,12.55,0.29,1.28,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_grapes_seedless_oval_black","Grapes, seedless, oval, black",94.4,1.41,20.48,0.46,1.64,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_grapes_seedless_round_green","Grapes, seedless, round, green",53.5,0.62,11.81,0.26,1.28,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_grapes_seedless_round_black","Grapes, seedless, round, black",89.4,1.24,19.86,0.35,1.15,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_guava_white_flesh","Guava, white flesh",32.3,1.44,5.13,0.32,8.59,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_guava_pink_flesh","Guava, pink flesh",46.6,1.19,9.14,0.25,7.39,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_jack_fruit_ripe","Jack fruit, ripe",72.2,2.74,14.01,0.15,3.62,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_jambu_fruit_ripe","Jambu fruit, ripe",56.2,0.82,12.3,0.17,3.07,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_karonda_fruit","Karonda fruit",33.7,1.15,2.87,1.67,7.25,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_lime_sweet_pulp","Lime, sweet, pulp",27.2,0.76,5.18,0.2,2.07,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_litchi","Litchi",53.8,0.99,11.41,0.26,1.34,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_mango_ripe_banganapalli","Mango, ripe, banganapalli",41.8,0.54,8.18,0.55,1.88,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_mango_ripe_gulabkhas","Mango, ripe, gulabkhas",50.0,0.52,10.32,0.53,1.67,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_mango_ripe_himsagar","Mango, ripe, himsagar",44.7,0.46,9.03,0.54,1.55,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_mango_ripe_kesar","Mango, ripe, kesar",55.2,0.54,11.36,0.57,2.02,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_mango_ripe_neelam","Mango, ripe, neelam",42.5,0.68,8.21,0.55,1.77,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_mango_ripe_paheri","Mango, ripe, paheri",44.9,0.68,8.67,0.58,1.97,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_mango_ripe_totapari","Mango, ripe, totapari",59.3,0.41,12.75,0.49,1.73,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_mangosteen","Mangosteen",52.3,0.63,11.41,0.24,1.87,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_manila_tamarind","Manila tamarind",81.7,3.56,13.54,1.14,4.4,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_musk_melon_orange_flesh","Musk melon, orange flesh",23.2,0.42,4.24,0.35,1.51,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_musk_melon_yellow_flesh","Musk melon, yellow flesh",27.7,0.53,5.4,0.26,1.49,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_orange_pulp","Orange, pulp",37.3,0.7,7.92,0.13,1.29,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_palm_fruit_tender","Palm fruit, tender",24.1,0.5,4.92,0.12,2.4,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_papaya_ripe","Papaya, ripe",23.9,0.42,4.61,0.16,2.83,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_peach","Peach",40.2,0.86,7.82,0.37,2.13,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_pear","Pear",37.5,0.36,8.09,0.27,4.48,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_phalsa","Phalsa",71.5,1.66,15.09,0.14,4.54,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_pineapple","Pineapple",43.0,0.52,9.42,0.16,3.46,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_plum","Plum",56.9,0.64,12.1,0.4,2.07,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_pomegranate_maroon_seeds","Pomegranate, maroon seeds",54.7,1.33,11.58,0.15,2.83,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_pummelo","Pummelo",50.2,0.68,10.64,0.42,0.8,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_raisins_dried_black","Raisins, dried, black",305.7,2.57,71.29,0.34,3.92,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_raisins_dried_golden","Raisins, dried, golden",296.6,2.76,68.79,0.35,4.56,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_rambutan","Rambutan",73.1,0.68,16.84,0.16,1.02,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_sapota","Sapota",73.4,0.92,13.9,1.26,9.6,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_soursop","Soursop",62.1,0.74,11.94,0.94,4.95,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_star_fruit","Star fruit",26.3,0.79,4.51,0.39,2.81,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_strawberry","Strawberry",24.6,0.97,3.4,0.56,2.5,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_tamarind_pulp","Tamarind, pulp",288.5,2.92,67.35,0.15,5.31,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_water_melon_dark_green_sugar_baby","Water melon, dark green (sugar baby)",20.3,0.6,3.86,0.16,0.7,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_water_melon_pale_green","Water melon, pale green",16.7,0.59,3.02,0.16,0.78,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_wood_apple","Wood Apple",78.2,3.14,7.52,3.62,5.21,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_zizyphus","Zizyphus",48.8,1.34,9.4,0.35,3.73,0,"Fruits","",[["1 katori (100 g, chopped)",100]],0,0],["i_beet_root","Beet root",35.6,1.95,6.18,0.14,3.31,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_carrot_orange","Carrot, orange",33.2,0.95,5.55,0.47,4.18,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_carrot_red","Carrot, red",38.2,1.04,6.71,0.47,4.49,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_colocasia","Colocasia",88.9,3.31,17.85,0.17,3.22,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_lotus_root","Lotus root",79.3,1.94,14.67,0.93,4.7,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_potato_brown_skin_big","Potato, brown skin, big",69.8,1.54,14.89,0.23,1.71,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_potato_brown_skin_small","Potato, brown skin, small",60.9,1.35,12.9,0.22,1.69,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_potato_red_skin","Potato, red skin",73.1,1.83,15.43,0.22,1.68,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_radish_elongate_red_skin","Radish, elongate, red skin",32.0,0.67,6.71,0.13,2.46,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_radish_elongate_white_skin","Radish, elongate, white skin",32.3,0.77,6.56,0.15,2.65,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_radish_round_red_skin","Radish, round, red skin",31.1,0.89,6.07,0.16,2.29,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_radish_round_white_skin","Radish, round, white skin",30.8,0.8,6.13,0.14,2.37,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_sweet_potato_brown_skin","Sweet potato, brown skin",109.0,1.33,24.25,0.26,3.99,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_sweet_potato_pink_skin","Sweet potato, pink skin",108.0,1.27,23.93,0.33,3.94,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_tapioca","Tapioca",79.8,1.03,17.81,0.2,4.61,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_water_chestnut","Water Chestnut",95.6,0.86,21.46,0.37,3.02,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_yam_elephant","Yam, elephant",84.4,2.56,17.46,0.14,4.17,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_yam_ordinary","Yam, ordinary",83.4,2.18,17.65,0.17,4.08,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_yam_wild","Yam, wild",102.8,3.07,20.95,0.3,4.57,0,"Roots and Tubers","",[["1 katori (100 g, chopped)",100]],0,0],["i_chillies_green_1","Chillies, green-1",45.7,2.62,6.32,0.73,4.86,0,"Condiments and Spices","",[],0,0],["i_chillies_green_2","Chillies, green-2",39.9,2.28,5.27,0.75,5.13,0,"Condiments and Spices","",[],0,0],["i_chillies_green_3","Chillies, green-3",40.4,2.38,5.23,0.75,5.1,0,"Condiments and Spices","",[],0,0],["i_chillies_green_4","Chillies, green-4",45.4,2.33,6.63,0.74,4.15,0,"Condiments and Spices","",[],0,0],["i_chillies_green_5","Chillies, green-5",43.0,2.01,6.64,0.65,3.95,0,"Condiments and Spices","",[],0,0],["i_chillies_green_6","Chillies, green-6",41.8,3.01,5.31,0.64,5.15,0,"Condiments and Spices","",[],0,0],["i_chillies_green_7","Chillies, green-7",39.0,2.12,5.61,0.6,4.95,0,"Condiments and Spices","",[],0,0],["i_chillies_green_all_varieties","Chillies, green - all varieties",42.3,2.36,5.86,0.72,4.77,0,"Condiments and Spices","",[],0,0],["i_coriander_leaves","Coriander leaves",31.1,3.52,1.93,0.7,4.66,0,"Condiments and Spices","",[],0,0],["i_curry_leaves","Curry leaves",63.6,7.41,4.51,1.06,16.83,0,"Condiments and Spices","",[],0,0],["i_garlic_big_clove","Garlic, big clove",123.8,6.92,21.93,0.16,5.22,0,"Condiments and Spices","",[],0,0],["i_garlic_small_clove","Garlic, small clove",122.8,6.75,21.84,0.14,5.47,0,"Condiments and Spices","",[],0,0],["i_garlic_single_clove_kashmir","Garlic, single clove, Kashmir",125.0,6.12,23.46,0.16,4.01,0,"Condiments and Spices","",[],0,0],["i_ginger_fresh","Ginger, fresh",55.0,2.22,8.97,0.85,5.36,0,"Condiments and Spices","",[],0,0],["i_mango_ginger","Mango ginger",42.3,1.45,6.98,0.7,4.74,0,"Condiments and Spices","",[],0,0],["i_mint_leaves","Mint leaves",37.0,4.66,2.39,0.65,5.89,0,"Condiments and Spices","",[],0,0],["i_onion_big","Onion, big",48.0,1.5,9.56,0.24,2.45,0,"Condiments and Spices","",[],0,0],["i_onion_small","Onion, small",56.6,1.82,11.58,0.16,1.16,0,"Condiments and Spices","",[],0,0],["i_asafoetida","Asafoetida",331.5,6.34,71.95,1.26,5.13,0,"Condiments and Spices","",[],0,0],["i_cardamom_green","Cardamom, green",255.0,8.1,47.76,2.6,23.1,0,"Condiments and Spices","",[],0,0],["i_cardamom_black","Cardamom, black",270.6,6.69,52.53,2.8,23.46,0,"Condiments and Spices","",[],0,0],["i_chillies_red","Chillies, red",236.6,12.69,29.46,6.4,31.15,0,"Condiments and Spices","",[],0,0],["i_cloves","Cloves",186.7,5.86,18.73,8.41,34.52,0,"Condiments and Spices","",[],0,0],["i_coriander_seeds","Coriander seeds",268.9,10.66,12.98,17.47,44.81,0,"Condiments and Spices","",[],0,0],["i_cumin_seeds","Cumin seeds",304.5,13.91,22.62,16.64,30.35,0,"Condiments and Spices","",[],0,0],["i_fenugreek_seeds","Fenugreek seeds",234.9,25.41,10.57,5.72,47.55,0,"Condiments and Spices","",[],0,0],["i_mace","Mace",355.6,6.24,26.51,24.41,20.31,0,"Condiments and Spices","",[],0,0],["i_nutmeg","Nutmeg",463.7,6.3,27.64,36.52,11.99,0,"Condiments and Spices","",[],0,0],["i_omum","Omum",357.3,15.89,24.53,21.11,20.58,0,"Condiments and Spices","",[],0,0],["i_pippali","Pippali",216.5,10.53,35.7,2.27,34.14,0,"Condiments and Spices","",[],0,0],["i_pepper_black","Pepper, black",217.5,10.12,36.22,2.74,33.16,0,"Condiments and Spices","",[],0,0],["i_poppy_seeds","Poppy seeds",422.6,20.31,12.37,30.38,26.68,0,"Condiments and Spices","",[],0,0],["i_turmeric_powder","Turmeric powder",280.6,7.66,49.22,5.03,21.38,0,"Condiments and Spices","",[],0,0],["i_almond","Almond",609.2,18.41,3.04,58.49,13.06,0,"Nuts and Oil Seeds","",[],0,0],["i_arecanut_dried_brown","Arecanut, dried, brown",350.6,5.78,70.42,4.35,11.44,0,"Nuts and Oil Seeds","",[],0,0],["i_arecanut_dried_red_color","Arecanut, dried, red color",353.0,6.46,70.27,4.46,11.11,0,"Nuts and Oil Seeds","",[],0,0],["i_arecanut_fresh","Arecanut, fresh",244.7,2.73,45.0,5.51,7.63,0,"Nuts and Oil Seeds","",[],0,0],["i_cashew_nut","Cashew nut",582.7,18.78,25.46,45.2,3.86,0,"Nuts and Oil Seeds","",[],0,0],["i_coconut_kernal_dry","Coconut, kernal, dry",624.0,7.27,8.01,63.26,15.88,0,"Nuts and Oil Seeds","",[],0,0],["i_coconut_kernel_fresh","Coconut, kernel, fresh",408.9,3.84,6.3,41.38,10.42,0,"Nuts and Oil Seeds","",[],0,0],["i_garden_cress_seeds","Garden cress, seeds",445.3,23.36,33.66,23.74,8.27,0,"Nuts and Oil Seeds","",[],0,0],["i_gingelly_seeds_black","Gingelly seeds, black",507.6,19.17,10.29,43.1,17.16,0,"Nuts and Oil Seeds","",[],0,0],["i_gingelly_seeds_brown","Gingelly seeds, brown",516.5,21.61,9.76,43.22,17.21,0,"Nuts and Oil Seeds","",[],0,0],["i_gingelly_seeds_white","Gingelly seeds, white",519.6,21.7,10.83,43.05,16.99,0,"Nuts and Oil Seeds","",[],0,0],["i_ground_nut","Ground nut",520.1,23.65,17.27,39.63,10.38,0,"Nuts and Oil Seeds","",[],0,0],["i_mustard_seeds","Mustard seeds",509.6,19.51,16.8,40.19,14.1,0,"Nuts and Oil Seeds","",[],0,0],["i_linseeds","Linseeds",443.8,18.55,10.99,35.67,26.17,0,"Nuts and Oil Seeds","",[],0,0],["i_niger_seeds_black","Niger seeds, black",512.4,18.92,22.98,38.61,10.93,0,"Nuts and Oil Seeds","",[],0,0],["i_niger_seeds_gray","Niger seeds, gray",508.6,18.34,20.59,39.53,10.96,0,"Nuts and Oil Seeds","",[],0,0],["i_pine_seed","Pine seed",594.2,12.55,26.77,48.79,3.79,0,"Nuts and Oil Seeds","",[],0,0],["i_pistachio_nuts","Pistachio nuts",539.4,23.35,15.82,42.49,10.64,0,"Nuts and Oil Seeds","",[],0,0],["i_safflower_seeds","Safflower seeds",473.5,17.66,30.18,30.87,13.49,0,"Nuts and Oil Seeds","",[],0,0],["i_sunflower_seeds","Sunflower seeds",586.3,23.53,6.85,51.85,10.8,0,"Nuts and Oil Seeds","",[],0,0],["i_walnut","Walnut",671.4,14.92,10.14,64.27,5.39,0,"Nuts and Oil Seeds","",[],0,0],["i_jaggery_cane","Jaggery, cane",353.7,1.85,84.87,0.16,0.0,0,"Sugars","",[],0,0],["i_sugarcane_juice","Sugarcane, juice",57.8,0.16,13.11,0.4,0.56,0,"Sugars","",[],0,0],["i_button_mushroom_fresh","Button mushroom, fresh",27.5,3.68,1.98,0.42,3.11,0,"Mushrooms","",[["1 katori (100 g, chopped)",100]],0,0],["i_chicken_mushroom_fresh","Chicken mushroom, fresh",21.3,1.84,2.76,0.25,1.99,0,"Mushrooms","",[["1 katori (100 g, chopped)",100]],0,0],["i_shiitake_mushroom_fresh","Shiitake mushroom, fresh",58.1,3.19,8.98,0.76,3.02,0,"Mushrooms","",[["1 katori (100 g, chopped)",100]],0,0],["i_oyster_mushroom_dried","Oyster mushroom, dried",243.5,19.04,33.07,2.86,39.12,0,"Mushrooms","",[["1 katori (100 g, chopped)",100]],0,0],["i_toddy","Toddy",24.1,0.18,5.72,0.03,0.0,0,"Miscellaneous Foods","",[],0,0],["i_coconut_water","Coconut Water",15.3,0.26,3.16,0.16,0.0,0,"Miscellaneous Foods","",[],0,0],["i_paneer","Paneer",257.9,18.86,12.41,14.78,0.0,0,"Milk and Milk Products","",[],0,0],["i_khoa","Khoa",316.0,16.34,16.53,20.62,0.0,0,"Milk and Milk Products","",[],0,0],["i_egg_poultry_whole_raw","Egg, poultry, whole, raw",134.8,13.28,0.0,9.15,0.0,0,"Egg and Egg Products","",[],0,0],["i_egg_poultry_white_raw","Egg, poultry, white, raw",44.7,10.84,0.0,0.06,0.0,0,"Egg and Egg Products","",[],0,0],["i_egg_poultry_yolk_raw","Egg, poultry, yolk, raw",296.8,15.74,0.0,26.34,0.0,0,"Egg and Egg Products","",[],0,0],["i_egg_poultry_whole_boiled","Egg, poultry, whole, boiled",147.7,13.43,0.0,10.54,0.0,0,"Egg and Egg Products","",[],0,0],["i_egg_poultry_white_boiled","Egg, poultry, white, boiled",52.6,12.37,0.0,0.26,0.0,0,"Egg and Egg Products","",[],0,0],["i_egg_poultry_yolk_boiled","Egg, poultry, yolk, boiled",308.3,16.13,0.0,27.46,0.0,0,"Egg and Egg Products","",[],0,0],["i_egg_poultry_omlet","Egg, poultry, omlet",169.7,16.53,0.0,11.6,0.0,0,"Egg and Egg Products","",[],0,0],["i_egg_country_hen_whole_raw","Egg, country hen, whole, raw",168.3,13.14,0.0,13.0,0.0,0,"Egg and Egg Products","",[],0,0],["i_egg_country_hen_whole_boiled","Egg, country hen, whole, boiled",183.3,14.43,0.0,14.1,0.0,0,"Egg and Egg Products","",[],0,0],["i_egg_country_hen_omlet","Egg, country hen, omlet",204.3,14.8,0.0,16.3,0.0,0,"Egg and Egg Products","",[],0,0],["i_egg_duck_whole_boiled","Egg, duck, whole, boiled",176.4,13.8,0.0,13.61,0.0,0,"Egg and Egg Products","",[],0,0],["i_egg_duck_whole_raw","Egg, duck, whole, raw",181.6,14.6,0.0,13.83,0.0,0,"Egg and Egg Products","",[],0,0],["i_egg_duck_whole_omlet","Egg, duck, whole, omlet",192.2,15.1,0.0,14.8,0.0,0,"Egg and Egg Products","",[],0,0],["i_egg_quial_whole_raw","Egg, quial, whole, raw",151.8,12.39,0.0,11.46,0.0,0,"Egg and Egg Products","",[],0,0],["i_egg_quial_whole_boiled","Egg, quial, whole, boiled",154.6,13.03,0.0,11.5,0.0,0,"Egg and Egg Products","",[],0,0],["i_chicken_poultry_thigh_skinless","Chicken, poultry, thigh, skinless",199.8,18.18,0.0,14.23,0.0,0,"Poultry","",[],0,0],["i_chicken_poultry_breast_skinless","Chicken, poultry, breast, skinless",168.3,21.81,0.0,9.0,0.0,0,"Poultry","",[],0,0],["i_chicken_poultry_wing_skinless","Chicken, poultry, wing, skinless",192.9,17.42,0.0,13.81,0.0,0,"Poultry","",[],0,0],["i_poultry_chicken_liver","Poultry, chicken, liver",123.8,21.57,0.0,4.08,0.0,0,"Poultry","",[],0,0],["i_poultry_chicken_gizzard","Poultry, chicken, gizzard",92.3,18.22,0.0,2.07,0.0,0,"Poultry","",[],0,0],["i_country_hen_leg_with_skin","Country hen, leg, with skin",172.8,17.01,0.0,11.73,0.0,0,"Poultry","",[],0,0],["i_country_hen_thigh_with_skin","Country hen, thigh, with skin",187.6,18.29,0.0,12.82,0.0,0,"Poultry","",[],0,0],["i_country_hen_breast_with_skin","Country hen, breast, with skin",180.0,22.08,0.0,10.2,0.0,0,"Poultry","",[],0,0],["i_country_hen_wing_with_skin","Country hen, wing, with skin",182.6,18.65,0.0,12.09,0.0,0,"Poultry","",[],0,0],["i_duck_meat_with_skin","Duck, meat, with skin",130.7,19.07,0.0,6.03,0.0,0,"Poultry","",[],0,0],["i_emu_meat_skinless","Emu, meat, skinless",132.9,22.65,0.0,4.62,0.0,0,"Poultry","",[],0,0],["i_guinea_fowl_meat_with_skin","Guinea fowl, meat, with skin",112.1,20.52,0.0,3.24,0.0,0,"Poultry","",[],0,0],["i_pigeon_meat_with_skin","Pigeon, meat, with skin",126.2,17.94,0.0,6.03,0.0,0,"Poultry","",[],0,0],["i_quail_meat_skinless","Quail, meat, skinless",137.7,20.92,0.0,5.95,0.0,0,"Poultry","",[],0,0],["i_turkey_leg_with_skin","Turkey, leg, with skin",154.6,20.3,0.0,8.15,0.0,0,"Poultry","",[],0,0],["i_turkey_thigh_with_skin","Turkey, thigh, with skin",138.9,20.46,0.0,6.31,0.0,0,"Poultry","",[],0,0],["i_turkey_breast_with_skin","Turkey, breast, with skin",160.4,21.96,0.0,8.04,0.0,0,"Poultry","",[],0,0],["i_turkey_wing_with_skin","Turkey, wing, with skin",184.3,21.91,0.0,10.77,0.0,0,"Poultry","",[],0,0],["i_goat_shoulder_meat","Goat, shoulder, meat",188.1,20.33,0.0,11.94,0.0,0,"Animal Meat","",[],0,0],["i_goat_chops","Goat, chops",135.8,20.39,0.0,5.98,0.0,0,"Animal Meat","",[],0,0],["i_goat_legs","Goat, legs",159.9,22.07,0.0,7.94,0.0,0,"Animal Meat","",[],0,0],["i_goat_brain","Goat, brain",127.4,13.82,0.0,8.06,0.0,0,"Animal Meat","",[],0,0],["i_goat_tongue","Goat, tongue",188.6,16.63,0.0,13.68,0.0,0,"Animal Meat","",[],0,0],["i_goat_lungs","Goat, lungs",95.8,16.86,0.0,3.09,0.0,0,"Animal Meat","",[],0,0],["i_goat_heart","Goat, heart",117.6,19.38,0.0,4.4,0.0,0,"Animal Meat","",[],0,0],["i_goat_liver","Goat, liver",125.7,20.32,0.0,4.88,0.0,0,"Animal Meat","",[],0,0],["i_goat_tripe","Goat, tripe",92.3,15.36,0.0,3.36,0.0,0,"Animal Meat","",[],0,0],["i_goat_spleen","Goat, spleen",95.8,18.45,0.0,2.37,0.0,0,"Animal Meat","",[],0,0],["i_goat_kidneys","Goat, kidneys",89.4,15.6,0.0,2.93,0.0,0,"Animal Meat","",[],0,0],["i_goat_tube_small_intestine","Goat, tube (small intestine)",125.5,12.92,0.0,8.26,0.0,0,"Animal Meat","",[],0,0],["i_goat_testis","Goat, testis",71.2,12.32,0.0,2.39,0.0,0,"Animal Meat","",[],0,0],["i_sheep_shoulder","Sheep, shoulder",200.8,18.24,0.0,14.31,0.0,0,"Animal Meat","",[],0,0],["i_sheep_chops","Sheep, chops",118.5,18.0,0.0,5.15,0.0,0,"Animal Meat","",[],0,0],["i_sheep_leg","Sheep, leg",164.0,21.42,0.0,8.69,0.0,0,"Animal Meat","",[],0,0],["i_sheep_brain","Sheep, brain",117.6,13.05,0.0,7.29,0.0,0,"Animal Meat","",[],0,0],["i_sheep_tongue","Sheep, tongue",187.1,16.61,0.0,13.53,0.0,0,"Animal Meat","",[],0,0],["i_sheep_lungs","Sheep, lungs",86.8,16.12,0.0,2.41,0.0,0,"Animal Meat","",[],0,0],["i_sheep_heart","Sheep, heart",106.4,18.19,0.0,3.66,0.0,0,"Animal Meat","",[],0,0],["i_sheep_liver","Sheep, liver",133.6,22.26,0.0,4.87,0.0,0,"Animal Meat","",[],0,0],["i_sheep_tripe","Sheep, tripe",104.0,16.76,0.0,4.05,0.0,0,"Animal Meat","",[],0,0],["i_sheep_spleen","Sheep, spleen",91.8,16.02,0.0,3.02,0.0,0,"Animal Meat","",[],0,0],["i_sheep_kidneys","Sheep, kidneys",91.8,16.22,0.0,2.92,0.0,0,"Animal Meat","",[],0,0],["i_beef_shoulder","Beef, shoulder",212.5,20.56,0.0,14.59,0.0,0,"Animal Meat","",[],0,0],["i_beef_chops","Beef, chops",139.8,19.82,0.0,6.71,0.0,0,"Animal Meat","",[],0,0],["i_beef_round_leg","Beef, round (leg)",157.3,22.64,0.0,7.38,0.0,0,"Animal Meat","",[],0,0],["i_beef_brain","Beef, brain",125.0,10.55,0.0,9.28,0.0,0,"Animal Meat","",[],0,0],["i_beef_tongue","Beef, tongue",174.7,15.63,0.0,12.57,0.0,0,"Animal Meat","",[],0,0],["i_beef_lungs","Beef, lungs",83.9,15.66,0.0,2.28,0.0,0,"Animal Meat","",[],0,0],["i_beef_heart","Beef, heart",103.5,17.68,0.0,3.57,0.0,0,"Animal Meat","",[],0,0],["i_beef_liver","Beef, liver",119.3,20.73,0.0,3.96,0.0,0,"Animal Meat","",[],0,0],["i_beef_tripe","Beef, tripe",75.5,13.1,0.0,2.51,0.0,0,"Animal Meat","",[],0,0],["i_beef_spleen","Beef, spleen",90.3,17.42,0.0,2.22,0.0,0,"Animal Meat","",[],0,0],["i_beef_kidneys","Beef, kidneys",104.9,17.09,0.0,4.01,0.0,0,"Animal Meat","",[],0,0],["i_calf_shoulder","Calf, shoulder",151.3,20.98,0.0,7.47,0.0,0,"Animal Meat","",[],0,0],["i_calf_chops","Calf, chops",125.2,22.47,0.0,3.85,0.0,0,"Animal Meat","",[],0,0],["i_calf_round_leg","Calf, round (leg)",147.0,21.1,0.0,6.92,0.0,0,"Animal Meat","",[],0,0],["i_calf_brain","Calf, brain",107.1,9.84,0.0,7.6,0.0,0,"Animal Meat","",[],0,0],["i_calf_tongue","Calf, tongue",176.1,17.78,0.0,11.76,0.0,0,"Animal Meat","",[],0,0],["i_calf_heart","Calf, heart",109.7,18.84,0.0,3.75,0.0,0,"Animal Meat","",[],0,0],["i_calf_liver","Calf, liver",120.2,21.02,0.0,3.95,0.0,0,"Animal Meat","",[],0,0],["i_calf_spleen","Calf, spleen",90.6,17.71,0.0,2.12,0.0,0,"Animal Meat","",[],0,0],["i_calf_kidneys","Calf, kidneys",92.5,15.16,0.0,3.5,0.0,0,"Animal Meat","",[],0,0],["i_mithun_shoulder","Mithun, shoulder",175.9,19.05,0.0,11.14,0.0,0,"Animal Meat","",[],0,0],["i_mithun_chops","Mithun, chops",128.1,18.19,0.0,6.12,0.0,0,"Animal Meat","",[],0,0],["i_mithun_round_leg","Mithun, round (leg)",115.9,19.61,0.0,4.1,0.0,0,"Animal Meat","",[],0,0],["i_pork_shoulder","Pork, shoulder",237.3,17.41,0.0,18.83,0.0,0,"Animal Meat","",[],0,0],["i_pork_chops","Pork, chops",178.8,19.41,0.0,11.3,0.0,0,"Animal Meat","",[],0,0],["i_pork_ham","Pork, ham",240.4,18.83,0.0,18.55,0.0,0,"Animal Meat","",[],0,0],["i_pork_lungs","Pork, lungs",85.6,15.13,0.0,2.74,0.0,0,"Animal Meat","",[],0,0],["i_pork_heart","Pork, heart",109.2,16.31,0.0,4.87,0.0,0,"Animal Meat","",[],0,0],["i_pork_liver","Pork, liver",115.7,19.89,0.0,3.94,0.0,0,"Animal Meat","",[],0,0],["i_pork_stomach","Pork, stomach",131.5,15.36,0.0,7.81,0.0,0,"Animal Meat","",[],0,0],["i_pork_spleen","Pork, spleen",85.3,15.13,0.0,2.71,0.0,0,"Animal Meat","",[],0,0],["i_pork_kidneys","Pork, kidneys",90.6,14.35,0.0,3.65,0.0,0,"Animal Meat","",[],0,0],["i_pork_tube_small_intestine","Pork, tube (small intestine)",140.3,14.96,0.0,8.98,0.0,0,"Animal Meat","",[],0,0],["i_hare_shoulder","Hare, shoulder",144.1,21.13,0.0,6.58,0.0,0,"Animal Meat","",[],0,0],["i_hare_chops","Hare, chops",106.4,20.62,0.0,2.55,0.0,0,"Animal Meat","",[],0,0],["i_hare_leg","Hare, leg",120.2,20.52,0.0,4.16,0.0,0,"Animal Meat","",[],0,0],["i_rabbit_shoulder","Rabbit, shoulder",151.8,20.01,0.0,7.96,0.0,0,"Animal Meat","",[],0,0],["i_rabbit_chops","Rabbit, chops",135.0,22.61,0.0,4.88,0.0,0,"Animal Meat","",[],0,0],["i_rabbit_leg","Rabbit, leg",139.6,21.31,0.0,5.99,0.0,0,"Animal Meat","",[],0,0],["i_allathi","Allathi",97.0,21.77,0.0,0.98,0.0,0,"Marine Fish","",[],0,0],["i_aluva","Aluva",103.7,21.63,0.0,1.8,0.0,0,"Marine Fish","",[],0,0],["i_anchovy","Anchovy",87.7,19.88,0.0,0.78,0.0,0,"Marine Fish","",[],0,0],["i_ari_fish","Ari fish",99.2,22.01,0.0,1.11,0.0,0,"Marine Fish","",[],0,0],["i_betki","Betki",67.9,15.28,0.0,0.29,0.0,0,"Marine Fish","",[],0,0],["i_black_snapper","Black snapper",90.1,19.5,0.0,1.24,0.0,0,"Marine Fish","",[],0,0],["i_bombay_duck","Bombay duck",68.6,13.53,0.0,1.03,0.0,0,"Marine Fish","",[],0,0],["i_bommuralu","Bommuralu",115.9,22.3,0.0,2.87,0.0,0,"Marine Fish","",[],0,0],["i_cat_fish_marine_fish","Cat fish (Marine Fish)",109.0,22.18,0.0,2.13,0.0,0,"Marine Fish","",[],0,0],["i_chakla","Chakla",97.0,20.21,0.0,1.68,0.0,0,"Marine Fish","",[],0,0],["i_chappal","Chappal",75.8,17.17,0.0,0.67,0.0,0,"Marine Fish","",[],0,0],["i_chelu","Chelu",87.5,20.02,0.0,0.7,0.0,0,"Marine Fish","",[],0,0],["i_chembali","Chembali",97.0,20.06,0.0,1.77,0.0,0,"Marine Fish","",[],0,0],["i_eri_meen","Eri meen",108.5,22.3,0.0,2.02,0.0,0,"Marine Fish","",[],0,0],["i_gobro","Gobro",86.5,19.37,0.0,0.88,0.0,0,"Marine Fish","",[],0,0],["i_guitar_fish","Guitar fish",95.6,22.56,0.0,0.44,0.0,0,"Marine Fish","",[],0,0],["i_hilsa","Hilsa",258.8,21.8,0.0,18.49,0.0,0,"Marine Fish","",[],0,0],["i_jallal","Jallal",100.4,21.55,0.0,1.46,0.0,0,"Marine Fish","",[],0,0],["i_jathi_vela_meen","Jathi vela meen",108.3,22.45,0.0,1.92,0.0,0,"Marine Fish","",[],0,0],["i_kadal_bral","Kadal bral",88.0,18.72,0.0,1.34,0.0,0,"Marine Fish","",[],0,0],["i_kadali","Kadali",126.7,22.07,0.0,4.2,0.0,0,"Marine Fish","",[],0,0],["i_kalamaara","Kalamaara",125.0,20.89,0.0,4.54,0.0,0,"Marine Fish","",[],0,0],["i_kalava","Kalava",89.4,19.38,0.0,1.2,0.0,0,"Marine Fish","",[],0,0],["i_kanamayya","Kanamayya",87.7,20.19,0.0,0.65,0.0,0,"Marine Fish","",[],0,0],["i_kannadi_paarai","Kannadi paarai",101.1,22.09,0.0,1.27,0.0,0,"Marine Fish","",[],0,0],["i_karimeen","Karimeen",92.3,19.68,0.0,1.38,0.0,0,"Marine Fish","",[],0,0],["i_karnagawala","Karnagawala",86.8,19.52,0.0,0.84,0.0,0,"Marine Fish","",[],0,0],["i_kayrai","Kayrai",108.5,20.15,0.0,3.0,0.0,0,"Marine Fish","",[],0,0],["i_kiriyan","Kiriyan",132.9,22.49,0.0,4.7,0.0,0,"Marine Fish","",[],0,0],["i_kite_fish","Kite fish",98.7,23.07,0.0,0.56,0.0,0,"Marine Fish","",[],0,0],["i_korka","Korka",126.2,23.72,0.0,3.36,0.0,0,"Marine Fish","",[],0,0],["i_kulam_paarai","Kulam paarai",119.7,21.62,0.0,3.6,0.0,0,"Marine Fish","",[],0,0],["i_maagaa","Maagaa",87.5,20.11,0.0,0.67,0.0,0,"Marine Fish","",[],0,0],["i_mackerel","Mackerel",101.1,21.51,0.0,1.53,0.0,0,"Marine Fish","",[],0,0],["i_manda_clathi","Manda clathi",95.1,21.27,0.0,1.0,0.0,0,"Marine Fish","",[],0,0],["i_matha","Matha",93.0,21.17,0.0,0.79,0.0,0,"Marine Fish","",[],0,0],["i_milk_fish","Milk fish",105.6,23.66,0.0,1.09,0.0,0,"Marine Fish","",[],0,0],["i_moon_fish","Moon fish",125.7,20.74,0.0,4.69,0.0,0,"Marine Fish","",[],0,0],["i_mullet","Mullet",93.9,20.23,0.0,1.32,0.0,0,"Marine Fish","",[],0,0],["i_mural","Mural",82.5,19.04,0.0,0.58,0.0,0,"Marine Fish","",[],0,0],["i_myil_meen","Myil meen",98.0,22.89,0.0,0.56,0.0,0,"Marine Fish","",[],0,0],["i_nalla_bontha","Nalla bontha",87.0,19.82,0.0,0.72,0.0,0,"Marine Fish","",[],0,0],["i_narba","Narba",103.3,21.95,0.0,1.6,0.0,0,"Marine Fish","",[],0,0],["i_paarai","Paarai",104.0,21.58,0.0,1.84,0.0,0,"Marine Fish","",[],0,0],["i_padayappa","Padayappa",86.0,19.7,0.0,0.69,0.0,0,"Marine Fish","",[],0,0],["i_pali_kora","Pali kora",94.2,19.25,0.0,1.81,0.0,0,"Marine Fish","",[],0,0],["i_pambada","Pambada",128.3,21.95,0.0,4.44,0.0,0,"Marine Fish","",[],0,0],["i_pandukopa","Pandukopa",86.0,19.73,0.0,0.65,0.0,0,"Marine Fish","",[],0,0],["i_parava","Parava",111.6,21.5,0.0,2.74,0.0,0,"Marine Fish","",[],0,0],["i_parcus","Parcus",86.3,19.87,0.0,0.62,0.0,0,"Marine Fish","",[],0,0],["i_parrot_fish","Parrot fish",89.6,20.82,0.0,0.57,0.0,0,"Marine Fish","",[],0,0],["i_perinkilichai","Perinkilichai",92.5,20.89,0.0,0.87,0.0,0,"Marine Fish","",[],0,0],["i_phopat","Phopat",101.3,22.05,0.0,1.33,0.0,0,"Marine Fish","",[],0,0],["i_piranha","Piranha",131.2,20.46,0.0,5.43,0.0,0,"Marine Fish","",[],0,0],["i_pomfret_black","Pomfret, black",123.1,18.91,0.0,4.83,0.0,0,"Marine Fish","",[],0,0],["i_pomfret_snub_nose","Pomfret, snub nose",89.6,21.05,0.0,0.46,0.0,0,"Marine Fish","",[],0,0],["i_pomfret_white","Pomfret, white",122.6,19.02,0.0,5.12,0.0,0,"Marine Fish","",[],0,0],["i_pranel","Pranel",96.8,19.69,0.0,1.89,0.0,0,"Marine Fish","",[],0,0],["i_pulli_paarai","Pulli paarai",95.4,20.06,0.0,1.55,0.0,0,"Marine Fish","",[],0,0],["i_queen_fish","Queen fish",95.6,20.97,0.0,1.17,0.0,0,"Marine Fish","",[],0,0],["i_raai_fish","Raai fish",102.8,21.61,0.0,1.69,0.0,0,"Marine Fish","",[],0,0],["i_raai_vanthu","Raai vanthu",98.0,19.39,0.0,2.17,0.0,0,"Marine Fish","",[],0,0],["i_rani","Rani",90.1,18.83,0.0,1.49,0.0,0,"Marine Fish","",[],0,0],["i_ray_fish_bow_head_spotted","Ray fish, bow head, spotted",83.4,19.03,0.0,0.7,0.0,0,"Marine Fish","",[],0,0],["i_red_snapper","Red snapper",104.4,22.79,0.0,1.34,0.0,0,"Marine Fish","",[],0,0],["i_red_snapper_small","Red snapper, small",107.8,21.5,0.0,2.3,0.0,0,"Marine Fish","",[],0,0],["i_sadaya","Sadaya",110.4,20.68,0.0,2.97,0.0,0,"Marine Fish","",[],0,0],["i_salmon","Salmon",172.3,20.97,0.0,9.86,0.0,0,"Marine Fish","",[],0,0],["i_sangada","Sangada",105.9,20.26,0.0,2.67,0.0,0,"Marine Fish","",[],0,0],["i_sankata_paarai","Sankata paarai",103.7,21.87,0.0,1.68,0.0,0,"Marine Fish","",[],0,0],["i_sardine","Sardine",152.2,17.91,0.0,8.99,0.0,0,"Marine Fish","",[],0,0],["i_shark","Shark",95.1,21.6,0.0,0.83,0.0,0,"Marine Fish","",[],0,0],["i_shark_hammer_head","Shark, hammer head",103.3,23.4,0.0,0.8,0.0,0,"Marine Fish","",[],0,0],["i_shark_spotted","Shark, spotted",91.8,20.95,0.0,0.75,0.0,0,"Marine Fish","",[],0,0],["i_shelavu","Shelavu",106.6,22.46,0.0,1.74,0.0,0,"Marine Fish","",[],0,0],["i_silan","Silan",151.3,22.72,0.0,6.68,0.0,0,"Marine Fish","",[],0,0],["i_silk_fish","Silk fish",97.5,20.65,0.0,1.53,0.0,0,"Marine Fish","",[],0,0],["i_silver_carp","Silver carp",132.6,21.71,0.0,5.17,0.0,0,"Marine Fish","",[],0,0],["i_sole_fish","Sole fish",87.7,19.05,0.0,1.18,0.0,0,"Marine Fish","",[],0,0],["i_stingray","Stingray",97.5,23.98,0.0,0.68,0.0,0,"Marine Fish","",[],0,0],["i_tarlava","Tarlava",98.9,21.72,0.0,1.2,0.0,0,"Marine Fish","",[],0,0],["i_tholam","Tholam",103.3,20.78,0.0,2.13,0.0,0,"Marine Fish","",[],0,0],["i_tilapia","Tilapia",83.4,18.48,0.0,1.08,0.0,0,"Marine Fish","",[],0,0],["i_tuna","Tuna",112.3,24.5,0.0,1.44,0.0,0,"Marine Fish","",[],0,0],["i_tuna_striped","Tuna, striped",96.3,21.28,0.0,1.12,0.0,0,"Marine Fish","",[],0,0],["i_valava","Valava",98.0,21.8,0.0,1.06,0.0,0,"Marine Fish","",[],0,0],["i_vanjaram","Vanjaram",136.2,22.28,0.0,5.18,0.0,0,"Marine Fish","",[],0,0],["i_vela_meen","Vela meen",128.3,22.16,0.0,4.34,0.0,0,"Marine Fish","",[],0,0],["i_vora","Vora",100.9,20.14,0.0,2.14,0.0,0,"Marine Fish","",[],0,0],["i_whale_shark","Whale shark",95.8,21.83,0.0,0.82,0.0,0,"Marine Fish","",[],0,0],["i_xiphinis","Xiphinis",88.4,19.82,0.0,0.88,0.0,0,"Marine Fish","",[],0,0],["i_eggs_cat_fish","Eggs, Cat fish",143.4,24.68,0.0,5.28,0.0,0,"Marine Fish","",[],0,0],["i_crab_sea","Crab, sea",67.6,15.36,0.0,0.6,0.0,0,"Marine Shellfish","",[],0,0],["i_lobster_brown","Lobster, brown",69.8,15.96,0.0,0.56,0.0,0,"Marine Shellfish","",[],0,0],["i_lobster_king_size","Lobster, king size",89.6,18.54,0.0,0.78,0.0,0,"Marine Shellfish","",[],0,0],["i_mud_crab","Mud crab",45.4,10.0,0.0,0.55,0.0,0,"Marine Shellfish","",[],0,0],["i_oyster","Oyster",60.2,9.51,0.0,2.44,0.0,0,"Marine Shellfish","",[],0,0],["i_tiger_prawns_brown","Tiger prawns, brown",65.2,14.85,0.0,0.56,0.0,0,"Marine Shellfish","",[],0,0],["i_tiger_prawns_orange","Tiger Prawns, orange",64.5,14.25,0.0,0.74,0.0,0,"Marine Shellfish","",[],0,0],["i_clam_green_shell","Clam, green shell",58.1,12.14,0.0,0.98,0.0,0,"Marine Mollusks","",[],0,0],["i_clam_white_shell_ribbed","Clam, white shell, ribbed",59.8,11.82,0.0,1.34,0.0,0,"Marine Mollusks","",[],0,0],["i_octopus","Octopus",79.8,14.71,0.0,1.12,0.0,0,"Marine Mollusks","",[],0,0],["i_squid_black","Squid, black",80.1,16.1,0.0,1.07,0.0,0,"Marine Mollusks","",[],0,0],["i_squid_hard_shell","Squid, hard shell",76.5,16.82,0.0,0.93,0.0,0,"Marine Mollusks","",[],0,0],["i_squid_red","Squid, red",78.6,16.25,0.0,1.44,0.0,0,"Marine Mollusks","",[],0,0],["i_squid_white_small","Squid, white, small",84.4,17.41,0.0,1.15,0.0,0,"Marine Mollusks","",[],0,0],["i_cat_fish_fresh_water_fish_and_shellfish","Cat fish (Fresh Water Fish and Shellfish)",123.8,15.86,0.0,6.24,0.0,0,"Fresh Water Fish and Shellfish","",[],0,0],["i_catla","Catla",94.2,17.94,0.0,2.15,0.0,0,"Fresh Water Fish and Shellfish","",[],0,0],["i_freshwater_eel","Freshwater Eel",107.8,20.41,0.0,2.63,0.0,0,"Fresh Water Fish and Shellfish","",[],0,0],["i_gold_fish","Gold fish",94.6,16.91,0.0,2.94,0.0,0,"Fresh Water Fish and Shellfish","",[],0,0],["i_pangas","Pangas",203.6,17.12,0.0,16.77,0.0,0,"Fresh Water Fish and Shellfish","",[],0,0],["i_rohu","Rohu",102.3,19.71,0.0,2.39,0.0,0,"Fresh Water Fish and Shellfish","",[],0,0],["i_prawns_big","Prawns, big",90.8,19.24,0.0,0.52,0.0,0,"Fresh Water Fish and Shellfish","",[],0,0],["i_prawns_small","Prawns, small",71.0,13.07,0.0,0.78,0.0,0,"Fresh Water Fish and Shellfish","",[],0,0],["i_tiger_prawns","Tiger prawns",67.9,14.24,0.0,0.66,0.0,0,"Fresh Water Fish and Shellfish","",[],0,0]]</script>
+<script>
+(function(){
+'use strict';
+/* Open Food Facts (opt-in online search; nothing is requested unless the user taps the button) */
+var OFF_PRIMARY='https://world.openfoodfacts.org/cgi/search.pl';
+var OFF_FALLBACK='https://search.openfoodfacts.org/search';
+var OFF_FIELDS='code,product_name,brands,nutriments,serving_size,serving_quantity';
+var OFF_TIMEOUT=12000,OFF_COOLDOWN=6000,OFF_SLOW=5000;
+/* ---------- tiny DOM helpers (textContent only; no innerHTML anywhere) ---------- */
+function h(tag,props){
+  var el=document.createElement(tag),k,v;
+  props=props||{};
+  for(k in props){v=props[k];if(v==null||v===false&&typeof v!=='boolean')continue;
+    if(k==='class')el.className=v;
+    else if(k==='text')el.textContent=v;
+    else if(k.slice(0,2)==='on')el.addEventListener(k.slice(2),v);
+    else if(k==='value')el.value=v;
+    else if(typeof v==='boolean'){if(k in el)el[k]=v;else if(v)el.setAttribute(k,'')}
+    else el.setAttribute(k,v);}
+  for(var i=2;i<arguments.length;i++)add(el,arguments[i]);
+  return el;
+}
+function add(el,c){if(c==null||c===false)return;if(Array.isArray(c)){c.forEach(function(x){add(el,x)});return}
+  el.appendChild(c.nodeType?c:document.createTextNode(String(c)))}
+var NSV='http://www.w3.org/2000/svg';
+function s(tag,props){
+  var el=document.createElementNS(NSV,tag),k;props=props||{};
+  for(k in props){if(props[k]==null)continue;if(k==='text')el.textContent=props[k];else el.setAttribute(k,props[k])}
+  for(var i=2;i<arguments.length;i++)add(el,arguments[i]);return el;
+}
+function $(sel){return document.querySelector(sel)}
+
+/* ---------- dates / numbers ---------- */
+function pad(n){return String(n).padStart(2,'0')}
+function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function parseD(x){var a=x.split('-').map(Number);return new Date(a[0],a[1]-1,a[2])}
+function addDays(x,n){var d=parseD(x);d.setDate(d.getDate()+n);return ymd(d)}
+function todayStr(){return ymd(new Date())}
+function fmtDate(x){return parseD(x).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'})}
+function fmtDateLong(x){return parseD(x).toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+function nowTime(){var d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())}
+/* '20:05' -> '8:05 PM' (same format everywhere, independent of the device locale) */
+function fmt12(hhmm){var m=/^(\d\d):(\d\d)$/.exec(hhmm||'');if(!m)return String(hhmm||'');var h24=+m[1];return ((h24%12)||12)+':'+m[2]+' '+(h24>=12?'PM':'AM')}
+/* Reusable 12-hour time control: hour, minute, AM/PM, minute -/+ (5 min), Now. Stores/returns 'HH:MM' (24h). */
+function timePicker(o){
+  var id=o.idPrefix||'tp',ap='AM',api={};
+  var hIn=h('input',{type:'text',id:id+'-h',class:'tp-in',inputmode:'numeric',pattern:'[0-9]*',maxlength:'2',autocomplete:'off','aria-label':'Hour, 1 to 12'});
+  var mIn=h('input',{type:'text',id:id+'-m',class:'tp-in',inputmode:'numeric',pattern:'[0-9]*',maxlength:'2',autocomplete:'off','aria-label':'Minute, 00 to 59'});
+  var err=h('p',{class:'err tp-err',role:'alert',id:id+'-err'});
+  function read(){
+    if(hIn.value===''||mIn.value==='')return {err:'Enter hour 1-12 and minute 0-59.'};
+    var hv=+hIn.value,mv=+mIn.value;
+    if(!(hv>=1&&hv<=12))return {err:'Enter hour 1-12.'};
+    if(!(mv>=0&&mv<=59))return {err:'Enter minute 0-59.'};
+    return {v:pad((hv%12)+(ap==='PM'?12:0))+':'+pad(mv)};
+  }
+  function showErr(all){
+    var r=read();
+    if(!r.err){err.textContent='';return}
+    var hv=hIn.value,mv=mIn.value,bad=(hv.length===2&&!(+hv>=1&&+hv<=12))||(hv.length===1&&+hv===0&&all)||(mv.length===2&&+mv>59);
+    err.textContent=(all||bad)?r.err:'';
+  }
+  function changed(all){showErr(all);if(o.onChange){var r=read();o.onChange(r.v||null)}}
+  function syncAp(){amB.setAttribute('aria-pressed',ap==='AM'?'true':'false');pmB.setAttribute('aria-pressed',ap==='PM'?'true':'false')}
+  var amB=h('button',{type:'button',class:'btn tp-ap',id:id+'-am',text:'AM','aria-label':'AM',onclick:function(){ap='AM';syncAp();changed(true)}});
+  var pmB=h('button',{type:'button',class:'btn tp-ap',id:id+'-pm',text:'PM','aria-label':'PM',onclick:function(){ap='PM';syncAp();changed(true)}});
+  api.set=function(v){
+    var m=/^(\d\d):(\d\d)$/.exec(v||'');if(!m)return;var h24=+m[1];
+    ap=h24>=12?'PM':'AM';hIn.value=String((h24%12)||12);mIn.value=m[2];syncAp();err.textContent='';
+  };
+  api.get=function(){return read().v||null};
+  api.validate=function(){showErr(true);return read().err||null};
+  api.focus=function(){hIn.focus();hIn.select()};
+  function step(dir){
+    var r=read(),t0;
+    if(r.v)t0=(+r.v.slice(0,2))*60+(+r.v.slice(3));else{var n=nowTime();t0=(+n.slice(0,2))*60+(+n.slice(3))}
+    var t1=dir>0?Math.min(1439,Math.floor(t0/5)*5+5):Math.max(0,Math.ceil(t0/5)*5-5);
+    api.set(pad(Math.floor(t1/60))+':'+pad(t1%60));changed(true);
+  }
+  function keys(ev){if(ev.key==='Enter'){ev.preventDefault();if(o.onEnter)o.onEnter()}else if(ev.key==='Escape'&&o.onEscape){ev.preventDefault();o.onEscape()}}
+  hIn.addEventListener('input',function(){
+    var d=hIn.value.replace(/\D/g,'').slice(0,2);hIn.value=d;
+    if(d.length===2||(d.length===1&&+d>=2)){changed(false);mIn.focus();mIn.select();return}
+    changed(false);
+  });
+  mIn.addEventListener('input',function(){mIn.value=mIn.value.replace(/\D/g,'').slice(0,2);changed(false)});
+  mIn.addEventListener('blur',function(){if(mIn.value.length===1)mIn.value=pad(+mIn.value);changed(false)});
+  hIn.addEventListener('blur',function(){if(hIn.value!==''&&!(+hIn.value>=1&&+hIn.value<=12))err.textContent='Enter hour 1-12.'});
+  hIn.addEventListener('keydown',keys);mIn.addEventListener('keydown',function(ev){
+    if(ev.key==='Backspace'&&mIn.value===''){ev.preventDefault();hIn.focus();return}keys(ev)});
+  /* Paste '9:45 pm', '09:45PM', '21:45' or '945pm' into either box: fills hour, minute and AM/PM */
+  function onPaste(ev){
+    var txt=(ev.clipboardData||window.clipboardData);txt=txt?String(txt.getData('text')||''):'';
+    var m=/^\s*(\d{1,2})\s*[:.h]\s*(\d{2})\s*([ap])?\.?\s*(m)?\.?\s*$/i.exec(txt)||/^\s*(\d{1,2})(\d{2})\s*([ap])\.?\s*(m)?\.?\s*$/i.exec(txt);
+    if(!m)return;
+    var hv=+m[1],mv=+m[2],a=m[3]?m[3].toUpperCase()+'M':null;
+    if(mv>59)return;
+    if(a){if(hv<1||hv>12)return}else{if(hv>23)return;a=hv>=12?'PM':'AM';hv=hv%12||12}
+    ev.preventDefault();api.set(pad(((hv%12)+(a==='PM'?12:0)))+':'+pad(mv));changed(true);
+  }
+  hIn.addEventListener('paste',onPaste);mIn.addEventListener('paste',onPaste);
+  /* Tapping a box selects its content so typing replaces it; typing into a full or impossible value starts afresh */
+  function selectAll(el){
+    var fresh0=false;
+    el.addEventListener('focus',function(){try{el.select()}catch(e){}fresh0=true});
+    el.addEventListener('mouseup',function(ev){if(fresh0){ev.preventDefault();fresh0=false}});
+    el.addEventListener('touchend',function(){fresh0=false});
+  }
+  selectAll(hIn);selectAll(mIn);
+  function fresh(el,isHour){
+    el.addEventListener('keydown',function(ev){
+      if(!/^\d$/.test(ev.key)||ev.ctrlKey||ev.metaKey||ev.altKey)return;
+      if(el.selectionStart!==el.selectionEnd)return;
+      var cur=el.value,nx=+(cur+ev.key);
+      if(cur.length>=2||(cur.length===1&&(isHour?(cur==='0'?false:!(nx>=1&&nx<=12)):+cur>5)))el.value='';
+    });
+  }
+  fresh(hIn,true);fresh(mIn,false);
+  api.el=h('div',{class:'tp',role:'group','aria-label':o.label||'Time'},
+    h('div',{class:'tp-row'},hIn,h('span',{class:'tp-colon','aria-hidden':'true',text:':'}),mIn,
+      h('button',{type:'button',class:'btn icon',id:id+'-mdown','aria-label':'Minutes down 5',text:'\u2212',onclick:function(){step(-1)}}),
+      h('button',{type:'button',class:'btn icon',id:id+'-mup','aria-label':'Minutes up 5',text:'+',onclick:function(){step(1)}})),
+    h('div',{class:'tp-row',style:'margin-top:6px'},amB,pmB,h('button',{type:'button',class:'btn',id:id+'-now',text:'Now',onclick:function(){api.set(nowTime());changed(true)}})),err);
+  api.set(o.value||nowTime());
+  return api;
+}
+function r0(n){return Math.round(n)}
+function r1(n){return Math.round(n*10)/10}
+function fmt2(n){return String(Math.round(n*100)/100)}
+function isDate(x){return typeof x==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x)&&!isNaN(parseD(x).getTime())&&ymd(parseD(x))===x}
+function ageOn(dob,date){var a=dob.split('-').map(Number),b=date.split('-').map(Number),age=b[0]-a[0];if(b[1]<a[1]||(b[1]===a[1]&&b[2]<a[2]))age--;return age}
+function uuid(){try{if(crypto&&crypto.randomUUID)return crypto.randomUUID()}catch(e){}return 'x'+Date.now().toString(36)+Math.random().toString(36).slice(2,10)}
+/* Meal slots are per profile, user-managed and have no fixed times. */
+function defaultSlots(){return [{id:'s_breakfast',name:'Breakfast'},{id:'s_midmorning',name:'Mid-morning snack'},{id:'s_lunch',name:'Lunch'},{id:'s_evening',name:'Evening snack'},{id:'s_dinner',name:'Dinner'},{id:'s_latenight',name:'Late-night snack'}]}
+var LEGACY={breakfast:['s_breakfast','Breakfast'],lunch:['s_lunch','Lunch'],snacks:['s_evening','Evening snack'],dinner:['s_dinner','Dinner'],other:['s_other','Other']};
+function normName(n){return String(n==null?'':n).replace(/\s+/g,' ').trim()}
+function slotNameError(name,slots,exceptId){
+  name=normName(name);
+  if(!name)return 'Give the meal slot a name.';
+  if(name.length>30)return 'Meal slot names can be up to 30 characters.';
+  if(slots.some(function(s){return s.id!==exceptId&&s.name.toLowerCase()===name.toLowerCase()}))return 'You already have a meal slot with that name.';
+  return null;
+}
+function cleanSlots(arr){
+  var out=[],ids={},names={};
+  (Array.isArray(arr)?arr:[]).forEach(function(s){
+    if(!s||!safeId(s.id)||typeof s.name!=='string')return;var n=normName(s.name).slice(0,30);
+    if(!n||ids[s.id]||names[n.toLowerCase()])return;ids[s.id]=1;names[n.toLowerCase()]=1;out.push({id:s.id,name:n});
+  });
+  return out.slice(0,60);
+}
+/* Map old fixed slots (breakfast, lunch, snacks, dinner, other) to slot ids; adds an "Other" slot to prof only if needed. */
+function migrateEntries(list,prof){
+  var changed=false;
+  list.forEach(function(e){
+    var m=LEGACY[String(e.slot).toLowerCase()];if(!m)return;changed=true;var id=m[0],name=m[1];
+    if(String(e.slot).toLowerCase()==='other'){
+      var have=prof.slots.filter(function(s){return s.id==='s_other'||s.name.toLowerCase()==='other'})[0];
+      if(!have){have={id:'s_other',name:'Other'};prof.slots.push(have)}
+      id=have.id;name=have.name;
+    }
+    e.slot=id;e.slotName=name;
+  });
+  return changed;
+}
+function slotNameOf(p,e){
+  var s=p.slots.filter(function(x){return x.id===e.slot})[0];
+  return s?s.name:(e.slotName||(LEGACY[e.slot]&&LEGACY[e.slot][1])||'Other meal');
+}
+function saveSlots(slots){var np=Object.assign({},S.profile,{slots:slots,updatedAt:Date.now()});saveProfile(np);S.profile=np;return np}
+function newSlotId(){return 's_'+uuid().replace(/[^\w]/g,'').slice(0,10)}
+var MAX_SLOTS=30;
+/* Default meal for the Add form: the slot of the entry most recently ADDED on that date (not the next slot in order). */
+function nextSlotId(p,date){
+  var all=loadMonth(p.id,date.slice(0,7)).filter(function(e){return e.date===date}),best=null,bi=-1;
+  all.forEach(function(e,i){var c=e.createdAt||e.updatedAt||0;if(!best||c>=(best.createdAt||best.updatedAt||0)){best=e;bi=i}});
+  if(best&&p.slots.some(function(s){return s.id===best.slot}))return best.slot;
+  return p.slots[0].id;
+}
+/* Create a slot (shared by Profile and the Add form). Reuses the id of a removed slot that still has entries under the same name. */
+function createSlot(name){
+  var slots=S.profile.slots;
+  if(slots.length>=MAX_SLOTS)return {err:'You can have up to '+MAX_SLOTS+' meal slots. Delete one you do not use first.'};
+  var bad=slotNameError(name,slots,null);if(bad)return {err:bad};
+  name=normName(name);var id=null,low=name.toLowerCase();
+  allEntries(S.profile.id).forEach(function(e){if(!id&&e.slotName&&e.slotName.toLowerCase()===low&&!slots.some(function(s){return s.id===e.slot}))id=e.slot});
+  var ns={id:id||newSlotId(),name:name};saveSlots(slots.concat([ns]));return {slot:ns};
+}
+function renameSlotEntries(id,name){
+  monthsOf(S.profile.id).forEach(function(ym){
+    var a=loadMonth(S.profile.id,ym),ch=false;a.forEach(function(e){if(e.slot===id&&e.slotName!==name){e.slotName=name;ch=true}});
+    if(ch)saveMonth(S.profile.id,ym,a);
+  });
+}
+/* Activity multipliers (model 2). These already include workouts: do not add workout calories on top. */
+var ACTIVITY=[[1.2,'Sedentary (desk job, little exercise)'],[1.3,'Lightly active (on your feet part of the day, housework / homemaking, or 1-2 light workouts a week)'],[1.4,'Moderately active (workout 3-4 times a week)'],[1.55,'Very active (workout 5-6 times a week, or on your feet most of the day)'],[1.7,'Extremely active (heavy manual work like construction, farm work or loading, or hard daily training)']];
+/* Profiles saved before activityModel 2 used the old scale; map each old value to the new level. */
+var OLD_ACTIVITY={1.2:1.2,1.375:1.3,1.55:1.4,1.725:1.55,1.9:1.7};
+function nearestOf(v,arr){var best=arr[0];arr.forEach(function(x){if(Math.abs(x-v)<Math.abs(best-v))best=x});return best}
+function levelName(v){var a=ACTIVITY.filter(function(x){return x[0]===v})[0];return a?a[1].replace(/\s*\(.*$/,''):''}
+
+/* ---------- storage ---------- */
+var NS='dt:v1:',storageOK=true,mem={},writeFailed=false;
+(function probe(){try{var k=NS+'probe';localStorage.setItem(k,'1');localStorage.removeItem(k)}catch(e){storageOK=false}})();
+function sget(k){if(!storageOK)return k in mem?mem[k]:null;try{return localStorage.getItem(k)}catch(e){return null}}
+function sset(k,v){if(!storageOK){mem[k]=v;return true}try{localStorage.setItem(k,v);return true}catch(e){writeFailed=true;showBanners();return false}}
+function sdel(k){if(!storageOK){delete mem[k];return}try{localStorage.removeItem(k)}catch(e){}}
+function skeys(prefix){var out=[],i,k;if(!storageOK){for(k in mem)if(k.indexOf(prefix)===0)out.push(k);return out}
+  try{for(i=0;i<localStorage.length;i++){k=localStorage.key(i);if(k&&k.indexOf(prefix)===0)out.push(k)}}catch(e){}return out}
+function jget(k,def){var t=sget(k);if(t==null)return def;try{var v=JSON.parse(t);return v==null?def:v}catch(e){return def}}
+function jset(k,v){return sset(k,JSON.stringify(v))}
+
+var blocked={};
+function readJSON(key){var raw=sget(key);if(raw==null)return {v:null};try{return {v:JSON.parse(raw),raw:raw}}catch(e){return {bad:true,raw:raw}}}
+/* Keep a copy of anything we could not fully read, so it is never silently overwritten. */
+function protect(key,raw){
+  if(blocked[key]!==undefined)return;
+  var pre=NS+'corrupt:'+key.slice(NS.length)+':',have=skeys(pre).some(function(k){return sget(k)===raw});
+  blocked[key]=have?false:!sset(pre+Date.now(),raw);
+}
+function loadList(key,cleaner){
+  var r=readJSON(key);if(r.v==null&&!r.bad)return [];
+  if(r.bad||!Array.isArray(r.v)){protect(key,r.raw);return []}
+  var out=[];r.v.forEach(function(x){var c=cleaner(x);if(c)out.push(c)});
+  if(out.length!==r.v.length)protect(key,r.raw);return out;
+}
+function saveList(key,arr){
+  if(blocked[key]===true){writeFailed=true;showBanners();return false}
+  var ok=arr.length||/:(weights|foods)$/.test(key)?jset(key,arr):(sdel(key),true);if(ok)delete blocked[key];return ok;
+}
+var meta=(function(){
+  var r=readJSON(NS+'meta'),m=r.v&&typeof r.v==='object'&&!Array.isArray(r.v)?r.v:{};
+  if(r.bad)protect(NS+'meta',r.raw);
+  var ids=(Array.isArray(m.profileIds)?m.profileIds:[]).filter(safeId);
+  skeys(NS+'p:').forEach(function(k){var mm=/^dt:v1:p:([\w-]{1,64}):profile$/.exec(k);if(mm&&ids.indexOf(mm[1])<0)ids.push(mm[1])});
+  ids=ids.filter(function(id,i){return ids.indexOf(id)===i&&!!loadProfile(id)});
+  return {schema:1,profileIds:ids,lastExport:typeof m.lastExport==='number'?m.lastExport:null,
+    activeProfileId:ids.indexOf(m.activeProfileId)>=0?m.activeProfileId:(ids[0]||null)};
+})();
+function pk(pid,what){return NS+'p:'+pid+':'+what}
+/* Profiles saved before meal slots / activityModel 2 are upgraded once (old record backed up first). */
+meta.profileIds.forEach(function(pid){
+  var r=readJSON(pk(pid,'profile'));
+  if(r.v&&typeof r.v==='object'&&(!Array.isArray(r.v.slots)||!(Number(r.v.activityModel)>=2))){var p=loadProfile(pid);if(p&&sset(NS+'backup:profile:'+pid+':'+Date.now(),r.raw))saveProfile(p)}
+});
+function saveMeta(){jset(NS+'meta',meta)}
+function loadProfile(pid){
+  var key=pk(pid,'profile'),r=readJSON(key);if(r.v==null&&!r.bad)return null;
+  var p=r.bad?null:cleanProfile(r.v);if(!p||p.id!==pid){protect(key,r.raw);return null}return p;
+}
+function saveProfile(p){jset(pk(p.id,'profile'),p)}
+function listProfiles(){return meta.profileIds.map(loadProfile).filter(Boolean)}
+function monthsOf(pid){var pre=pk(pid,'entries:');return skeys(pre).map(function(k){return k.slice(pre.length)}).filter(function(m){return /^\d{4}-\d{2}$/.test(m)}).sort()}
+function loadMonth(pid,ym){
+  var key=pk(pid,'entries:'+ym),list=loadList(key,cleanEntry);
+  if(list.some(function(e){return LEGACY[String(e.slot).toLowerCase()]}))list=migrateShard(pid,key,list);
+  return list;
+}
+/* Old entries used fixed slots. Convert in memory always; write back only after the old shard is safely backed up. */
+function migrateShard(pid,key,list){
+  var prof=loadProfile(pid);if(!prof)return list;
+  var raw=sget(key),before=JSON.stringify(prof.slots);
+  migrateEntries(list,prof);
+  if(raw!=null&&sset(NS+'backup:slots:'+key.slice(NS.length)+':'+Date.now(),raw)){
+    if(JSON.stringify(prof.slots)!==before){saveProfile(prof);if(S&&S.profile&&S.profile.id===pid)S.profile=prof}
+    saveList(key,list);
+  }
+  return list;
+}
+function saveMonth(pid,ym,arr){return saveList(pk(pid,'entries:'+ym),arr)}
+function entriesOn(pid,date){return loadMonth(pid,date.slice(0,7)).filter(function(e){return e.date===date}).sort(function(a,b){return a.time<b.time?-1:a.time>b.time?1:0})}
+function putEntry(pid,e){var ym=e.date.slice(0,7),a=loadMonth(pid,ym).filter(function(x){return x.id!==e.id});a.push(e);saveMonth(pid,ym,a)}
+function removeEntry(pid,id,date){var ym=date.slice(0,7),a=loadMonth(pid,ym),f=null;
+  saveMonth(pid,ym,a.filter(function(x){if(x.id===id){f=x;return false}return true}));return f}
+function loadWeights(pid){return loadList(pk(pid,'weights'),cleanWeight).sort(function(x,y){return x.date<y.date?-1:1})}
+function saveWeights(pid,a){saveList(pk(pid,'weights'),a)}
+function loadCustom(pid){return loadList(pk(pid,'foods'),cleanFood)}
+function saveCustom(pid,a){saveList(pk(pid,'foods'),a)}
+function allEntries(pid){var out=[];monthsOf(pid).forEach(function(ym){out=out.concat(loadMonth(pid,ym))});return out}
+
+/* ---------- food database ---------- */
+var FOODS=JSON.parse($('#foods').textContent).map(function(r){
+  var est=!!r[7];
+  var o={id:r[0],name:r[1],per100:{kcal:r[2],p:r[3],c:r[4],f:r[5],fib:r[6]},est:est,group:r[8],alias:r[9]||'',kind:r[12]?'dish':'raw',
+    units:r[10]?r[10].map(function(m){return {label:m[0],grams:m[1]}}):[],pop:!!r[11]};
+  return prep(o);
+});
+function prep(o){var base=o.name.toLowerCase().split('(')[0];o.lc=o.name.toLowerCase();o.base=base.trim();
+  o.words=base.split(/[^a-z0-9]+/).filter(Boolean);o.awords=(o.alias||'').split(/\s+/).filter(Boolean);return o}
+var FOODBYID=Object.create(null);FOODS.forEach(function(f){FOODBYID[f.id]=f});
+function unitKind(label){var l=label.toLowerCase();
+  return /katori/.test(l)?'katori':/glass/.test(l)?'glass':/tbsp/.test(l)?'tbsp':/tsp/.test(l)?'tsp':/cup/.test(l)?'cup':/plate/.test(l)?'plate':'piece'}
+function unitsFor(food){
+  var list=[{kind:'g',label:'g',grams:1}];
+  (food.units||[]).forEach(function(m){var lab=String(m.label).replace(/^1\s+/,'');list.push({kind:unitKind(m.label),label:lab,grams:m.grams})});
+  return list;
+}
+function customToFood(c){return prep({id:c.id,name:c.name,per100:c.per100,est:false,group:'Custom',alias:'',kind:'custom',units:c.units||[],pop:false})}
+/* ---------- shared food store (device-wide, travels in food packs) ---------- */
+var KSF=NS+'sharedfoods',KPM=NS+'packmeta',SFCACHE=null;
+var SF_SOURCES=['custom','openfoodfacts','pack','override'];
+var UNIT_ORDER=['katori','glass','piece','serving','cup','plate','tbsp','tsp'];
+function cleanSharedFood(f){
+  if(!f||typeof f!=='object'||typeof f.id!=='string'||!/^[\w.-]{1,64}$/.test(f.id))return null;
+  var del=f.deleted===true,name=normName(f.name).slice(0,80);
+  if(!name){if(!del)return null;name='(removed food)'}
+  var n=f.per100&&typeof f.per100==='object'?f.per100:{},per={},lim={kcal:900,p:100,c:100,f:100,fib:100};
+  for(var k in lim){var v=n[k];if(typeof v!=='number'||!isFinite(v)||v<0||v>lim[k]){if(del)v=0;else return null}per[k]=v}
+  var units={},cnt=0;
+  if(f.units&&typeof f.units==='object'&&!Array.isArray(f.units))Object.keys(f.units).forEach(function(k){
+    var g=f.units[k];if(cnt<12&&/^[a-z][a-z0-9_]{0,19}$/.test(k)&&typeof g==='number'&&isFinite(g)&&g>=0.1&&g<=5000){units[k]=g;cnt++}});
+  var aliases=(Array.isArray(f.aliases)?f.aliases:[]).filter(function(a){return typeof a==='string'}).map(function(a){return normName(a).slice(0,30)}).filter(Boolean).slice(0,10);
+  var src=SF_SOURCES.indexOf(f.source)>=0?f.source:'pack',ov=null;
+  if(typeof f.overrides==='string'&&f.overrides===f.id&&FOODBYID[f.id])ov=f.id;
+  if(src==='override'&&!ov)src='pack';
+  var out={id:f.id,name:name,aliases:aliases,per100:per,units:units,source:src,updatedAt:numIn(f.updatedAt,0,9e15)?f.updatedAt:0};
+  if(ov)out.overrides=ov;if(del)out.deleted=true;if(f.origin==='pack')out.origin='pack';if(f.check===true)out.check=true;return out;
+}
+function loadShared(){
+  if(SFCACHE)return SFCACHE;
+  var r=readJSON(KSF),m=Object.create(null);
+  if(r.bad||(r.v!=null&&(typeof r.v!=='object'||Array.isArray(r.v)))){protect(KSF,r.raw)}
+  else if(r.v){Object.keys(r.v).forEach(function(k){var c=cleanSharedFood(r.v[k]);if(c&&c.id===k)m[k]=c;else protect(KSF,r.raw)})}
+  SFCACHE=m;return m;
+}
+function saveShared(m){
+  if(blocked[KSF]===true){writeFailed=true;showBanners();return false}
+  var ok=jset(KSF,m);if(ok)SFCACHE=m;return ok;
+}
+function copyShared(){var m=Object.create(null),s=loadShared();Object.keys(s).forEach(function(k){m[k]=s[k]});return m}
+function putShared(food){var m=copyShared();m[food.id]=food;return saveShared(m)}
+/* newer updatedAt wins; tombstones delete; returns counts */
+function mergeSharedInto(m,list){
+  var st={added:0,updated:0,removed:0,older:0};
+  list.forEach(function(c){
+    var cur=m[c.id];
+    if(!cur){m[c.id]=c;if(!c.deleted)st.added++;return}
+    if(c.updatedAt>cur.updatedAt){if(c.deleted&&!cur.deleted)st.removed++;else if(!c.deleted)st.updated++;m[c.id]=c}
+    else st.older++;
+  });
+  return st;
+}
+function sharedList(){var m=loadShared();return Object.keys(m).map(function(k){return m[k]}).filter(function(c){return !c.deleted}).sort(function(a,b){return a.name.toLowerCase()<b.name.toLowerCase()?-1:1})}
+function unitLabel(k,g){var names={katori:'katori',glass:'glass',piece:'piece',tbsp:'tbsp',tsp:'tsp',cup:'cup',plate:'plate',serving:'serving'};return (names[k]||k.replace(/_/g,' '))+' ('+fmt2(g)+' g)'}
+function unitsMapToArr(m){
+  var keys=Object.keys(m||{}).sort(function(a,b){var x=UNIT_ORDER.indexOf(a),y=UNIT_ORDER.indexOf(b);return (x<0?99:x)-(y<0?99:y)||(a<b?-1:1)});
+  return keys.map(function(k){return {label:unitLabel(k,m[k]),grams:m[k]}});
+}
+function unitsArrToMap(arr){
+  var m={};(arr||[]).forEach(function(u){
+    var k=unitKind(u.label);if(k==='piece'&&!/piece|egg|roti|idli|slice|biscuit|pav|samosa|banana|apple|orange|dosa|paratha|puri|chilla|thepla|uttapam|almonds|handful/i.test(u.label)){k=null}
+    if(!k||m[k]){k=String(u.label).toLowerCase().replace(/\(.*$/,'').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').replace(/^\d+_?/,'').slice(0,18);if(!/^[a-z]/.test(k))k='unit'}
+    if(!m[k]&&u.grams>=0.1&&u.grams<=5000)m[k]=u.grams;
+  });
+  return m;
+}
+var SRC_TAG={custom:'My food',override:'My food',openfoodfacts:'Open Food Facts',pack:'Shared pack'};
+function srcTag(c){return c.origin==='pack'?'Shared pack':(SRC_TAG[c.source]||'My food')}
+function sharedToFood(c){
+  return prep({id:c.id,name:c.name,per100:c.per100,est:false,group:srcTag(c),alias:(c.aliases||[]).join(' '),kind:'shared',source:c.source,check:!!c.check,units:unitsMapToArr(c.units),pop:false});
+}
+function allFoods(){
+  var m=loadShared(),out=[],over=Object.create(null);
+  Object.keys(m).forEach(function(k){var c=m[k];if(c.deleted)return;if(c.overrides)over[c.overrides]=1;out.push(sharedToFood(c))});
+  loadCustom(S.profile.id).forEach(function(c){if(!m[c.id])out.push(customToFood(c))});
+  FOODS.forEach(function(f){if(!over[f.id])out.push(f)});
+  return out;
+}
+function findFood(id){
+  var m=loadShared();if(m[id]&&!m[id].deleted)return sharedToFood(m[id]);
+  if(FOODBYID[id])return FOODBYID[id];
+  var c=loadCustom(S.profile.id).filter(function(x){return x.id===id})[0];return c?customToFood(c):null;
+}
+/* Copy per-profile custom foods into the shared list (old keys are left untouched as the backup). */
+function migrateCustom(){
+  var m=copyShared(),n=0;
+  meta.profileIds.forEach(function(pid){loadCustom(pid).forEach(function(c){
+    if(m[c.id])return;var u=unitsArrToMap(c.units);
+    m[c.id]={id:c.id,name:c.name,aliases:[],per100:c.per100,units:u,source:'custom',updatedAt:c.updatedAt||Date.now()};n++})});
+  if(n)saveShared(m);return n;
+}
+function loadPackMeta(){
+  var r=readJSON(KPM).v,o=r&&typeof r==='object'&&!Array.isArray(r)?r:{};
+  var li=o.lastPackImport&&typeof o.lastPackImport==='object'?o.lastPackImport:null;
+  return {packName:normName(o.packName||'My foods').slice(0,40)||'My foods',revision:numIn(o.revision,0,1e9)?Math.floor(o.revision):0,
+    lastPackImport:li?{packName:normName(li.packName||'').slice(0,40),revision:numIn(li.revision,0,1e9)?Math.floor(li.revision):0,exportedAt:typeof li.exportedAt==='string'?li.exportedAt.slice(0,40):''}:null};
+}
+function savePackMeta(m){jset(KPM,m)}
+function recentIds(pid,n){
+  var d=todayStr(),ym=[d.slice(0,7),addDays(d.slice(0,7)+'-01',-1).slice(0,7)],all=[];
+  ym.forEach(function(m){all=all.concat(loadMonth(pid,m))});
+  all.sort(function(a,b){var x=a.date+a.time,y=b.date+b.time;return x<y?1:x>y?-1:0});
+  var seen=Object.create(null),out=[];all.forEach(function(e){if(!seen[e.foodId]&&out.length<n){seen[e.foodId]=1;out.push(e.foodId)}});return out;
+}
+function search(q,pid){
+  var tokens=q.toLowerCase().split(/[^a-z0-9\u0900-\u097f]+/).filter(Boolean),rec=recentIds(pid,30),out=[];
+  allFoods().forEach(function(f){
+    var worst=0,ok=true;
+    for(var i=0;i<tokens.length;i++){var t=tokens[i],tier;
+      if(f.base.indexOf(t)===0)tier=0;
+      else if(f.words.some(function(w){return w.indexOf(t)===0}))tier=1;
+      else if(f.base.indexOf(t)>=0)tier=2;
+      else if(f.awords.some(function(w){return w===t||(t.length>=4&&w.indexOf(t)===0)}))tier=3;
+      else{ok=false;break}
+      if(tier>worst)worst=tier}
+    if(ok)out.push({f:f,k:[(f.kind==='shared'||f.kind==='custom')?0:1,f.kind==='raw'?1:0,f.pop?0:1,worst,rec.indexOf(f.id)>=0?0:1,f.base.length]});
+  });
+  out.sort(function(a,b){for(var i=0;i<6;i++)if(a.k[i]!==b.k[i])return a.k[i]-b.k[i];return a.f.name<b.f.name?-1:1});
+  return out.map(function(x){return x.f});
+}
+
+/* ---------- calculations ---------- */
+function weightOn(pid,p,date){var w=loadWeights(pid),kg=p.startKg;w.forEach(function(x){if(x.date<=date)kg=x.kg});return kg}
+function calc(p,kg,date){
+  var age=ageOn(p.dob,date),bmr=10*kg+6.25*p.heightCm-5*age+(p.sex==='m'?5:-161),tdee=bmr*p.activity;
+  var rate=p.rateKgWk||0.5,delta=p.goal==='lose'?-rate*7700/7:p.goal==='gain'?rate*7700/7:0;
+  var target=tdee+delta,clamped=false,floor=Math.max(bmr,p.sex==='f'?1200:1500);
+  if(delta<0&&target<floor){target=floor;clamped=true}
+  var ov=p.override||{};function has(v,min){return typeof v==='number'&&isFinite(v)&&v>=min}
+  if(has(ov.kcal,1))target=ov.kcal;
+  var P=has(ov.p,0)?ov.p:p.proteinGPerKg*kg,F=has(ov.f,0)?ov.f:target*p.fatPct/100/9;
+  var C=has(ov.c,0)?ov.c:Math.max(0,(target-4*P-9*F)/4);
+  return {age:age,kg:kg,bmr:bmr,tdee:tdee,delta:delta,target:target,clamped:clamped,floor:floor,p:P,c:C,f:F};
+}
+function nut(e){var g=e.grams/100,n=e.per100;return {kcal:n.kcal*g,p:n.p*g,c:n.c*g,f:n.f*g,fib:n.fib*g}}
+function sumEntries(list){var t={kcal:0,p:0,c:0,f:0,fib:0};list.forEach(function(e){var n=nut(e);for(var k in t)t[k]+=n[k]});return t}
+function dayInfo(p,date){var ents=entriesOn(p.id,date),tot=sumEntries(ents),c=calc(p,weightOn(p.id,p,date),date);return {ents:ents,tot:tot,c:c}}
+
+/* ---------- state ---------- */
+var S={myFoods:null,tab:'today',profile:meta.activeProfileId?loadProfile(meta.activeProfileId):null,today:todayStr(),viewDate:todayStr(),add:null,range:30,newPerson:false,importState:null,exportedSinceDelete:false,persisted:null};
+function setProfile(pid){meta.activeProfileId=pid;saveMeta();S.profile=loadProfile(pid);S.viewDate=S.today;S.add=null;S.importState=null;S.exportedSinceDelete=false}
+
+/* ---------- toast / banners ---------- */
+var toastTimer=null;
+function toast(msg,undoLabel,undoFn){
+  var box=$('#toasts');box.replaceChildren();clearTimeout(toastTimer);
+  var t=h('div',{class:'toast'},h('span',{text:msg}));
+  if(undoFn)t.appendChild(h('button',{type:'button',text:undoLabel||'Undo',onclick:function(){box.replaceChildren();clearTimeout(toastTimer);undoFn()}}));
+  box.appendChild(t);toastTimer=setTimeout(function(){box.replaceChildren()},undoFn?7000:3500);
+}
+var SAVE_NOTICE='Save this file to your phone (Downloads) and open it in Chrome or Safari, not inside WhatsApp or Gmail, otherwise your log may not be saved.';
+function showBanners(){
+  if(!S)return;
+  var b=$('#banners');b.replaceChildren();
+  if(!storageOK)b.appendChild(h('div',{class:'banner error',role:'alert',id:'storage-banner'},h('b',{text:'Your data cannot be saved. '}),SAVE_NOTICE+' This browser is blocking storage for this file, so everything will be lost when you close the page.'));
+  else if(!S.profile&&sget(NS+'notice1')!=='1'){
+    var n=h('div',{class:'banner info',id:'save-notice'},h('p',{style:'margin:0 0 6px',text:SAVE_NOTICE}),
+      h('button',{type:'button',class:'btn sm',text:'Got it',onclick:function(){sset(NS+'notice1','1');n.remove()}}));
+    b.appendChild(n);
+  }
+  if(writeFailed)b.appendChild(h('div',{class:'banner error',role:'alert'},'The last change could not be saved (storage may be full, or a damaged record is being protected). Export a backup now.'));
+  if(S.profile&&storageOK){
+    var ref=meta.lastExport||S.profile.createdAt||Date.now();
+    if(Date.now()-ref>7*864e5&&allEntries(S.profile.id).length)
+      b.appendChild(h('div',{class:'banner info'},'Time for a backup: last export was more than 7 days ago. ',h('button',{type:'button',class:'btn sm',onclick:function(){setTab('profile')},text:'Go to backup'})));
+  }
+}
+
+/* ---------- navigation / render ---------- */
+var TABS=[['today','Today','<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'],['add','Add food','<path d="M12 5v14M5 12h14"/>'],['history','History','<path d="M4 6h16M4 12h16M4 18h10"/>'],['weight','Weight','<path d="M3 17l6-6 4 4 8-9"/>'],['profile','Profile','<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>']];
+function buildTabs(){
+  var bar=$('#tabs');bar.replaceChildren();
+  TABS.forEach(function(t){
+    var svg=s('svg',{viewBox:'0 0 24 24','aria-hidden':'true'});
+    var tmp=new DOMParser().parseFromString('<svg xmlns="'+NSV+'">'+t[2]+'</svg>','image/svg+xml').documentElement;
+    Array.prototype.slice.call(tmp.childNodes).forEach(function(n){svg.appendChild(document.importNode(n,true))});
+    var off=!S.profile&&t[0]!=='profile';
+    var b=h('button',{type:'button','data-tab':t[0],'aria-current':S.tab===t[0]?'page':null,disabled:off,title:off?'Create your profile first':null,onclick:function(){if(t[0]==='add'){S.add=null}S.myFoods=null;setTab(t[0])}},svg,h('span',{text:t[1]}));
+    bar.appendChild(b);
+  });
+}
+function setTab(t){
+  if(!S.profile&&t!=='profile')t='profile';
+  S.tab=t;render(true);
+}
+function render(focusHeading){
+  var root=$('#view');
+  try{
+    showBanners();buildTabs();
+    root.replaceChildren();
+    if(!S.profile&&S.tab!=='profile')S.tab='profile';
+    (S.tab==='profile'&&S.myFoods&&S.profile?viewMyFoods:({today:viewToday,add:viewAdd,history:viewHistory,weight:viewWeight,profile:viewProfile})[S.tab])(root);
+    updateCredit();
+  }catch(err){
+    root.replaceChildren(h('section',{class:'card',role:'alert',id:'crash'},h('h1',{text:'Something went wrong'}),
+      h('p',{text:'This screen could not be shown. Your saved data has not been changed. You can download a raw copy of everything stored by this app, then reload.'}),
+      h('p',{class:'muted small',text:String(err&&err.message||err).slice(0,200)}),
+      h('div',{class:'row'},h('button',{type:'button',class:'btn primary',id:'export-raw',text:'Export raw data',onclick:exportRaw}),
+        h('button',{type:'button',class:'btn',text:'Reload',onclick:function(){location.reload()}}))));
+    try{buildTabs()}catch(e2){}
+    return;
+  }
+  if(focusHeading){var hd=root.querySelector('h1');if(hd){hd.setAttribute('tabindex','-1');hd.focus({preventScroll:true});window.scrollTo(0,0)}}
+}
+function exportRaw(){
+  var o={app:'diet-tracker-raw',exportedAt:new Date().toISOString(),keys:{}};
+  skeys(NS).forEach(function(k){o.keys[k]=sget(k)});download(o,'diet-tracker-raw-'+todayStr()+'.json');
+}
+
+function personSwitcher(){
+  var ps=listProfiles();if(ps.length<2)return null;
+  var sel=h('select',{'aria-label':'Person',onchange:function(){setProfile(sel.value);render(true)}});
+  ps.forEach(function(p){sel.appendChild(h('option',{value:p.id,text:p.name,selected:p.id===S.profile.id}))});
+  return h('div',{style:'max-width:180px'},sel);
+}
+
+/* ---------- TODAY ---------- */
+function ringSvg(eaten,target){
+  var R=54,C=2*Math.PI*R,frac=Math.max(0,Math.min(1,eaten/target));
+  return s('svg',{class:'ring',viewBox:'0 0 140 140','aria-hidden':'true'},
+    s('circle',{cx:70,cy:70,r:R,fill:'none','stroke-width':12,class:'ring-track'}),
+    s('circle',{cx:70,cy:70,r:R,fill:'none','stroke-width':12,class:'ring-val'+(eaten>target?' over':''),'stroke-dasharray':(frac*C)+' '+C,'stroke-linecap':'round',transform:'rotate(-90 70 70)'}),
+    s('text',{x:70,y:72,'font-size':26,'font-weight':700,text:String(r0(eaten))}),
+    s('text',{x:70,y:92,'font-size':12,text:'kcal eaten'}));
+}
+function macroRow(label,id,val,goal){
+  var over=goal>0&&val>goal*1.0001&&label!=='Protein';
+  return h('div',{class:'macro'+(over?' over':'')},
+    h('div',{class:'row between'},h('span',{text:label}),h('span',{id:id,text:r0(val)+' / '+r0(goal)+' g'+(over?' (over)':'')})),
+    h('div',{class:'bar','aria-hidden':'true'},h('i',{style:'width:'+Math.min(100,goal>0?val/goal*100:0)+'%'})));
+}
+var openEditor=null;
+function viewToday(root){
+  openEditor=null;
+  var p=S.profile,d=S.viewDate,info=dayInfo(p,d),c=info.c,tot=info.tot,eaten=tot.kcal;
+  var isToday=d===S.today;
+  root.appendChild(h('div',{class:'row between'},h('h1',{text:isToday?'Today':fmtDate(d)}),personSwitcher()));
+  root.appendChild(h('p',{class:'muted small',text:p.name+' - '+fmtDateLong(d)}));
+  /* one-time notice for profiles moved to the new activity scale */
+  var an=p.activityNote;
+  if(an&&!an.dismissed&&an.from!==an.to){
+    var kgN=weightOn(p.id,p,d),cOld=calc(Object.assign({},p,{activity:an.from}),kgN,d),cNew=calc(p,kgN,d);
+    var tgtTxt=r0(cOld.target)===r0(cNew.target)?'your target stays at '+r0(cNew.target)+' kcal':'your target from '+r0(cOld.target)+' to '+r0(cNew.target)+' kcal';
+    var nb=h('div',{class:'banner info',id:'activity-notice',role:'note'},
+      h('p',{style:'margin:0 0 6px',text:'We made the daily burn estimate more realistic. Your daily burn changed from '+r0(cOld.tdee)+' to '+r0(cNew.tdee)+' kcal and '+tgtTxt+'. If you work out 5+ times a week, choose Very active in Profile.'}),
+      h('button',{type:'button',class:'btn sm',id:'activity-notice-ok',text:'Got it',onclick:function(){var np=Object.assign({},S.profile,{activityNote:Object.assign({},an,{dismissed:true}),updatedAt:Date.now()});saveProfile(np);S.profile=np;nb.remove()}}));
+    root.appendChild(nb);
+  }
+  /* date nav */
+  var di=h('input',{type:'date','aria-label':'Go to date',value:d,max:S.today,onchange:function(){if(isDate(di.value)&&di.value<=S.today){S.viewDate=di.value;render()}}});
+  root.appendChild(h('div',{class:'card'},
+    h('div',{class:'row'},
+      h('button',{type:'button',class:'btn','aria-label':'Previous day',text:'\u2039',onclick:function(){S.viewDate=addDays(d,-1);render()}}),
+      h('div',{class:'grow'},di),
+      h('button',{type:'button',class:'btn','aria-label':'Next day',text:'\u203a',disabled:isToday,onclick:function(){S.viewDate=addDays(d,1);render()}})),
+    dateStrip(d)));
+  /* summary */
+  var left=c.target-eaten,def=c.tdee-eaten,note=targetNote(c,p);
+  var dl=h('dl',{class:'kv',id:'totals','aria-live':'polite','aria-atomic':'true'},
+    kv('Daily target','t-target',r0(c.target)+' kcal'),
+    kv(left>=0?'Left to eat today':'Over target by','t-remaining',r0(Math.abs(left))+' kcal',left<0),
+    kv('Calories you burn per day','t-tdee',r0(c.tdee)+' kcal'),
+    kv('Eaten vs what you burn (deficit)','t-deficit',r0(Math.abs(def))+' kcal '+(def>=0?'under':'over'),def<0));
+  root.appendChild(h('section',{class:'card','aria-label':'Daily totals'},h('div',{class:'sum'},ringSvg(eaten,c.target),dl),
+    h('p',{class:'small muted',id:'deficit-help',text:isToday?'The day is not over yet, so this number shrinks as you eat. A deficit means you have eaten less than you burn per day.':'A deficit means you ate less than you burn per day.'}),
+    h('p',{class:'sr-only',id:'t-kcal',text:r0(eaten)}),
+    noteEl(note),
+    h('div',{style:'margin-top:8px'},macroRow('Protein','t-p',tot.p,c.p),macroRow('Carbs','t-c',tot.c,c.c),macroRow('Fat','t-f',tot.f,c.f)),
+    h('p',{class:'small muted'},'Fibre today: '+r1(tot.fib)+' g')));
+  root.appendChild(h('button',{type:'button',class:'btn primary',style:'width:100%;margin-bottom:12px',text:'+ Add food',onclick:function(){S.add=newAddCtx({date:d});S.tab='add';render(true)}}));
+  /* meals: slots with entries are shown (entries sorted by time); empty slots collapse into one row of "Add to" chips */
+  var bySlot={},order=[];
+  info.ents.forEach(function(e){if(!bySlot[e.slot]){bySlot[e.slot]=[];order.push(e.slot)}bySlot[e.slot].push(e)});
+  var liveIds=p.slots.map(function(s){return s.id});
+  var groups=[];
+  p.slots.forEach(function(s){if(bySlot[s.id])groups.push({id:s.id,name:s.name,list:bySlot[s.id]})});
+  order.forEach(function(id){if(liveIds.indexOf(id)<0)groups.push({id:id,name:slotNameOf(p,bySlot[id][0]),list:bySlot[id],removed:true})});
+  groups.forEach(function(g){
+    var list=g.list,sub=sumEntries(list).kcal;
+    var card=h('section',{class:'card slot','aria-label':g.name,'data-slot':g.id},
+      h('h3',null,h('span',{text:g.name}),h('span',{text:r0(sub)+' kcal'})));
+    var ul=h('ul',{class:'plain'});
+    list.forEach(function(e){
+      var n=nut(e),cur=e.time;
+      var li=h('li',{class:'entry col','data-time':e.time});
+      var tt=h('span',{class:'time-text',text:fmt12(e.time)});
+      var bot=h('div',{class:'bot'}),box=h('div',{class:'tpbox',hidden:true});
+      var editBtn=h('button',{type:'button',class:'btn sm time-edit-btn','aria-label':'Edit time for '+e.foodName+', currently '+fmt12(e.time),text:'Edit time',onclick:open});
+      function place(){
+        Array.prototype.slice.call(ul.children).sort(function(x,y){var a1=x.getAttribute('data-time'),b1=y.getAttribute('data-time');return a1<b1?-1:a1>b1?1:0}).forEach(function(x){ul.appendChild(x)});
+      }
+      function closeBox(refocus){box.hidden=true;box.replaceChildren();bot.hidden=false;if(openEditor===closeBox)openEditor=null;if(refocus!==false)editBtn.focus()}
+      function open(){
+        if(openEditor&&openEditor!==closeBox)openEditor(false);
+        openEditor=closeBox;
+        bot.hidden=true;box.hidden=false;box.replaceChildren();
+        var tp=timePicker({value:cur,label:'Time for '+e.foodName,idPrefix:'q',onEnter:done,onEscape:function(){closeBox()}});
+        function done(){
+          var v=tp.get();if(!v){tp.validate();return}
+          if(v!==cur){
+            var rec=loadMonth(p.id,e.date.slice(0,7)).filter(function(x){return x.id===e.id})[0];
+            if(rec){rec.time=v;rec.updatedAt=Date.now();putEntry(p.id,rec);cur=v;tt.textContent=fmt12(v);li.setAttribute('data-time',v);
+              editBtn.setAttribute('aria-label','Edit time for '+e.foodName+', currently '+fmt12(v));place();toast('Time saved: '+fmt12(v))}
+          }
+          closeBox();
+        }
+        box.appendChild(tp.el);
+        box.appendChild(h('div',{class:'row',style:'margin-top:8px'},h('button',{type:'button',class:'btn primary',id:'q-done',text:'Done',onclick:done}),h('button',{type:'button',class:'btn',id:'q-cancel',text:'Cancel',onclick:function(){closeBox()}})));
+        tp.focus();
+      }
+      li.appendChild(h('div',{class:'top'},h('b',{text:e.foodName}),h('span',{class:'kc',text:r0(n.kcal)+' kcal'})));
+      li.appendChild(h('div',{class:'muted small'},tt,' - '+fmtQty(e.qty)+' \u00d7 '+shortUnit(e)+(e.unit==='g'?'':' ('+r0(e.grams)+' g)')+' - P '+r1(n.p)+' / C '+r1(n.c)+' / F '+r1(n.f)+' g'));
+      bot.appendChild(editBtn);
+      bot.appendChild(h('button',{type:'button',class:'btn sm','aria-label':'Edit '+e.foodName,text:'Edit',onclick:function(){S.add=newAddCtx({entry:e});S.tab='add';render(true)}}));
+      bot.appendChild(h('button',{type:'button',class:'btn sm danger','aria-label':'Delete '+e.foodName,text:'Delete',onclick:function(){
+          var gone=removeEntry(p.id,e.id,e.date);render();
+          toast('Deleted '+e.foodName,'Undo',function(){if(gone){putEntry(p.id,gone);render()}});}}));
+      li.appendChild(bot);li.appendChild(box);
+      ul.appendChild(li);
+    });
+    card.appendChild(ul);
+    if(!g.removed)card.appendChild(h('button',{type:'button',class:'btn sm',style:'margin-top:6px',text:'Add to '+g.name,onclick:function(){S.add=newAddCtx({date:d,slot:g.id});S.tab='add';render(true)}}));
+    root.appendChild(card);
+  });
+  var empty=p.slots.filter(function(s){return !bySlot[s.id]});
+  if(empty.length){
+    var chips=h('div',{class:'chips',role:'group','aria-label':'Add food to a meal'});
+    empty.forEach(function(s){chips.appendChild(h('button',{type:'button',class:'chip','data-add-slot':s.id,text:'Add to '+s.name,onclick:function(){S.add=newAddCtx({date:d,slot:s.id});S.tab='add';render(true)}}))});
+    root.appendChild(h('section',{class:'card',id:'empty-slots'},h('h3',{style:'margin-bottom:8px',text:groups.length?'Other meals':'Log a meal'}),chips));
+  }
+  root.appendChild(weekChart(p,d));
+}
+function targetNote(c,p){
+  var ov=p.override||{};
+  if(typeof ov.kcal==='number'&&ov.kcal>0){
+    if(ov.kcal<c.floor)return {warn:true,text:'Your own target ('+r0(ov.kcal)+' kcal) is below the usual safe minimum of about '+r0(c.floor)+' kcal (your resting burn, and at least 1200 kcal for women or 1500 kcal for men). Eating this little for a long time can be harmful, so please check with a doctor or dietitian.'};
+    return null;
+  }
+  if(c.clamped){
+    var pace=(c.tdee-c.target)*7/7700,paceTxt=pace>=0.01?' At this target you\'d lose about '+(Math.round(pace*100)/100)+' kg a week.':' At this target you would not lose weight.';
+    return {text:'Your target was raised to a safe minimum of '+r0(c.floor)+' kcal (never below your resting burn, 1200 kcal for women or 1500 kcal for men).'+(p.goal==='lose'?paceTxt:'')};
+  }
+  return null;
+}
+function noteEl(n){return n?h('p',{class:'small'+(n.warn?' err':' muted'),id:'target-note',role:n.warn?'alert':null,text:n.text}):null}
+function kv(label,id,val,bad){return h('div',null,h('dt',{text:label}),h('dd',{id:id,class:bad?'bad':null,text:val}))}
+function fmtQty(q){return String(Math.round(q*100)/100)}
+function shortUnit(e){return (e.unitLabel||e.unit||'g').replace(/\s*\(.*$/,'')}
+function dateStrip(sel){
+  var end=addDays(sel,2);if(end>S.today)end=S.today;
+  var wrap=h('div',{class:'strip',role:'group','aria-label':'Pick a day'});
+  for(var i=4;i>=0;i--){(function(day){
+    var dt=parseD(day);
+    wrap.appendChild(h('button',{type:'button','aria-pressed':day===sel?'true':'false','aria-label':fmtDate(day),onclick:function(){S.viewDate=day;render()}},
+      h('span',{text:dt.toLocaleDateString(undefined,{weekday:'short'})}),h('b',{text:String(dt.getDate())})));
+  })(addDays(end,-i))}
+  return wrap;
+}
+function weekChart(p,endDate){
+  var days=[],i;for(i=6;i>=0;i--)days.push(addDays(endDate,-i));
+  var data=days.map(function(d){var x=dayInfo(p,d);return {d:d,kcal:x.tot.kcal,target:x.c.target}});
+  var tgt=data[data.length-1].target,max=Math.max(tgt,Math.max.apply(null,data.map(function(x){return x.kcal})))*1.15;
+  var W=340,H=170,L=8,B=28,T=18,bw=(W-L*2)/7,sv=s('svg',{class:'chart',viewBox:'0 0 '+W+' '+H,role:'img','aria-label':'Calories per day for the 7 days ending '+fmtDate(endDate)+'. Target '+r0(tgt)+' kcal.'});
+  function y(v){return T+(H-T-B)*(1-v/max)}
+  data.forEach(function(x,k){
+    var bx=L+k*bw+bw*0.18,w=bw*0.64,top=y(x.kcal);
+    sv.appendChild(s('rect',{class:'bar'+(x.kcal>x.target?' over':''),x:bx,y:top,width:w,height:Math.max(0,H-B-top),rx:3}));
+    sv.appendChild(s('text',{x:bx+w/2,y:Math.max(11,top-3),'text-anchor':'middle',text:x.kcal?String(r0(x.kcal)):''}));
+    sv.appendChild(s('text',{x:bx+w/2,y:H-10,'text-anchor':'middle',text:parseD(x.d).toLocaleDateString(undefined,{weekday:'short'})}));
+  });
+  sv.appendChild(s('line',{class:'tl',x1:L,x2:W-L,y1:y(tgt),y2:y(tgt)}));
+  sv.appendChild(s('text',{x:W-L,y:y(tgt)-4,'text-anchor':'end',text:'Target '+r0(tgt)}));
+  var tb=h('table',{class:'sr-only'},h('caption',{text:'Calories per day'}),h('tr',null,h('th',{text:'Day'}),h('th',{text:'kcal'}),h('th',{text:'Target'}),h('th',{text:'Status'})));
+  data.forEach(function(x){tb.appendChild(h('tr',null,h('td',{text:x.d}),h('td',{text:String(r0(x.kcal))}),h('td',{text:String(r0(x.target))}),h('td',{text:x.kcal>x.target?'over target':'within target'})))});
+  return h('section',{class:'card'},h('h2',{text:'Last 7 days'}),sv,tb,h('p',{class:'small muted',text:'Dashed line is your target. Red bars are over target.'}));
+}
+
+/* ---------- ADD FOOD ---------- */
+function newAddCtx(o){
+  o=o||{};var e=o.entry;
+  if(e){var base=findFood(e.foodId)||{id:e.foodId,kind:'custom',est:false,units:[{label:e.unitLabel,grams:e.unitG}],group:'',alias:''};
+    /* editing keeps the nutrition snapshot stored on the entry, not today's database values */
+    var f=Object.assign({},base,{id:e.foodId,name:e.foodName,per100:e.per100});
+    var us=unitsFor(f),u=us.filter(function(x){return x.kind===e.unit&&x.label===(e.unitLabel||x.label)})[0];
+    if(!u)u={kind:e.unit,label:e.unitLabel||e.unit,grams:e.unitG||1};
+    return {editId:e.id,editDate:e.date,food:f,unit:u,qty:e.qty,date:e.date,time:e.time,slot:e.slot,slotName:e.slotName,query:'',mode:'form',createdAt:e.createdAt};}
+  var t=o.date&&o.date!==S.today?'12:00':nowTime();
+  return {editId:null,food:null,unit:null,qty:1,date:o.date||S.viewDate,time:t,slot:o.slot||nextSlotId(S.profile,o.date||S.viewDate),query:'',mode:'search'};
+}
+function selectFood(ctx,f){
+  ctx.pendingShared=null;ctx.food=f;var us=unitsFor(f);
+  ctx.unit=us.length>1?us[1]:us[0];ctx.qty=ctx.unit.kind==='g'?100:1;
+}
+function viewAdd(root){
+  if(!S.add)S.add=newAddCtx({date:S.viewDate});
+  var ctx=S.add;
+  root.appendChild(h('div',{class:'row between'},h('h1',{text:ctx.editId?'Edit entry':'Add food'}),personSwitcher()));
+  if(ctx.mode==='custom')return addCustom(root,ctx);
+  if(!ctx.food)return addSearch(root,ctx);
+  addForm(root,ctx);
+}
+function foodLine(f,extra){
+  var tag=f.kind==='dish'?(f.est?h('span',{class:'tag',text:'estimate'}):h('span',{class:'tag alt',text:'IFCT'})):
+    (f.kind==='shared'||f.kind==='custom')?h('span',{class:'tag alt',text:f.kind==='custom'?'My food':f.group}):h('span',{class:'tag alt',text:'raw ingredient'});
+  return h('span',null,h('b',{text:f.name}),' ',tag,f.check?h('span',null,' ',h('span',{class:'tag',text:'check values'})):null,extra||null,
+    h('span',{class:'muted small',style:'display:block',text:r0(f.per100.kcal)+' kcal per 100 g - '+f.group}));
+}
+function addSearch(root,ctx){
+  var results=h('div',{id:'results'}),status=h('p',{class:'sr-only',role:'status','aria-live':'polite'});
+  var offOut=h('div',{id:'off-out','aria-live':'polite'}),cur=null,slowTimer=null,offBtns=[];
+  var inp=h('input',{type:'search',id:'q',autocomplete:'off',value:ctx.query,placeholder:'e.g. roti, dal, ghee, banana',oninput:function(){ctx.query=inp.value;fill()},
+    onkeydown:function(ev){if(ev.key==='Enter'){var b=results.querySelector('button.result');if(b){ev.preventDefault();b.click()}}}});
+  function mkBtn(id,label,cls){var b=h('button',{type:'button',class:cls,id:id,text:label,'data-label':label,onclick:startOff});offBtns.push(b);return b}
+  var topBtn=mkBtn('off-search-top','Search online','btn sm'),botBtn=mkBtn('off-search',"Can't find it? Search online",'btn');
+  var topRow=h('div',{id:'off-top',class:'row',style:'margin-top:8px',hidden:true},topBtn,h('span',{class:'muted small',id:'off-notice-top',text:'Your search words are sent to openfoodfacts.org.'}));
+  function fill(){
+    topRow.hidden=ctx.query.trim().length<2;
+    results.replaceChildren();var q=ctx.query.trim(),list,title;
+    if(q){list=search(q,S.profile.id);title=null}
+    else{var rec=recentIds(S.profile.id,8).map(findFood).filter(Boolean);list=rec.length?rec:FOODS.filter(function(f){return f.kind==='dish'}).slice(0,12);title=rec.length?'Recent foods':'Common dishes'}
+    status.textContent=q?list.length+' foods found':'';
+    if(title)results.appendChild(h('p',{class:'muted small',text:title}));
+    list.slice(0,40).forEach(function(f){results.appendChild(h('button',{type:'button',class:'result',onclick:function(){selectFood(ctx,f);render(true)}},foodLine(f)))});
+    if(q&&!list.length)results.appendChild(h('p',{class:'muted',text:'No match in your list. You can search online or add it as a custom food below.'}));
+    else if(q&&list.length<4)results.appendChild(h('p',{class:'muted small',text:'Only a few matches. Try the online search.'}));
+    if(list.length>40)results.appendChild(h('p',{class:'muted small',text:'Showing 40 of '+list.length+'. Type more letters to narrow down.'}));
+  }
+  function busy(on){offBtns.forEach(function(b){b.disabled=on;b.textContent=on?'Search online (wait a few seconds)':b.getAttribute('data-label')})}
+  function startOff(){
+    var q=ctx.query.trim();offOut.replaceChildren();clearTimeout(slowTimer);
+    if(q.length<2){offOut.appendChild(h('p',{class:'err',role:'alert',text:'Type what you want to find first (at least 2 letters).'}));return}
+    if(typeof navigator!=='undefined'&&navigator.onLine===false){offOut.appendChild(h('p',{class:'err',role:'alert',id:'off-msg',text:'You seem to be offline. Online search needs the internet; you can still add the food as a custom food.'}));return}
+    var handle={cancelled:false,ctl:null,done:false};cur=handle;busy(true);
+    setTimeout(function(){if(botBtn.isConnected)busy(false)},OFF_COOLDOWN);
+    offOut.appendChild(h('p',{class:'muted',id:'off-msg',role:'status',text:'Searching Open Food Facts...'}));
+    slowTimer=setTimeout(function(){
+      if(cur!==handle||handle.done||!offOut.isConnected)return;
+      offOut.replaceChildren(h('div',{class:'row',id:'off-slow'},h('span',{class:'muted',id:'off-msg',role:'status',text:'Still searching... this can take a while.'}),
+        h('button',{type:'button',class:'btn sm',id:'off-cancel',text:'Cancel',onclick:function(){handle.cancelled=true;try{if(handle.ctl)handle.ctl.abort()}catch(e){}offOut.replaceChildren(h('p',{class:'muted',id:'off-msg',role:'status',text:'Search cancelled.'}))}})));
+    },OFF_SLOW);
+    offSearch(q,handle).then(function(r){clearTimeout(slowTimer);handle.done=true;if(cur!==handle||handle.cancelled||!offOut.isConnected)return;offShow(r,q)});
+  }
+  function offShow(r,q){
+    offOut.replaceChildren();
+    if(r.status==='rate'){offOut.appendChild(h('p',{class:'err',role:'alert',id:'off-msg',text:'Too many searches. Please wait a minute and try again.'}));return}
+    if(r.status!=='ok'){offOut.appendChild(h('p',{class:'err',role:'alert',id:'off-msg',text:'Could not reach Open Food Facts. You may be offline, or the site blocked this request. You can still add the food yourself with "Add a custom food".'}));return}
+    if(!r.items.length){offOut.appendChild(h('p',{class:'muted',id:'off-msg',role:'status',text:'No usable matches online for "'+q+'" (foods with missing or odd values are hidden). Try other words, or add a custom food.'}));return}
+    offOut.appendChild(h('p',{class:'muted small',id:'off-msg',role:'status',text:r.items.length+' online matches from Open Food Facts (values per 100 g, entered by volunteers: please check them).'}));
+    r.items.forEach(function(it){
+      var tags=[h('span',{class:'tag alt',text:'Open Food Facts'})];if(it.flag)tags.push(' ',h('span',{class:'tag',text:'check values'}));
+      offOut.appendChild(h('button',{type:'button',class:'result off-result',onclick:function(){
+        var ex=loadShared()['off_'+it.code];
+        if(ex&&!ex.deleted){selectFood(ctx,sharedToFood(ex))}
+        else{
+          /* not saved yet: it is stored in My foods only when the log entry is saved (or via "Save to my foods") */
+          var rec={id:'off_'+it.code,name:it.name,aliases:it.brand?[it.brand]:[],per100:it.per100,units:it.serving?{serving:it.serving}:{},source:'openfoodfacts',updatedAt:Date.now()};
+          if(it.flag)rec.check=true;
+          selectFood(ctx,sharedToFood(rec));ctx.pendingShared=rec;
+        }
+        render(true)}},
+        h('span',null,h('b',{text:it.name}),' ',tags),
+        h('span',{class:'muted small',style:'display:block',text:r0(it.per100.kcal)+' kcal - P '+r1(it.per100.p)+' / C '+r1(it.per100.c)+' / F '+r1(it.per100.f)+' g per 100 g'})));
+    });
+  }
+  root.appendChild(h('div',{class:'card'},h('label',{for:'q',style:'margin-top:0'},'Search food'),inp,topRow,offOut,status,results,
+    h('div',{style:'margin-top:10px'},botBtn,h('p',{class:'muted small',id:'off-notice',text:'Your search words are sent to openfoodfacts.org.'})),
+    h('button',{type:'button',class:'btn',style:'margin-top:10px',id:'custom-food-btn',text:'Add a custom food',onclick:function(){ctx.mode='custom';render(true)}})));
+  fill();
+}
+/* ---------- Open Food Facts (opt-in) ---------- */
+function offNum(v){if(v===null||v===undefined||v==='')return NaN;var x=typeof v==='number'?v:parseFloat(String(v).replace(',','.'));return isFinite(x)?x:NaN}
+function offNorm(p){
+  if(!p||typeof p!=='object')return null;
+  var code=String(p.code==null?'':p.code).trim();if(!/^[A-Za-z0-9]{3,30}$/.test(code))return null;
+  var name=normName(p.product_name||p.product_name_en||'').slice(0,80);if(!name)return null;
+  var brand=normName(String(p.brands||'').split(',')[0]).slice(0,30),n=p.nutriments;if(!n||typeof n!=='object')return null;
+  var kcal=offNum(n['energy-kcal_100g']);if(isNaN(kcal)){var kj=offNum(n['energy_100g']);if(isNaN(kj))kj=offNum(n['energy-kj_100g']);kcal=isNaN(kj)?NaN:kj/4.184}
+  var P=offNum(n['proteins_100g']),C=offNum(n['carbohydrates_100g']),F=offNum(n['fat_100g']),B=offNum(n['fiber_100g']);if(isNaN(B))B=0;
+  if([kcal,P,C,F].some(isNaN)||kcal<0||kcal>900||P<0||C<0||F<0||B<0||P+C+F>100.5||B>100)return null;
+  var atw=4*P+4*C+9*F,flag=Math.abs(atw-kcal)>0.3*Math.max(kcal,10);
+  var sv=offNum(p.serving_quantity);if(!(sv>0&&sv<=5000))sv=0;
+  var rd=function(x){return Math.round(x*10)/10};
+  /* show the brand once: only add it when the product name does not already contain it */
+  var full=brand&&name.toLowerCase().indexOf(brand.toLowerCase())<0&&(name+' ('+brand+')').length<=80?name+' ('+brand+')':name;
+  return {code:code,name:full,brand:brand,per100:{kcal:rd(kcal),p:rd(P),c:rd(C),f:rd(F),fib:rd(B)},serving:sv?rd(sv):0,flag:flag};
+}
+function offFetch(url,handle){
+  return new Promise(function(resolve){
+    if(handle&&handle.cancelled){resolve({status:'cancelled'});return}
+    var ctl=typeof AbortController!=='undefined'?new AbortController():null,done=false;if(handle)handle.ctl=ctl;
+    function finish(r){if(done)return;done=true;clearTimeout(timer);resolve(r)}
+    var timer=setTimeout(function(){try{if(ctl)ctl.abort()}catch(e){}finish({status:'fail'})},OFF_TIMEOUT);
+    try{
+      fetch(url,{signal:ctl?ctl.signal:undefined,credentials:'omit',referrerPolicy:'no-referrer'}).then(function(resp){
+        if(resp.status===429){finish({status:'rate'});return}   /* only 429 means "too many searches"; 5xx are plain failures */
+        if(!resp.ok){finish({status:'fail'});return}
+        return resp.text().then(function(txt){
+          var d;try{d=JSON.parse(txt)}catch(e){finish({status:'fail'});return}
+          var arr=d&&Array.isArray(d.products)?d.products:d&&Array.isArray(d.hits)?d.hits:Array.isArray(d)?d:null;
+          if(!arr){finish({status:'fail'});return}
+          var seen=Object.create(null),items=[];arr.slice(0,100).forEach(function(x){var it=offNorm(x);if(it&&!seen[it.code]){seen[it.code]=1;items.push(it)}});
+          finish({status:'ok',items:items.slice(0,20)});
+        });
+      }).catch(function(){finish(handle&&handle.cancelled?{status:'cancelled'}:{status:'fail'})});
+    }catch(e){finish({status:'fail'})}
+  });
+}
+function offSearch(q,handle){
+  var qs=encodeURIComponent(q),f=encodeURIComponent(OFF_FIELDS);
+  var u1=OFF_PRIMARY+'?search_terms='+qs+'&search_simple=1&action=process&json=1&page_size=20&fields='+f;
+  var u2=OFF_FALLBACK+'?q='+qs+'&page_size=20&fields='+f;
+  return offFetch(u1,handle).then(function(r1){
+    if(r1.status==='cancelled'||r1.status==='rate'||(r1.status==='ok'&&r1.items.length))return r1;
+    return offFetch(u2,handle).then(function(r2){
+      if(r2.status==='cancelled'||r2.status==='rate'||r2.status==='ok')return r2.status==='ok'&&!r2.items.length&&r1.status==='ok'?r1:r2;
+      return r1.status==='ok'?r1:{status:'fail'};
+    });
+  });
+}
+function addForm(root,ctx){
+  var f=ctx.food,units=unitsFor(f),err=h('p',{class:'err',role:'alert'}),prev=h('div',{id:'preview','aria-live':'polite'});
+  function pendingBox(){
+    var box=h('div',{id:'pending-box',class:'small muted',style:'margin-top:6px'},h('span',{text:'Not saved to My foods yet (it is saved when you add this entry). '}),
+      h('button',{type:'button',class:'btn sm',id:'save-to-myfoods',text:'Save to my foods',onclick:function(){
+        if(ctx.pendingShared&&putShared(ctx.pendingShared)){ctx.pendingShared=null;box.replaceChildren(h('span',{text:'Saved to My foods.'}));toast('Saved to My foods')}}}));
+    return box;
+  }
+  var qty=h('input',{type:'number',id:'qty',inputmode:'decimal',step:'any',min:'0',value:String(ctx.qty),'aria-label':'Quantity',oninput:function(){ctx.qty=parseFloat(qty.value);upd()}});
+  function step(dir){var st=ctx.unit.kind==='g'?10:0.5,v=(isNaN(ctx.qty)?0:ctx.qty)+dir*st;v=Math.max(0,Math.round(v*100)/100);ctx.qty=v;qty.value=String(v);upd()}
+  var chips=h('div',{class:'chips',role:'group','aria-label':'Unit'});
+  function drawChips(){chips.replaceChildren();units.forEach(function(u){chips.appendChild(h('button',{type:'button',class:'chip','aria-pressed':u===ctx.unit||(u.kind===ctx.unit.kind&&u.label===ctx.unit.label)?'true':'false',
+    onclick:function(){var wasG=ctx.unit.kind==='g';ctx.unit=u;if(u.kind==='g'&&!wasG)ctx.qty=100;else if(u.kind!=='g'&&wasG)ctx.qty=1;qty.value=String(ctx.qty);drawChips();upd()},text:u.label==='g'?'g (grams)':u.label}))})}
+  var date=h('input',{type:'date',id:'adate',value:ctx.date,max:S.today,onchange:function(){if(isDate(date.value))ctx.date=date.value}});
+  var tpick=timePicker({value:ctx.time,label:'Time you ate',idPrefix:'atime',onChange:function(v){ctx.time=v||'';ctx.timeTouched=true}});
+  var slotBox=h('div',{id:'aslot'}),slotErr=h('p',{class:'err',role:'alert'});
+  function curSlotName(){var s=S.profile.slots.filter(function(x){return x.id===ctx.slot})[0];return s?s.name:(ctx.slotName||'Other meal')}
+  function drawSlots(focusNew){
+    slotBox.replaceChildren();
+    var chipsEl=h('div',{class:'chips',role:'group','aria-label':'Meal'}),live=S.profile.slots;
+    if(!live.some(function(s){return s.id===ctx.slot}))chipsEl.appendChild(h('button',{type:'button',class:'chip','aria-pressed':'true','data-slot':ctx.slot,text:curSlotName()+' (removed)'}));
+    live.forEach(function(s){chipsEl.appendChild(h('button',{type:'button',class:'chip','data-slot':s.id,'aria-pressed':s.id===ctx.slot?'true':'false',text:s.name,onclick:function(){ctx.slot=s.id;ctx.slotName=s.name;ctx.newSlotOpen=false;drawSlots();saveBtn.textContent=btnText()}}))});
+    chipsEl.appendChild(h('button',{type:'button',class:'chip',id:'new-slot-chip','aria-expanded':ctx.newSlotOpen?'true':'false',text:'+ New meal slot',onclick:function(){ctx.newSlotOpen=!ctx.newSlotOpen;drawSlots(true)}}));
+    slotBox.appendChild(chipsEl);
+    if(ctx.newSlotOpen){
+      var ni=h('input',{type:'text',id:'new-slot-name',maxlength:'30','aria-label':'Name for the new meal slot',placeholder:'e.g. Pre-workout',autocomplete:'off',
+        onkeydown:function(ev){if(ev.key==='Enter'){ev.preventDefault();go()}}});
+      function go(){
+        var r=createSlot(ni.value);if(r.err){slotErr.textContent=r.err;ni.focus();return}
+        var ns=r.slot;
+        ctx.slot=ns.id;ctx.slotName=ns.name;ctx.newSlotOpen=false;slotErr.textContent='';drawSlots();saveBtn.textContent=btnText();
+      }
+      slotBox.appendChild(h('div',{class:'row',style:'margin-top:8px'},h('div',{class:'grow'},ni),h('button',{type:'button',id:'new-slot-add',class:'btn',text:'Add slot',onclick:go})));
+      if(focusNew)ni.focus();
+    }
+    slotBox.appendChild(slotErr);
+  }
+  function btnText(){return ctx.editId?'Save changes':'Add to '+curSlotName()}
+  function grams(){return ctx.qty*ctx.unit.grams}
+  function upd(){
+    var g=grams(),ok=isFinite(g)&&g>0&&g<=5000;prev.replaceChildren();
+    if(!ok){prev.appendChild(h('p',{class:'muted',text:'Enter an amount between 0 and 5000 g.'}));return}
+    var n={kcal:f.per100.kcal*g/100,p:f.per100.p*g/100,c:f.per100.c*g/100,f:f.per100.f*g/100};
+    prev.appendChild(h('p',null,h('b',{id:'pv-kcal',text:r0(n.kcal)+' kcal'}),' for '+r0(g*10)/10+' g'));
+    prev.appendChild(h('p',{class:'muted',id:'pv-macros',text:'Protein '+r1(n.p)+' g, carbs '+r1(n.c)+' g, fat '+r1(n.f)+' g'}));
+  }
+  function submit(){
+    err.textContent='';var g=grams();
+    if(!isFinite(ctx.qty)||ctx.qty<=0){err.textContent='Enter how much you ate (more than 0).';qty.focus();return}
+    if(g>5000){err.textContent='That is more than 5000 g. Please check the amount.';qty.focus();return}
+    if(!isDate(ctx.date)||ctx.date>S.today){err.textContent='Pick a valid date that is not in the future.';return}
+    if(!/^\d\d:\d\d$/.test(ctx.time)){err.textContent='Enter a valid time.';tpick.validate();return}
+    /* Untouched time that is now stale (more than 10 minutes old, logging for today): use the current time. Edited times are never changed. */
+    if(!ctx.editId&&!ctx.timeTouched&&ctx.date===S.today){
+      var nt=nowTime(),mins=function(x){return (+x.slice(0,2))*60+(+x.slice(3))};
+      if(mins(nt)-mins(ctx.time)>10)ctx.time=nt;
+    }
+    var e={id:ctx.editId||uuid(),date:ctx.date,time:ctx.time,slot:ctx.slot,slotName:curSlotName(),foodId:f.id,foodName:f.name,qty:Math.round(ctx.qty*100)/100,unit:ctx.unit.kind,unitLabel:ctx.unit.label,unitG:ctx.unit.grams,
+      grams:Math.round(g*100)/100,per100:{kcal:f.per100.kcal,p:f.per100.p,c:f.per100.c,f:f.per100.f,fib:f.per100.fib},updatedAt:Date.now(),createdAt:ctx.createdAt||Date.now()};
+    if(ctx.editId&&ctx.editDate!==ctx.date)removeEntry(S.profile.id,ctx.editId,ctx.editDate);
+    putEntry(S.profile.id,e);
+    if(ctx.pendingShared){var pe=loadShared()[ctx.pendingShared.id];if(!pe||pe.deleted)putShared(ctx.pendingShared);ctx.pendingShared=null}
+    S.viewDate=ctx.date;S.add=null;S.tab='today';render(true);toast((ctx.editId?'Saved ':'Added ')+f.name);
+  }
+  root.appendChild(h('div',{class:'card'},
+    h('div',{class:'row between'},h('div',{class:'grow'},foodLine(f)),ctx.editId?null:h('button',{type:'button',class:'btn sm',text:'Change food',onclick:function(){ctx.food=null;render(true)}})),
+    f.check?h('p',{class:'small',id:'check-warning',role:'note',text:'Check values: the energy does not match protein, carbs and fat. Online values are entered by volunteers, so please compare with the pack.'}):null,
+    ctx.pendingShared?pendingBox():null,
+    ctx.editId?null:h('button',{type:'button',class:'btn sm',id:'edit-food',style:'margin-top:6px',text:'Edit this food',onclick:function(){S.myFoods={mode:'edit',id:f.id,returnToAdd:true};S.tab='profile';render(true)}}),
+    h('label',{for:'qty'},'How much?'),
+    h('div',{class:'stepper'},h('button',{type:'button',class:'btn','aria-label':'Decrease quantity',text:'\u2212',onclick:function(){step(-1)}}),qty,h('button',{type:'button',class:'btn','aria-label':'Increase quantity',text:'+',onclick:function(){step(1)}})),
+    h('label',null,'Unit'),chips,
+    h('label',{for:'adate'},'Date'),date,
+    h('label',null,'Time you ate'),tpick.el,
+    h('label',null,'Meal',h('span',{class:'hint',text:'Meals have no fixed times. Pick one, or make your own.'})),slotBox,
+    h('div',{class:'card',style:'margin:12px 0 0;background:var(--accent-soft)'},prev),
+    f.kind==='dish'&&f.est?h('p',{class:'small muted',text:'Cooked-dish values are estimates and vary with recipe and portion size.'}):null,
+    null));
+  var saveBtn=h('button',{type:'button',id:'save-entry',class:'btn primary grow',text:btnText(),onclick:submit});
+  root.appendChild(h('div',{class:'sticky-actions'},err,h('div',{class:'row'},saveBtn,
+    h('button',{type:'button',class:'btn',text:'Cancel',onclick:function(){S.add=null;S.tab='today';render(true)}}))));
+  drawChips();drawSlots();upd();
+}
+/* One form for creating a food, editing a shared food, or editing a built-in food (creates an override). */
+var FORM_UNITS=[['katori','Katori (g)'],['glass','Glass (g)'],['piece','Piece (g)'],['serving','Serving (g)'],['tbsp','Tablespoon (g)'],['tsp','Teaspoon (g)']];
+function foodForm(o){
+  var f=o.food||{},n=f.per100||{},u=f.units||{},err=h('p',{class:'err',role:'alert',id:'c-err'}),F={};
+  function num(id,label,val,hint){var i=h('input',{type:'number',id:'c-'+id,inputmode:'decimal',step:'any',min:'0',value:val==null?'':String(val)});F[id]=i;return h('div',null,h('label',{for:'c-'+id},label,hint?h('span',{class:'hint',text:hint}):null),i)}
+  var name=h('input',{type:'text',id:'c-name',maxlength:'80',autocomplete:'off',value:f.name||''});
+  var box=h('div',{class:'card',id:'food-form'},h('h2',{text:o.title}),h('p',{class:'muted',text:'Enter values per 100 g, usually from the pack label.'}),
+    h('label',{for:'c-name'},'Food name'),name,
+    h('div',{class:'field-grid'},num('kcal','Calories (kcal)',n.kcal),num('p','Protein (g)',n.p),num('c','Carbs (g)',n.c),num('f','Fat (g)',n.f),num('fib','Fibre (g)',n.fib,'optional')),
+    h('h3',{style:'margin-top:12px',text:'Household units (optional)'}),h('p',{class:'muted small',text:'How many grams one is, so you can log by the piece or katori.'}),
+    h('div',{class:'field-grid'},FORM_UNITS.map(function(k){return num('u-'+k[0],k[1],u[k[0]])})),err,
+    h('div',{class:'row',style:'margin-top:8px'},h('button',{type:'button',id:'c-save',class:'btn primary grow',text:'Save food',onclick:function(){
+      err.textContent='';var nm=normName(name.value);
+      if(!nm){err.textContent='Give the food a name.';name.focus();return}
+      if(nm.length>80){err.textContent='Names can be up to 80 characters.';return}
+      function v(id,max,req,label){var s=F[id].value.trim();if(s===''){if(req){err.textContent='Fill in '+label+'.';return null}return 0}var x=parseFloat(s);if(!isFinite(x)||x<0||x>max){err.textContent='Check '+label+' (0 to '+max+').';return null}return x}
+      var kcal=v('kcal',900,true,'calories');if(kcal==null)return;var P=v('p',100,true,'protein');if(P==null)return;var C=v('c',100,true,'carbs');if(C==null)return;var Fa=v('f',100,true,'fat');if(Fa==null)return;var fib=v('fib',100,false,'fibre');if(fib==null)return;
+      if(P+C+Fa>100.5){err.textContent='Protein, carbs and fat per 100 g cannot add up to more than 100 g.';return}
+      var units=Object.assign({},u);
+      for(var i=0;i<FORM_UNITS.length;i++){var k=FORM_UNITS[i][0],s=F['u-'+k].value.trim();
+        if(s===''){delete units[k];continue}var g=parseFloat(s);if(!isFinite(g)||g<0.1||g>5000){err.textContent='Check the '+FORM_UNITS[i][1].toLowerCase()+' (0.1 to 5000).';return}units[k]=g}
+      var rec=Object.assign({},o.base,{name:nm,per100:{kcal:kcal,p:P,c:C,f:Fa,fib:fib},units:units,updatedAt:Date.now()});delete rec.deleted;
+      o.onSave(rec)}}),
+      h('button',{type:'button',class:'btn',text:'Back',onclick:o.onCancel})));
+  return box;
+}
+function addCustom(root,ctx){
+  root.appendChild(foodForm({title:'Add a custom food',food:null,base:{id:'c_'+uuid(),source:'custom',aliases:[]},
+    onSave:function(rec){if(!putShared(rec))return;ctx.mode='form';selectFood(ctx,sharedToFood(rec));render(true)},
+    onCancel:function(){ctx.mode='search';render(true)}}));
+}
+
+/* ---------- MY FOODS (shared list) + food packs ---------- */
+function builtinToForm(f){return {name:f.name,per100:f.per100,units:unitsArrToMap(f.units)}}
+function viewMyFoods(root){
+  var st=S.myFoods,m=loadShared(),pm=loadPackMeta();
+  function back(){var ra=st.returnToAdd;S.myFoods=ra?null:{mode:'list'};if(ra){S.tab='add';var c=S.add;if(c&&c.food&&st.id===c.food.id){var nf=findFood(st.id);if(nf)selectFood(c,nf)}}render(true)}
+  if(st.mode==='edit'){
+    var cur=m[st.id]&&!m[st.id].deleted?m[st.id]:null,bi=FOODBYID[st.id]||null,legacy=!cur&&!bi?loadCustom(S.profile.id).filter(function(x){return x.id===st.id})[0]:null;
+    root.appendChild(h('h1',{text:'Edit food'}));
+    var form,base,food;
+    if(cur){base=Object.assign({},cur);food={name:cur.name,per100:cur.per100,units:cur.units}}
+    else if(bi){base={id:bi.id,source:'override',overrides:bi.id,aliases:[]};food=builtinToForm(bi)}
+    else if(legacy){base={id:legacy.id,source:'custom',aliases:[]};food={name:legacy.name,per100:legacy.per100,units:unitsArrToMap(legacy.units)}}
+    else if(st.id==null){base={id:'c_'+uuid(),source:'custom',aliases:[]};food=null}
+    else{root.appendChild(h('p',{text:'That food could not be found.'}));S.myFoods=null;return}
+    if(bi&&!cur)root.appendChild(h('p',{class:'muted',text:'This is a built-in food. Saving creates your own version that replaces the original in search. Old log entries keep the numbers they were saved with.'}));
+    root.appendChild(foodForm({title:st.id==null?'Add a food':'Food details',food:food,base:base,onSave:function(rec){delete rec.origin;delete rec.check;if(rec.source==='pack')rec.source='custom';if(putShared(rec)){toast('Saved '+rec.name);back()}},onCancel:back}));
+    return;
+  }
+  root.appendChild(h('div',{class:'row between'},h('h1',{text:'My foods'}),h('button',{type:'button',class:'btn',id:'myfoods-back',text:'Back to Profile',onclick:function(){S.myFoods=null;render(true)}})));
+  root.appendChild(h('p',{class:'muted',text:'Foods you add, edit or find online are saved on this device and shown first in search. To get updates from someone, ask them to Export food pack and send you the file.'}));
+  root.appendChild(h('p',{class:'muted small',id:'clock-note',text:'When two lists differ, the newest edit wins. This uses each phone\'s clock, so keep your phone\'s date and time correct.'}));
+  var imp=pm.lastPackImport;
+  root.appendChild(h('p',{class:'small',id:'last-pack'},imp?'Food list from '+(imp.packName||'a shared pack')+' v'+imp.revision+(imp.exportedAt?', updated '+new Date(imp.exportedAt).toLocaleDateString():'')+'.':'No food pack imported yet.'));
+  /* pack tools */
+  var pname=h('input',{type:'text',id:'pack-name',maxlength:'40',value:pm.packName,'aria-label':'Pack name'}),pout=h('div',{id:'pack-out','aria-live':'polite'});
+  var pfile=h('input',{type:'file',id:'pack-file',accept:'.json,application/json','aria-label':'Choose a food pack file to import',onchange:function(){
+    pout.replaceChildren();var f=pfile.files&&pfile.files[0];if(!f)return;
+    if(f.size>2*1024*1024){pout.appendChild(h('p',{class:'err',role:'alert',id:'pack-error',text:'That file is too big to be a food pack (over 2 MB).'}));return}
+    var rd=new FileReader();rd.onerror=function(){pout.appendChild(h('p',{class:'err',role:'alert',id:'pack-error',text:'The file could not be opened.'}))};
+    rd.onload=function(){try{var r=importPack(String(rd.result));pfile.value='';render();var o2=$('#pack-out');if(o2)o2.appendChild(h('div',{class:'banner info',id:'pack-summary',role:'status'},h('b',{text:'Food pack imported: '}),r.summary))}
+      catch(e){pout.replaceChildren(h('p',{class:'err',role:'alert',id:'pack-error',text:e.message}))}};
+    rd.readAsText(f);}});
+  root.appendChild(h('section',{class:'card',id:'pack-card'},h('h2',{text:'Share your food list'}),
+    h('label',{for:'pack-name',style:'margin-top:0'},'Pack name'),pname,
+    h('div',{class:'row',style:'margin-top:8px'},h('button',{type:'button',class:'btn primary',id:'export-pack',text:'Export food pack',onclick:function(){exportPack(pname.value)}})),
+    h('label',{for:'pack-file'},'Import food pack'),pfile,
+    h('p',{class:'muted small',text:'Importing only adds or updates foods. It never changes your profiles or your log.'}),pout));
+  /* list */
+  var list=sharedList(),ul=h('ul',{class:'plain',id:'myfoods-list'});
+  if(!list.length)ul.appendChild(h('li',{class:'muted',text:'You have no saved foods yet.'}));
+  list.forEach(function(c){
+    var isOv=!!c.overrides;
+    ul.appendChild(h('li',{class:'entry','data-id':c.id},
+      h('div',{class:'main'},h('b',{text:c.name}),' ',h('span',{class:'tag alt',text:c.origin==='pack'?'Shared pack':isOv?'Edited built-in':srcTag(c)}),
+        h('div',{class:'muted small',text:r0(c.per100.kcal)+' kcal - P '+r1(c.per100.p)+' / C '+r1(c.per100.c)+' / F '+r1(c.per100.f)+' g per 100 g'})),
+      h('button',{type:'button',class:'btn sm','aria-label':'Edit '+c.name,text:'Edit',onclick:function(){S.myFoods={mode:'edit',id:c.id};render(true)}}),
+      h('button',{type:'button',class:'btn sm danger','aria-label':(isOv?'Restore original of ':'Delete ')+c.name,text:isOv?'Restore original':'Delete',onclick:function(){
+        var old=c,mm=copyShared();mm[c.id]=Object.assign({},c,{deleted:true,updatedAt:Date.now()});saveShared(mm);render();
+        toast((isOv?'Restored original: ':'Deleted ')+c.name,'Undo',function(){var m2=copyShared();m2[old.id]=Object.assign({},old,{updatedAt:Date.now()});saveShared(m2);render()})}})));
+  });
+  root.appendChild(h('section',{class:'card',id:'myfoods-card'},h('h2',{text:'Your saved foods'}),ul,
+    h('button',{type:'button',class:'btn',id:'myfood-new',style:'margin-top:10px',text:'Add a food',onclick:function(){S.myFoods={mode:'edit',id:null};render(true)}})));
+  /* edit a built-in */
+  var res=h('ul',{class:'plain',id:'mf-results'}),si=h('input',{type:'search',id:'mf-search',autocomplete:'off',placeholder:'e.g. roti, milk, banana','aria-label':'Search built-in foods to edit',oninput:function(){
+    res.replaceChildren();var q=si.value.trim();if(q.length<2)return;
+    search(q,S.profile.id).filter(function(x){return x.kind==='dish'||x.kind==='raw'}).slice(0,8).forEach(function(x){
+      res.appendChild(h('li',{class:'entry'},h('div',{class:'main'},foodLine(x)),h('button',{type:'button',class:'btn sm','aria-label':'Edit this food: '+x.name,text:'Edit this food',onclick:function(){S.myFoods={mode:'edit',id:x.id};render(true)}})))})}});
+  root.appendChild(h('section',{class:'card'},h('h2',{text:'Change a built-in food'}),h('p',{class:'muted small',text:'Find a food and tap Edit this food to make your own version with your numbers.'}),si,res));
+}
+function exportPack(nameVal){
+  var pm=loadPackMeta(),m=loadShared();pm.packName=normName(nameVal||pm.packName).slice(0,40)||'My foods';pm.revision+=1;
+  var foods=Object.keys(m).map(function(k){return m[k]}),hasOff=foods.some(function(c){return !c.deleted&&c.source==='openfoodfacts'});
+  var pack={type:'dt-foodpack',format:1,packName:pm.packName,revision:pm.revision,exportedAt:new Date().toISOString(),foods:foods,credits:hasOff?['Open Food Facts (ODbL)']:[]};
+  savePackMeta(pm);
+  download(pack,'diet-foods-'+(pm.packName.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'pack')+'-'+todayStr()+'.json');
+  toast('Food pack downloaded (version '+pm.revision+')');
+}
+function parsePack(text){
+  var o;try{o=JSON.parse(text)}catch(e){throw new Error('That file could not be read. It is not a valid food pack (the JSON is broken).')}
+  if(!o||typeof o!=='object'||o.type!=='dt-foodpack')throw new Error('This is not a Diet Tracker food pack file.');
+  if(o.format!==1)throw new Error('This food pack was made by a newer version of the app and cannot be read here.');
+  if(!Array.isArray(o.foods))throw new Error('This food pack has no foods in it.');
+  if(o.foods.length>5000)throw new Error('This food pack has too many foods (the limit is 5000).');
+  var foods=[],bad=0;o.foods.forEach(function(f){var c=cleanSharedFood(f);if(c){if(c.source==='custom')c.source='pack';c.origin='pack';foods.push(c)}else bad++});
+  return {foods:foods,bad:bad,packName:normName(o.packName||'').slice(0,40)||'Shared pack',revision:numIn(o.revision,0,1e9)?Math.floor(o.revision):0,exportedAt:typeof o.exportedAt==='string'?o.exportedAt.slice(0,40):''};
+}
+function importPack(text){
+  var pk2=parsePack(text),m=copyShared(),st=mergeSharedInto(m,pk2.foods);
+  if(!saveShared(m))throw new Error('The foods could not be saved (storage may be full).');
+  var pm=loadPackMeta();pm.lastPackImport={packName:pk2.packName,revision:pk2.revision,exportedAt:pk2.exportedAt};savePackMeta(pm);
+  return {stat:st,bad:pk2.bad,summary:'+'+st.added+' new, '+st.updated+' updated, '+st.removed+' removed, '+st.older+' skipped (older)'+(pk2.bad?', '+pk2.bad+' invalid skipped':'')};
+}
+function updateCredit(){
+  var el=$('#off-credit');if(!el)return;var m=loadShared();
+  el.hidden=!Object.keys(m).some(function(k){return !m[k].deleted&&m[k].source==='openfoodfacts'});
+}
+
+/* ---------- HISTORY ---------- */
+function viewHistory(root){
+  var p=S.profile,byDate={};
+  allEntries(p.id).forEach(function(e){(byDate[e.date]=byDate[e.date]||[]).push(e)});
+  var dates=Object.keys(byDate).sort().reverse();
+  root.appendChild(h('div',{class:'row between'},h('h1',{text:'History'}),personSwitcher()));
+  if(!dates.length){root.appendChild(h('div',{class:'card'},h('p',{text:'No days logged yet. Add your first food from the Add food tab.'})));return}
+  var shown=S.histAll?dates:dates.slice(0,30);
+  shown.forEach(function(d){
+    var info=dayInfo(p,d),kcal=info.tot.kcal,ratio=kcal/info.c.target;
+    var b=ratio<0.9?['under','Under target']:ratio<=1.1?['on','On target']:['over','Over target'];
+    root.appendChild(h('section',{class:'card','aria-label':fmtDate(d)},
+      h('div',{class:'row between'},h('h3',{text:fmtDate(d)+(d===S.today?' (today)':'')}),h('span',{class:'badge '+b[0],text:b[1]})),
+      h('p',null,h('b',{text:r0(kcal)+' kcal'}),' of '+r0(info.c.target)+' target - '+byDate[d].length+(byDate[d].length===1?' item':' items')),
+      h('div',{class:'row'},
+        h('button',{type:'button',class:'btn sm',text:'Open',onclick:function(){S.viewDate=d;S.tab='today';render(true)}}),
+        d!==S.today?h('button',{type:'button',class:'btn sm',text:'Copy to today',onclick:function(){
+          var now=Date.now();byDate[d].forEach(function(e){var c=JSON.parse(JSON.stringify(e));c.id=uuid();c.date=S.today;c.updatedAt=now;c.createdAt=now;putEntry(p.id,c)});
+          toast('Copied '+byDate[d].length+' items to today');}}):null)));
+  });
+  if(!S.histAll&&dates.length>30)root.appendChild(h('button',{type:'button',class:'btn',text:'Show older days',onclick:function(){S.histAll=true;render()}}));
+}
+
+/* ---------- WEIGHT ---------- */
+function viewWeight(root){
+  var p=S.profile,ws=loadWeights(p.id);
+  root.appendChild(h('div',{class:'row between'},h('h1',{text:'Weight'}),personSwitcher()));
+  var err=h('p',{class:'err',role:'alert'});
+  var kg=h('input',{type:'number',id:'w-kg',inputmode:'decimal',step:'0.1',min:'20',max:'300',value:String(ws.length?ws[ws.length-1].kg:p.startKg)});
+  var dt=h('input',{type:'date',id:'w-date',value:S.today,max:S.today});
+  root.appendChild(h('div',{class:'card'},h('div',{class:'field-grid'},h('div',null,h('label',{for:'w-kg',style:'margin-top:0'},'Weight (kg)'),kg),h('div',null,h('label',{for:'w-date',style:'margin-top:0'},'Date'),dt)),err,
+    h('button',{type:'button',id:'w-save',class:'btn primary',style:'margin-top:10px',text:'Save weight',onclick:function(){
+      err.textContent='';var v=parseFloat(kg.value);
+      if(!isFinite(v)||v<20||v>300){err.textContent='Weight must be between 20 and 300 kg.';return}
+      if(!isDate(dt.value)||dt.value>S.today){err.textContent='Pick a valid date that is not in the future.';return}
+      var a=loadWeights(p.id).filter(function(x){return x.date!==dt.value});a.push({date:dt.value,kg:Math.round(v*10)/10,updatedAt:Date.now()});
+      saveWeights(p.id,a);render();toast('Weight saved');}})));
+  /* range + chart */
+  var seg=h('div',{class:'seg',role:'group','aria-label':'Chart range'});
+  [[30,'30 days'],[90,'90 days'],[0,'All']].forEach(function(r){seg.appendChild(h('button',{type:'button','aria-pressed':S.range===r[0]?'true':'false',text:r[1],onclick:function(){S.range=r[0];render()}}))});
+  var avg=ws.map(function(w){var lo=addDays(w.date,-6),xs=ws.filter(function(x){return x.date>=lo&&x.date<=w.date});return xs.reduce(function(a,x){return a+x.kg},0)/xs.length});
+  var idx=ws.map(function(_,i){return i}).filter(function(i){return !S.range||ws[i].date>=addDays(S.today,-S.range)});
+  var card=h('section',{class:'card'},h('div',{class:'row between'},h('h2',{text:'Trend'}),seg));
+  if(!idx.length)card.appendChild(h('p',{class:'muted',text:ws.length?'No weights in this range.':'No weights logged yet. Add your first one above.'}));
+  else{card.appendChild(weightChart(ws,avg,idx));
+    var last=ws[idx[idx.length-1]],first=ws[idx[0]],stats=h('ul',{class:'plain'});
+    var ch=last.kg-p.startKg;
+    stats.appendChild(h('li',{id:'w-change',text:'Change since your starting weight ('+p.startKg+' kg): '+(ch>0?'+':'')+r1(ch)+' kg'}));
+    var span=(parseD(last.date)-parseD(first.date))/864e5;
+    if(idx.length>1&&span>=7){var rate=(avg[idx[idx.length-1]]-avg[idx[0]])/span*7;stats.appendChild(h('li',{id:'w-rate',text:'Average pace: '+(rate>0?'+':'')+(Math.round(rate*100)/100)+' kg per week (7-day averages)'}))}
+    else stats.appendChild(h('li',{class:'muted',text:'Log weights over at least a week to see your weekly pace.'}));
+    card.appendChild(stats);
+    card.appendChild(h('p',{class:'small muted',text:'Dots are single weigh-ins; the line is the 7-day average.'}));}
+  root.appendChild(card);
+  if(ws.length){var ul=h('ul',{class:'plain'});
+    ws.slice(-10).reverse().forEach(function(w){ul.appendChild(h('li',{class:'entry'},h('div',{class:'main',text:fmtDate(w.date)+' - '+w.kg+' kg'}),h('button',{type:'button',class:'btn sm danger','aria-label':'Delete weight on '+fmtDate(w.date),text:'Delete',onclick:function(){
+      saveWeights(p.id,loadWeights(p.id).filter(function(x){return x.date!==w.date}));render();toast('Weight deleted','Undo',function(){var a=loadWeights(p.id).filter(function(x){return x.date!==w.date});a.push(w);saveWeights(p.id,a);render()})}})))});
+    root.appendChild(h('section',{class:'card'},h('h2',{text:'Recent weigh-ins'}),ul))}
+}
+function weightChart(ws,avg,idx){
+  var W=340,H=210,L=40,R=10,T=12,B=30,pts=idx.map(function(i){return {d:ws[i].date,kg:ws[i].kg,a:avg[i]}});
+  var ys=[];pts.forEach(function(q){ys.push(q.kg,q.a)});
+  var lo=Math.min.apply(null,ys),hi=Math.max.apply(null,ys);if(hi-lo<1){lo-=0.5;hi+=0.5}
+  var pd=(hi-lo)*0.1;lo-=pd;hi+=pd;
+  var t0=parseD(pts[0].d).getTime(),t1=parseD(pts[pts.length-1].d).getTime(),dx=t1-t0;
+  function X(d){return dx?L+(parseD(d).getTime()-t0)/dx*(W-L-R):(L+W-R)/2}
+  function Y(v){return T+(H-T-B)*(1-(v-lo)/(hi-lo))}
+  var sv=s('svg',{class:'chart',viewBox:'0 0 '+W+' '+H,role:'img','aria-label':'Weight chart, '+pts.length+' weigh-ins from '+pts[0].d+' to '+pts[pts.length-1].d+'. Latest '+pts[pts.length-1].kg+' kg.'});
+  for(var g=0;g<4;g++){var v=lo+(hi-lo)*g/3;sv.appendChild(s('line',{class:'grid',x1:L,x2:W-R,y1:Y(v),y2:Y(v)}));sv.appendChild(s('text',{x:L-4,y:Y(v)+4,'text-anchor':'end',text:(Math.round(v*10)/10)+''}))}
+  if(pts.length>1)sv.appendChild(s('polyline',{class:'avg',points:pts.map(function(q){return X(q.d)+','+Y(q.a)}).join(' ')}));
+  pts.forEach(function(q){sv.appendChild(s('circle',{class:'raw',cx:X(q.d),cy:Y(q.kg),r:pts.length>60?2:3.5}))});
+  sv.appendChild(s('text',{x:L,y:H-10,text:fmtDate(pts[0].d)}));
+  if(pts.length>1)sv.appendChild(s('text',{x:W-R,y:H-10,'text-anchor':'end',text:fmtDate(pts[pts.length-1].d)}));
+  var tb=h('table',{class:'sr-only'},h('caption',{text:'Weight log'}),h('tr',null,h('th',{text:'Date'}),h('th',{text:'kg'}),h('th',{text:'7-day average kg'})));
+  pts.forEach(function(q){tb.appendChild(h('tr',null,h('td',{text:q.d}),h('td',{text:String(q.kg)}),h('td',{text:String(r1(q.a))})))});
+  return h('div',null,sv,tb);
+}
+
+/* ---------- PROFILE ---------- */
+function viewProfile(root){
+  var existing=S.profile&&!S.newPerson?S.profile:null,first=!S.profile;
+  var p=existing||{name:'',sex:'m',dob:'',heightCm:'',startKg:'',activity:1.4,goal:'lose',rateKgWk:0.5,proteinGPerKg:1.6,fatPct:25,override:{}};
+  var ov=p.override||{};
+  root.appendChild(h('h1',{text:existing?'Profile':S.profile?'Add a person':'Welcome'}));
+  if(first){
+    root.appendChild(h('p',{class:'lead',text:'Create your profile to get started. Your numbers are used to work out how many calories you burn and a daily target. Nothing leaves this device.'}));
+    root.appendChild(h('p',{class:'muted small',id:'tabs-hint',text:'The other tabs unlock once your profile exists.'}));
+    root.appendChild(importCard('Restore from backup','Already used this app? Choose your backup file to get your people and logs back. No new profile is needed.'));
+  }
+  /* switcher */
+  var ps=listProfiles();
+  if(S.profile){
+    var sel=h('select',{id:'p-switch','aria-label':'Switch person',onchange:function(){S.newPerson=false;setProfile(sel.value);render()}});
+    ps.forEach(function(q){sel.appendChild(h('option',{value:q.id,text:q.name,selected:S.profile&&q.id===S.profile.id&&!S.newPerson}))});
+    root.appendChild(h('section',{class:'card'},h('h2',{text:'People on this device'}),h('div',{class:'row'},h('div',{class:'grow'},sel),
+      S.newPerson?h('button',{type:'button',class:'btn',text:'Cancel',onclick:function(){S.newPerson=false;render()}}):h('button',{type:'button',id:'add-person',class:'btn',text:'Add person',onclick:function(){S.newPerson=true;render(true)}}))));
+  }
+  if(existing)root.appendChild(dataCard());
+  if(existing)root.appendChild(h('section',{class:'card',id:'myfoods-link'},h('h2',{text:'My foods'}),h('p',{class:'muted small',text:'Foods you added, edited or found online. Share them with others as a food pack file.'}),h('button',{type:'button',class:'btn',id:'open-myfoods',text:'Open My foods',onclick:function(){S.myFoods={mode:'list'};render(true)}})));
+  var err=h('p',{class:'err',role:'alert'}),F={};
+  function inp(id,type,val,extra){var i=h('input',Object.assign({type:type,id:'f-'+id,value:val==null?'':String(val)},extra||{}));F[id]=i;i.addEventListener('input',preview);return i}
+  function selct(id,opts,val){var e=h('select',{id:'f-'+id});if(id==='activity'&&!opts.some(function(o){return String(o[0])===String(val)}))opts=opts.concat([[val,'Your current setting ('+val+')']]);opts.forEach(function(o){e.appendChild(h('option',{value:String(o[0]),text:o[1],selected:String(o[0])===String(val)}))});F[id]=e;e.addEventListener('input',preview);return e}
+  var form=h('section',{class:'card'},h('h2',{text:'About you'}),
+    h('label',{for:'f-name'},'Name'),inp('name','text',p.name,{maxlength:'40',autocomplete:'off'}),
+    h('div',{class:'field-grid'},
+      h('div',null,h('label',{for:'f-sex'},'Sex',h('span',{class:'hint',text:'Used in the calorie formula'})),selct('sex',[['m','Male'],['f','Female']],p.sex)),
+      h('div',null,h('label',{for:'f-dob'},'Date of birth'),inp('dob','date',p.dob,{max:S.today})),
+      h('div',null,h('label',{for:'f-height'},'Height (cm)'),inp('height','number',p.heightCm,{inputmode:'decimal',step:'any',min:'100',max:'230'})),
+      h('div',null,h('label',{for:'f-weight'},existing?'Starting weight (kg)':'Weight (kg)'),inp('weight','number',p.startKg,{inputmode:'decimal',step:'0.1',min:'20',max:'300'}))),
+    h('label',{for:'f-activity'},'How active are you?'),selct('activity',ACTIVITY,p.activity),
+    h('p',{class:'muted small',id:'activity-note-help',text:'These already include your workouts, so don\'t add workout calories on top.'}),
+    h('p',{class:'muted small',id:'activity-heavy-help',text:'Doing heavy physical work? If the number still looks low, set your own calories under Advanced.'}),
+    h('label',{for:'f-goal'},'Your goal'),selct('goal',[['lose','Lose weight'],['maintain','Stay the same'],['gain','Gain weight']],p.goal),
+    h('label',{for:'f-rate'},'Pace (kg per week)'),selct('rate',[[0.25,'0.25 kg per week (gentle)'],[0.5,'0.5 kg per week (steady)']],p.rateKgWk));
+  var hasAdv=Object.keys(ov).length>0||p.proteinGPerKg!==1.6||p.fatPct!==25;
+  var adv=h('details',{class:'card',id:'advanced',open:hasAdv},h('summary',{text:'Advanced (protein, fat, your own targets)'}),
+    h('div',{class:'field-grid'},
+      h('div',null,h('label',{for:'f-protein'},'Protein (g per kg body weight)'),inp('protein','number',p.proteinGPerKg,{inputmode:'decimal',step:'0.1',min:'0.5',max:'4'})),
+      h('div',null,h('label',{for:'f-fat'},'Fat (% of calories)'),inp('fat','number',p.fatPct,{inputmode:'decimal',step:'1',min:'10',max:'50'}))),
+    h('h3',{style:'margin-top:14px',text:'Set your own targets (optional)'}),h('p',{class:'muted small',text:'Leave a box empty to use the automatic number.'}),
+    h('div',{class:'field-grid'},
+      h('div',null,h('label',{for:'f-ovkcal'},'Calories per day'),inp('ovkcal','number',ov.kcal,{inputmode:'decimal',step:'any',min:'1'})),
+      h('div',null,h('label',{for:'f-ovp'},'Protein (g)'),inp('ovp','number',ov.p,{inputmode:'decimal',step:'any',min:'0'})),
+      h('div',null,h('label',{for:'f-ovc'},'Carbs (g)'),inp('ovc','number',ov.c,{inputmode:'decimal',step:'any',min:'0'})),
+      h('div',null,h('label',{for:'f-ovf'},'Fat (g)'),inp('ovf','number',ov.f,{inputmode:'decimal',step:'any',min:'0'}))));
+  var pv=h('section',{class:'card','aria-live':'polite',id:'pv'});
+  function readForm(){
+    function n(id){var t=F[id].value.trim();return t===''?null:parseFloat(t)}
+    var o={};[['ovkcal','kcal'],['ovp','p'],['ovc','c'],['ovf','f']].forEach(function(k){var v=n(k[0]);if(v!=null&&isFinite(v))o[k[1]]=v});
+    return {name:F.name.value.trim(),sex:F.sex.value,dob:F.dob.value,heightCm:n('height'),startKg:n('weight'),activity:parseFloat(F.activity.value),goal:F.goal.value,rateKgWk:parseFloat(F.rate.value),proteinGPerKg:n('protein'),fatPct:n('fat'),override:o};
+  }
+  function validate(q){
+    if(!q.name)return 'Please enter a name.';
+    if(!isDate(q.dob)||q.dob>S.today||ageOn(q.dob,S.today)<10||ageOn(q.dob,S.today)>110)return 'Enter a valid date of birth (age 10 to 110).';
+    if(!(q.heightCm>=100&&q.heightCm<=230))return 'Height must be between 100 and 230 cm.';
+    if(!(q.startKg>=20&&q.startKg<=300))return 'Weight must be between 20 and 300 kg.';
+    if(!(q.proteinGPerKg>=0.5&&q.proteinGPerKg<=4)){adv.open=true;return 'Protein must be between 0.5 and 4 g per kg.'}
+    if(!(q.fatPct>=10&&q.fatPct<=50)){adv.open=true;return 'Fat must be between 10 and 50 percent of calories.'}
+    var o=q.override;if('kcal' in o&&(o.kcal<500||o.kcal>10000)){adv.open=true;return 'Calories per day should be between 500 and 10000.'}
+    return null;
+  }
+  function preview(){
+    F.rate.disabled=F.goal.value==='maintain';
+    var q=readForm(),bad=validate(q);pv.replaceChildren(h('h2',{text:'Your numbers'}));
+    if(bad){pv.appendChild(h('p',{class:'muted',text:'Fill in the form to see your numbers.'}));return}
+    var kg=existing?weightOn(existing.id,q,S.today):q.startKg,c=calc(q,kg,S.today);
+    pv.appendChild(h('dl',{class:'kv'},
+      kv('Age','pv-age',c.age+' years'),
+      kv('Calories you burn at rest (BMR)','pv-bmr',fmt2(c.bmr)+' kcal'),
+      kv('Calories you burn per day (TDEE)','pv-tdee',fmt2(c.tdee)+' kcal'),
+      kv('Daily calorie target','pv-target',r0(c.target)+' kcal'),
+      kv('Protein','pv-p',r0(c.p)+' g'),kv('Carbs','pv-c',r0(c.c)+' g'),kv('Fat','pv-f',r0(c.f)+' g')));
+    var nt=targetNote(c,q);if(nt)pv.appendChild(noteEl(nt));
+    pv.appendChild(h('p',{class:'small muted',text:'Estimates from the Mifflin-St Jeor formula. 1 kg of body weight is about 7700 kcal.'}));
+  }
+  root.appendChild(form);root.appendChild(adv);root.appendChild(pv);
+  root.appendChild(h('div',{class:'card'},err,h('button',{type:'button',id:'save-profile',class:'btn primary',style:'width:100%',text:existing?'Save changes':'Create profile',onclick:function(){
+    err.textContent='';var q=readForm(),bad=validate(q);if(bad){err.textContent=bad;return}
+    var now=Date.now(),base=existing?S.profile:{slots:defaultSlots()},np=Object.assign({},base,q,{id:existing?existing.id:'p_'+uuid().replace(/[^\w-]/g,'').slice(0,12),updatedAt:now,createdAt:existing?existing.createdAt:now,activityModel:existing&&existing.activityModel>2?existing.activityModel:2});
+    if(existing&&q.activity!==existing.activity)np.activityNote=null;
+    saveProfile(np);
+    if(!existing){meta.profileIds.push(np.id);meta.activeProfileId=np.id;saveMeta();S.profile=np;S.newPerson=false;S.viewDate=S.today;S.add=null;S.tab='today';render(true);toast('Profile created')}
+    else{S.profile=np;render();toast('Profile saved')}}})));
+  preview();
+  if(existing){root.appendChild(slotsCard());root.appendChild(deleteCard(existing));root.appendChild(storageCard())}
+}
+
+/* ---------- export / import ---------- */
+function buildExport(pids){
+  var sm=loadShared(),pm=loadPackMeta();
+  return {app:'diet-tracker',schema:1,exportedAt:new Date().toISOString(),
+    sharedFoods:Object.keys(sm).map(function(k){return sm[k]}),lastPackImport:pm.lastPackImport,
+    profiles:pids.map(function(pid){
+    var entries={};monthsOf(pid).forEach(function(ym){entries[ym]=loadMonth(pid,ym)});
+    return {profile:loadProfile(pid),entries:entries,weights:loadWeights(pid),foods:loadCustom(pid)}}).filter(function(x){return x.profile})};
+}
+function download(obj,name){
+  var blob=new Blob([JSON.stringify(obj,null,1)],{type:'application/json'}),url=URL.createObjectURL(blob),a=h('a',{href:url,download:name});
+  document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},3000);
+}
+function doExport(pids,label){
+  download(buildExport(pids),'diet-tracker-'+label+'-'+todayStr()+'.json');
+  meta.lastExport=Date.now();saveMeta();S.exportedSinceDelete=true;showBanners();toast('Backup file downloaded');
+}
+function safeId(x){return typeof x==='string'&&/^[\w-]{1,64}$/.test(x)}
+function numIn(x,lo,hi){return typeof x==='number'&&isFinite(x)&&x>=lo&&x<=hi}
+function cleanProfile(p){
+  if(!p||typeof p!=='object'||!safeId(p.id)||typeof p.name!=='string'||!p.name.trim())return null;
+  if(p.sex!=='m'&&p.sex!=='f')return null;if(!isDate(p.dob))return null;
+  if(!numIn(p.heightCm,100,230)||!numIn(p.startKg,20,300))return null;
+  var av=typeof p.activity==='string'?parseFloat(p.activity.replace(',','.')):p.activity;
+  if(typeof av!=='number'||!isFinite(av))return null;
+  var am=Number(p.activityModel),isNew=isFinite(am)&&am>=2,actVal,note=null;
+  if(isNew){
+    /* model 2: snap to a level; a newer model number than this app knows is kept as is (factor clamped to 1.2-1.7) */
+    actVal=am===2?nearestOf(av,ACTIVITY.map(function(a){return a[0]})):Math.max(1.2,Math.min(1.7,av));
+    var an=p.activityNote;if(an&&typeof an==='object'&&typeof an.from==='number'&&typeof an.to==='number'&&isFinite(an.from)&&isFinite(an.to))note={from:an.from,to:an.to,dismissed:an.dismissed===true};
+  }else{
+    /* old scale: map to the new level once, then stamp activityModel 2 */
+    var oldv=nearestOf(av,[1.2,1.375,1.55,1.725,1.9]);actVal=OLD_ACTIVITY[oldv];
+    if(oldv!==actVal)note={from:oldv,to:actVal,dismissed:false};
+  }
+  if(['lose','maintain','gain'].indexOf(p.goal)<0)return null;
+  var o={},ov=p.override||{};['kcal','p','c','f'].forEach(function(k){if(numIn(ov[k],0,20000))o[k]=ov[k]});
+  return {id:p.id,name:p.name.trim().slice(0,40),sex:p.sex,dob:p.dob,heightCm:p.heightCm,startKg:p.startKg,activity:actVal,activityModel:isNew&&am>2?am:2,activityNote:note,goal:p.goal,rateKgWk:p.rateKgWk===0.25?0.25:0.5,
+    proteinGPerKg:numIn(p.proteinGPerKg,0.5,4)?p.proteinGPerKg:1.6,fatPct:numIn(p.fatPct,10,50)?p.fatPct:25,override:o,slots:(function(s){return s.length?s:defaultSlots()})(cleanSlots(p.slots)),
+    createdAt:numIn(p.createdAt,0,9e15)?p.createdAt:Date.now(),updatedAt:numIn(p.updatedAt,0,9e15)?p.updatedAt:0};
+}
+function cleanEntry(e){
+  if(!e||typeof e!=='object'||!safeId(e.id)||!isDate(e.date)||!/^\d\d:\d\d$/.test(e.time||''))return null;
+  if(typeof e.slot!=='string'||!/^[\w-]{1,40}$/.test(e.slot)||typeof e.foodName!=='string'||!e.foodName||typeof e.foodId!=='string')return null;
+  if(!numIn(e.qty,0.0001,1e6)||!numIn(e.grams,0.0001,5000)||!e.per100)return null;
+  var n=e.per100,out={};for(var k of ['kcal','p','c','f','fib']){if(!numIn(n[k],0,1000))return null;out[k]=n[k]}
+  return {id:e.id,date:e.date,time:e.time,slot:e.slot,slotName:typeof e.slotName==='string'?normName(e.slotName).slice(0,30):'',foodId:e.foodId.slice(0,80),foodName:e.foodName.slice(0,120),qty:e.qty,unit:typeof e.unit==='string'?e.unit.slice(0,20):'g',
+    unitLabel:typeof e.unitLabel==='string'?e.unitLabel.slice(0,80):(e.unit||'g'),unitG:numIn(e.unitG,0.0001,5000)?e.unitG:1,grams:e.grams,per100:out,
+    updatedAt:numIn(e.updatedAt,0,9e15)?e.updatedAt:0,createdAt:numIn(e.createdAt,0,9e15)?e.createdAt:0};
+}
+function cleanWeight(w){return w&&isDate(w.date)&&numIn(w.kg,20,300)?{date:w.date,kg:w.kg,updatedAt:numIn(w.updatedAt,0,9e15)?w.updatedAt:0}:null}
+function cleanFood(f){
+  if(!f||typeof f.id!=='string'||!/^c_[\w-]{1,64}$/.test(f.id)||typeof f.name!=='string'||!f.name.trim()||!f.per100)return null;
+  var n=f.per100,out={};for(var k of ['kcal','p','c','f','fib']){if(!numIn(n[k],0,1000))return null;out[k]=n[k]}
+  var units=(Array.isArray(f.units)?f.units:[]).filter(function(u){return u&&typeof u.label==='string'&&numIn(u.grams,0.0001,5000)}).map(function(u){return {label:u.label.slice(0,80),grams:u.grams}});
+  return {id:f.id,name:f.name.trim().slice(0,80),per100:out,units:units,updatedAt:numIn(f.updatedAt,0,9e15)?f.updatedAt:0};
+}
+function parseImport(text){
+  var o;try{o=JSON.parse(text)}catch(e){throw new Error('That file could not be read. It is not a valid backup (the JSON is broken). Choose a file exported from this app.')}
+  if(!o||o.app!=='diet-tracker'||!Array.isArray(o.profiles))throw new Error('This does not look like a Diet Tracker backup file.');
+  if(o.schema!==1)throw new Error('This backup was made by a newer version of the app and cannot be read here.');
+  var out=[],skipped=0;
+  o.profiles.forEach(function(bp){
+    var p=bp&&cleanProfile(bp.profile);if(!p){skipped++;return}
+    var months={};
+    Object.keys(bp.entries||{}).forEach(function(k){var arr=bp.entries[k];if(!Array.isArray(arr))return;arr.forEach(function(e){var c=cleanEntry(e);if(c)(months[c.date.slice(0,7)]=months[c.date.slice(0,7)]||[]).push(c);else skipped++})});
+    var flat=[];Object.keys(months).forEach(function(ym){flat=flat.concat(months[ym])});migrateEntries(flat,p);
+    var ws=[];(Array.isArray(bp.weights)?bp.weights:[]).forEach(function(w){var c=cleanWeight(w);if(c)ws.push(c);else skipped++});
+    var fs=[];(Array.isArray(bp.foods)?bp.foods:[]).forEach(function(f){var c=cleanFood(f);if(c)fs.push(c);else skipped++});
+    out.push({profile:p,months:months,weights:ws,foods:fs,fromOld:!(Number(bp.profile.activityModel)>=2)});
+  });
+  if(!out.length)throw new Error('No people could be read from this file.');
+  var sfoods=[],sbad=0;
+  if(Array.isArray(o.sharedFoods)){
+    if(o.sharedFoods.length>5000)throw new Error('This backup has too many saved foods (the limit is 5000).');
+    o.sharedFoods.forEach(function(f){var c=cleanSharedFood(f);if(c)sfoods.push(c);else sbad++});
+  }
+  var li=o.lastPackImport&&typeof o.lastPackImport==='object'?o.lastPackImport:null;
+  return {items:out,skipped:skipped+sbad,sharedFoods:sfoods,lastPackImport:li?{packName:normName(li.packName||'').slice(0,40),revision:numIn(li.revision,0,1e9)?Math.floor(li.revision):0,exportedAt:typeof li.exportedAt==='string'?li.exportedAt.slice(0,40):''}:null};
+}
+function mergeList(local,incoming,keyFn){
+  var map={},stat={added:0,updated:0,kept:0};local.forEach(function(x){map[keyFn(x)]=x});
+  incoming.forEach(function(x){var k=keyFn(x),cur=map[k];if(!cur){map[k]=x;stat.added++}else if((x.updatedAt||0)>(cur.updatedAt||0)){map[k]=x;stat.updated++}else stat.kept++});
+  var res=Object.keys(map).map(function(k){return map[k]});return {list:res,stat:stat};
+}
+function applyImport(parsed,mode){
+  var lines=[];
+  parsed.items.forEach(function(it){
+    var pid=it.profile.id,exists=meta.profileIds.indexOf(pid)>=0,line;
+    if(!exists||mode==='replace'){
+      if(exists){skeys(pk(pid,'')).forEach(sdel)}
+      saveProfile(it.profile);Object.keys(it.months).forEach(function(ym){saveMonth(pid,ym,it.months[ym])});saveWeights(pid,it.weights);saveCustom(pid,it.foods);
+      if(!exists)meta.profileIds.push(pid);
+      var ne=0;Object.keys(it.months).forEach(function(ym){ne+=it.months[ym].length});
+      line=it.profile.name+': '+(exists?'replaced':'added')+' with '+ne+' entries, '+it.weights.length+' weights';
+    }else{
+      var cur=loadProfile(pid),pr=cur&&(cur.updatedAt||0)>=(it.profile.updatedAt||0)?cur:it.profile,oth=pr===cur?it.profile:cur;
+      var refd={};(pr===cur?Object.keys(it.months).flatMap(function(ym){return it.months[ym]}):allEntries(pid)).forEach(function(e){refd[e.slot]=1});
+      pr=Object.assign({},pr,{slots:unionSlots(pr.slots,oth?oth.slots:[],refd)});
+      /* an old-scale backup must never change the activity level of a profile that is already on the new scale */
+      /* a dismissed notice stays dismissed if either side dismissed it */
+      var dism=!!((cur&&cur.activityNote&&cur.activityNote.dismissed)||(it.profile.activityNote&&it.profile.activityNote.dismissed));
+      if(it.fromOld&&cur)pr=Object.assign({},pr,{activity:cur.activity,activityModel:cur.activityModel,activityNote:cur.activityNote||null});
+      if(dism&&pr.activityNote&&!pr.activityNote.dismissed)pr=Object.assign({},pr,{activityNote:Object.assign({},pr.activityNote,{dismissed:true})});
+      Object.keys(it.months).forEach(function(ym){remapEntrySlots(it.months[ym],pr.slots)});saveProfile(pr);if(S.profile&&S.profile.id===pid)S.profile=pr;
+      var a=0,u=0,k=0;
+      Object.keys(it.months).forEach(function(ym){var m=mergeList(loadMonth(pid,ym),it.months[ym],function(x){return x.id});saveMonth(pid,ym,m.list);a+=m.stat.added;u+=m.stat.updated;k+=m.stat.kept});
+      var mw=mergeList(loadWeights(pid),it.weights,function(x){return x.date});saveWeights(pid,mw.list);
+      var mf=mergeList(loadCustom(pid),it.foods,function(x){return x.id});saveCustom(pid,mf.list);
+      line=it.profile.name+': merged - '+a+' new entries, '+u+' updated, '+k+' kept; weights +'+mw.stat.added+'/'+mw.stat.updated+' updated';
+    }
+    lines.push(line);
+  });
+  if(!meta.activeProfileId||meta.profileIds.indexOf(meta.activeProfileId)<0)meta.activeProfileId=meta.profileIds[0]||null;
+  saveMeta();S.profile=meta.activeProfileId?loadProfile(meta.activeProfileId):null;
+  if(parsed.sharedFoods&&parsed.sharedFoods.length){
+    var sm2=copyShared(),ss=mergeSharedInto(sm2,parsed.sharedFoods);saveShared(sm2);
+    lines.push('Saved foods: +'+ss.added+' new, '+ss.updated+' updated, '+ss.removed+' removed, '+ss.older+' skipped (older)');
+  }
+  if(parsed.lastPackImport){var pm2=loadPackMeta();if(!pm2.lastPackImport){pm2.lastPackImport=parsed.lastPackImport;savePackMeta(pm2)}}
+  try{migrateCustom()}catch(e){}
+  return lines;
+}
+function slotsCard(){
+  var card=h('section',{class:'card',id:'slots'},h('h2',{text:'Meal slots'}),
+    h('p',{class:'muted small',text:'Meals have no fixed times. Add, rename or reorder them. Removing a meal slot never deletes anything you logged.'}));
+  var list=h('ul',{class:'plain'}),err=h('p',{class:'err',role:'alert'}),status=h('p',{class:'small muted',role:'status',id:'slot-status'}),stTimer=null,confirming=null;
+  function refresh(){
+    list.replaceChildren();var slots=S.profile.slots;
+    slots.forEach(function(s,i){
+      var li=h('li',{class:'slotrow','data-slot':s.id});
+      if(confirming===s.id){
+        li.appendChild(h('p',{style:'margin:0;flex:1 1 100%',text:'Delete "'+s.name+'"? Food you logged under it is kept and still shown under this name.'}));
+        li.appendChild(h('button',{type:'button',class:'btn danger solid',text:'Delete '+s.name,onclick:function(){confirming=null;saveSlots(S.profile.slots.filter(function(x){return x.id!==s.id}));refresh()}}));
+        li.appendChild(h('button',{type:'button',class:'btn',text:'Keep it',onclick:function(){confirming=null;refresh()}}));
+      }else{
+        var inp=h('input',{type:'text',maxlength:'30','aria-label':'Meal slot name',value:s.name,
+          onkeydown:function(ev){if(ev.key==='Enter'){ev.preventDefault();inp.blur()}},
+          onchange:function(){
+            var bad=slotNameError(inp.value,S.profile.slots,s.id);
+            if(bad){err.textContent=bad;status.textContent='';inp.value=s.name;return}
+            err.textContent='';var n=normName(inp.value);if(n===s.name){inp.value=n;return}
+            saveSlots(S.profile.slots.map(function(x){return x.id===s.id?{id:x.id,name:n}:x}));renameSlotEntries(s.id,n);
+            status.textContent='Saved: '+n;clearTimeout(stTimer);stTimer=setTimeout(function(){status.textContent=''},2500);refresh();}});
+        li.appendChild(inp);li.appendChild(h('span',{class:'spacer'}));
+        li.appendChild(h('button',{type:'button',class:'btn icon','aria-label':'Move '+s.name+' up',text:'↑',disabled:i===0,onclick:function(){move(i,-1)}}));
+        li.appendChild(h('button',{type:'button',class:'btn icon','aria-label':'Move '+s.name+' down',text:'↓',disabled:i===slots.length-1,onclick:function(){move(i,1)}}));
+        li.appendChild(h('button',{type:'button',class:'btn icon danger','aria-label':'Delete '+s.name,text:'×',disabled:slots.length<2,title:slots.length<2?'Keep at least one meal slot':null,onclick:function(){confirming=s.id;refresh()}}));
+      }
+      list.appendChild(li);
+    });
+  }
+  function move(i,dir){var a=S.profile.slots.slice(),j=i+dir;if(j<0||j>=a.length)return;var x=a[i];a[i]=a[j];a[j]=x;saveSlots(a);refresh()}
+  var ni=h('input',{type:'text',id:'slot-new-name',maxlength:'30','aria-label':'New meal slot name',placeholder:'e.g. Pre-workout',autocomplete:'off',onkeydown:function(ev){if(ev.key==='Enter'){ev.preventDefault();add()}}});
+  function add(){var r=createSlot(ni.value);if(r.err){err.textContent=r.err;ni.focus();return}
+    err.textContent='';ni.value='';refresh()}
+  card.appendChild(list);
+  card.appendChild(h('div',{class:'row',style:'margin-top:10px'},h('div',{class:'grow'},ni),h('button',{type:'button',id:'slot-add',class:'btn',text:'Add meal slot',onclick:add})));
+  card.appendChild(err);card.appendChild(status);refresh();return card;
+}
+/* Keep a's slots; take slots from b only if the entries on b's side reference them (so a deleted slot is not resurrected). */
+function unionSlots(a,b,referenced){
+  var out=a.slice(),ids={},names={};out.forEach(function(s){ids[s.id.toLowerCase()]=1;names[s.name.toLowerCase()]=1});
+  b.forEach(function(s){if(ids[s.id.toLowerCase()]||!referenced[s.id])return;var n=s.name;if(names[n.toLowerCase()])n=(n.slice(0,26)+' (2)');if(names[n.toLowerCase()])return;ids[s.id.toLowerCase()]=1;names[n.toLowerCase()]=1;out.push({id:s.id,name:n})});
+  return out;
+}
+/* Imported entries may spell a slot id or name with different capitalisation: map them onto the matching slot. */
+function remapEntrySlots(list,slots){
+  var byId={},byName={};slots.forEach(function(s){byId[s.id.toLowerCase()]=s;byName[s.name.toLowerCase()]=s});
+  list.forEach(function(e){var s=byId[String(e.slot).toLowerCase()]||(e.slotName&&byName[e.slotName.toLowerCase()]);if(s){e.slot=s.id;e.slotName=s.name}});
+}
+function dataCard(){
+  var card=h('section',{class:'card',id:'backup'},h('h2',{text:'Backup and sharing'}),
+    h('p',{class:'muted small',text:'Download a file to keep your log safe or move it to another phone. Last backup: '+(meta.lastExport?new Date(meta.lastExport).toLocaleDateString():'never')+'.'}),
+    h('div',{class:'row'},h('button',{type:'button',id:'export-one',class:'btn primary',text:'Export only me ('+S.profile.name.slice(0,20)+')',onclick:function(){doExport([S.profile.id],'person')}}),
+      h('button',{type:'button',id:'export-all',class:'btn',text:'Export everyone',onclick:function(){doExport(meta.profileIds.slice(),'all')}})),
+    h('p',{class:'muted small',text:'Everyone puts all people on this device in one file you can share with family.'}));
+  card.appendChild(importBody('Import a backup file'));
+  return card;
+}
+function importCard(title,hint){var c=h('section',{class:'card',id:'restore'},h('h2',{text:title}),h('p',{class:'muted small',text:hint}));c.appendChild(importBody('Choose a backup file'));return c}
+function importBody(label){
+  var frag=h('div',null),out=h('div',{id:'import-out','aria-live':'polite'});
+  var file=h('input',{type:'file',id:'import-file',accept:'.json,application/json','aria-label':'Choose a backup file to import',onchange:function(){
+    out.replaceChildren();var f=file.files&&file.files[0];if(!f)return;
+    var rd=new FileReader();rd.onerror=function(){out.appendChild(h('p',{class:'err',role:'alert',text:'The file could not be opened.'}))};
+    rd.onload=function(){
+      try{var parsed=parseImport(String(rd.result));showImportPanel(out,parsed)}catch(e){out.replaceChildren(h('p',{class:'err',role:'alert',id:'import-error',text:e.message}))}};
+    rd.readAsText(f);}});
+  frag.appendChild(h('label',{for:'import-file'},label));frag.appendChild(file);frag.appendChild(out);
+  return frag;
+}
+function showImportPanel(out,parsed){
+  out.replaceChildren();var mode='merge';
+  var ul=h('ul');if(parsed.sharedFoods&&parsed.sharedFoods.length)ul.appendChild(h('li',{text:parsed.sharedFoods.filter(function(c){return !c.deleted}).length+' saved foods (My foods list)'}));
+  parsed.items.forEach(function(it){var ne=0;Object.keys(it.months).forEach(function(ym){ne+=it.months[ym].length});
+    ul.appendChild(h('li',{text:it.profile.name+' - '+ne+' entries, '+it.weights.length+' weights, '+it.foods.length+' custom foods'+(meta.profileIds.indexOf(it.profile.id)>=0?' (already on this device)':' (new)')}))});
+  function radio(v,label,hint){return h('label',{style:'font-weight:400;display:flex;gap:8px;align-items:flex-start;min-height:44px'},h('input',{type:'radio',name:'imode',value:v,checked:v==='merge',style:'width:24px;height:24px;flex:none',onchange:function(){mode=v}}),h('span',null,h('b',{text:label}),h('span',{class:'hint',text:hint})))}
+  out.appendChild(h('div',{class:'banner info'},h('p',{text:'This file contains:'}),ul,parsed.skipped?h('p',{text:parsed.skipped+' damaged records were skipped.'}):null,
+    radio('merge','Merge (recommended)','Adds what is missing; for the same item, the newer edit wins.'),
+    radio('replace','Replace','For people already here, deletes their current data and uses the file instead.'),
+    h('div',{class:'row'},h('button',{type:'button',id:'import-apply',class:'btn primary',text:'Import now',onclick:function(){
+      var hadProfile=!!S.profile,lines=applyImport(parsed,mode);
+      if(!hadProfile&&S.profile){S.tab='today';S.viewDate=S.today;render(true);toast('Restored '+parsed.items.length+(parsed.items.length===1?' person':' people'));return}
+      render();var o2=$('#import-out');if(o2){o2.replaceChildren(h('div',{class:'banner info',id:'import-summary'},h('b',{text:'Import finished'}),h('ul',null,lines.map(function(l){return h('li',{text:l})}))))}}}),
+      h('button',{type:'button',class:'btn',text:'Cancel',onclick:function(){out.replaceChildren();var fi=$('#import-file');if(fi)fi.value=''}}))));
+}
+function deleteCard(p){
+  var conf=h('input',{type:'text',id:'del-name',autocomplete:'off','aria-label':'Type the name '+p.name+' to confirm'}),
+      go=h('button',{type:'button',id:'del-go',class:'btn danger solid',text:'Delete '+p.name,disabled:true,onclick:function(){
+        meta.profileIds=meta.profileIds.filter(function(i){return i!==p.id});skeys(pk(p.id,'')).forEach(sdel);
+        meta.activeProfileId=meta.profileIds[0]||null;saveMeta();S.profile=meta.activeProfileId?loadProfile(meta.activeProfileId):null;S.exportedSinceDelete=false;S.add=null;S.viewDate=S.today;
+        S.tab=S.profile?'today':'profile';render(true);toast('Profile deleted')}});
+  function chk(){go.disabled=!(S.exportedSinceDelete&&conf.value.trim()===p.name)}
+  conf.addEventListener('input',chk);
+  var exp=h('button',{type:'button',class:'btn',id:'del-export',text:'1. Download a backup of '+p.name,onclick:function(){doExport([p.id],'person');chk();stat.textContent='Backup downloaded.'}}),stat=h('span',{class:'small muted',role:'status'});
+  return h('details',{class:'card'},h('summary',{style:'min-height:44px;cursor:pointer;font-weight:700',text:'Delete this person'}),
+    h('p',{class:'small',text:'This removes '+p.name+' and all their entries, weights and custom foods from this device. Other people are not touched.'}),
+    h('div',{class:'row'},exp,stat),h('label',{for:'del-name'},'2. Type their name ('+p.name+') to confirm'),conf,h('div',{style:'margin-top:10px'},go));
+}
+function storageCard(){
+  var est=h('p',{class:'small muted',id:'st-est'}),per=h('p',{class:'small muted',id:'st-persist'});
+  var n=0;skeys(NS).forEach(function(k){n+=(sget(k)||'').length*2});
+  est.textContent='Stored data: about '+Math.max(1,Math.round(n/1024))+' KB (browsers usually allow around 5 MB).';
+  per.textContent=!storageOK?'Storage is blocked here: data will not be kept.':S.persisted===true?'The browser has promised to keep this data.':S.persisted===false?'The browser may clear this data if the device runs low on space. Export a backup regularly and keep this file in one fixed place.':'Export a backup regularly and keep this file in one fixed place.';
+  return h('section',{class:'card'},h('h2',{text:'Storage health'}),est,per);
+}
+
+/* ---------- init ---------- */
+function tick(){var t=todayStr();if(t!==S.today){var was=S.viewDate===S.today;S.today=t;if(was)S.viewDate=t;render()}}
+setInterval(tick,60000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)tick()});
+try{if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().then(function(r){S.persisted=r}).catch(function(){})}}catch(e){}
+try{migrateCustom()}catch(e){}
+if(!S.profile)S.tab='profile';
+render();
+})();
+</script>
+</body>
+</html>

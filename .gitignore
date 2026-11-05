@@ -1,0 +1,12 @@
+.venv/
+*:Zone.Identifier
+__pycache__/
+
+# personal / generated: keep out of the public repo
+tests/fixtures/*.pdf
+HANDOFF.md
+docs/
+shots/
+trackme-site.zip
+trackme-handoff-prompt.md
+data/trackme.pre-*.db

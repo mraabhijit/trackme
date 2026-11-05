@@ -3,6 +3,7 @@
 /* Open Food Facts (opt-in online search; nothing is requested unless the user taps the button) */
 var OFF_PRIMARY='https://world.openfoodfacts.org/cgi/search.pl';
 var OFF_FALLBACK='https://search.openfoodfacts.org/search';
+var OFF_THIRD='https://in.openfoodfacts.org/cgi/search.pl';   /* same API as OFF_PRIMARY, a different (India) server: world.* is often 'temporarily unavailable' (503) */
 var OFF_FIELDS='code,product_name,brands,nutriments,serving_size,serving_quantity';
 var OFF_TIMEOUT=12000,OFF_COOLDOWN=6000,OFF_SLOW=5000;
 /* ---------- tiny DOM helpers (textContent only; no innerHTML anywhere) ---------- */
@@ -362,17 +363,19 @@ function saveSaved(pid,a){return saveList(pk(pid,'saved'),a)}
 var FOODS=JSON.parse($('#foods').textContent).map(function(r){
   var est=!!r[7];
   var o={id:r[0],name:r[1],per100:{kcal:r[2],p:r[3],c:r[4],f:r[5],fib:r[6]},est:est,group:r[8],alias:r[9]||'',kind:r[12]?'dish':'raw',
-    units:r[10]?r[10].map(function(m){return {label:m[0],grams:m[1]}}):[],pop:!!r[11]};
+    units:r[10]?r[10].map(function(m){return {label:m[0],grams:m[1]}}):[],pop:!!r[11],
+    density:r[13]||0,liquid:r[14]===1,src:r[15]==='U'?'':r[15]||'',usda:r[15]==='U'||r[15]==='USDA'}; /* density g/ml (0 = unknown); liquid = stored per ml; src = USDA / EST for cooked rows */
   return prep(o);
 });
 function prep(o){var base=o.name.toLowerCase().split('(')[0];o.lc=o.name.toLowerCase();o.base=base.trim();
   o.words=base.split(/[^a-z0-9]+/).filter(Boolean);o.awords=(o.alias||'').split(/\s+/).filter(Boolean);return o}
 var FOODBYID=Object.create(null);FOODS.forEach(function(f){FOODBYID[f.id]=f});
 function unitKind(label){var l=label.toLowerCase();
-  return /katori/.test(l)?'katori':/glass/.test(l)?'glass':/tbsp/.test(l)?'tbsp':/tsp/.test(l)?'tsp':/cup/.test(l)?'cup':/plate/.test(l)?'plate':'piece'}
+  return /katori/.test(l)?'katori':/glass/.test(l)?'glass':/tbsp/.test(l)?'tbsp':/tsp/.test(l)?'tsp':/cup/.test(l)?'cup':/plate/.test(l)?'plate':/bottle/.test(l)?'bottle':/\bcan\b/.test(l)?'can':/\bshot\b/.test(l)?'shot':/\bpint\b/.test(l)?'pint':'piece'}
 function unitsFor(food){
   var list=[{kind:'g',label:'g',grams:1}];
   (food.units||[]).forEach(function(m){var lab=String(m.label).replace(/^1\s+/,'');list.push({kind:unitKind(m.label),label:lab,grams:m.grams})});
+  if(food.liquid&&food.density)list.push({kind:'g',label:'ml',grams:food.density});   /* explicit ml choice for liquids; last, so the default unit stays the first household one */
   return list;
 }
 function customToFood(c){return prep({id:c.id,name:c.name,per100:c.per100,est:false,group:'Custom',alias:'',kind:'custom',units:c.units||[],pop:false})}
@@ -477,15 +480,16 @@ function recentIds(pid,n){
 function searchTokens(tokens,pid){
   var rec=recentIds(pid,30),out=[];
   allFoods().forEach(function(f){
-    var worst=0,ok=true;
+    var worst=-1,ok=true;
     for(var i=0;i<tokens.length;i++){var t=tokens[i],tier;
-      if(f.base.indexOf(t)===0)tier=0;
+      if(f.kind==='raw'&&f.awords.some(function(w){return w===t}))tier=-1;   /* an exact alias (til, jeera) beats a mere prefix (Tilapia) */
+      else if(f.base.indexOf(t)===0)tier=0;
       else if(f.words.some(function(w){return w.indexOf(t)===0}))tier=1;
       else if(f.base.indexOf(t)>=0)tier=2;
       else if(f.awords.some(function(w){return w===t||(t.length>=4&&w.indexOf(t)===0)}))tier=3;
       else{ok=false;break}
       if(tier>worst)worst=tier}
-    if(ok)out.push({f:f,k:[(f.kind==='shared'||f.kind==='custom')?0:1,f.kind==='raw'?1:0,f.pop?0:1,worst,rec.indexOf(f.id)>=0?0:1,f.base.length]});
+    if(ok)out.push({f:f,k:[(f.kind==='shared'||f.kind==='custom')?0:1,f.kind==='raw'?1:f.src?2:0,f.pop?0:1,worst,rec.indexOf(f.id)>=0?0:1,f.base.length]});
   });
   out.sort(function(a,b){for(var i=0;i<6;i++)if(a.k[i]!==b.k[i])return a.k[i]-b.k[i];return a.f.name<b.f.name?-1:1});
   return out;
@@ -764,7 +768,10 @@ function chipsFor(n,adjusted){
   return h('div',{class:'nchips'},c('Calories: '+r0(n.kcal)),c('Carbs: '+r0(n.c)+'g'),c('Protein: '+r0(n.p)+'g'),c('Fat: '+r0(n.f)+'g'),adjusted?h('span',{class:'tag',text:'adjusted'}):null);
 }
 /* "2 × katori (300 g)", "100 × g", "200 ml": the unit is shown the way it was typed */
-function qtyText(e){var s=shortUnit(e);return e.unit==='g'?fmtQty(e.qty)+' '+s:fmtQty(e.qty)+' × '+s+' ('+r0(e.grams)+' g)'}
+function isCountU(e){return e.unit==='piece'&&COUNT_LAB.test(shortUnit(e))}
+/* a liquid is shown in ml, never in grams (its saved grams stay as they are; ml = grams / density of today's table row) */
+function amtG(e){var f=FOODBYID[e.foodId];return f&&f.liquid&&f.density?r0(e.grams/f.density)+' ml':r0(e.grams)+' g'}
+function qtyText(e){var s=shortUnit(e);if(isCountU(e))return fmtQty(e.qty)+' '+s;return e.unit==='g'?fmtQty(e.qty)+' '+s:fmtQty(e.qty)+' × '+s+' ('+amtG(e)+')'}
 /* compact pinned summary: Remaining + carbs / protein / fat, each consumed / goal with a thin bar */
 function compactBar(tot,c,left,counted,eaten){
   function col(label,id,val,goal,over,extra){
@@ -998,6 +1005,7 @@ function viewMeal(root){
   function row(id,label,val,unit,sub,partial){
     var r=h('div',{class:'nf-row'+(sub?' sub':''),id:id},h('span',{class:'nf-l'},label,partial?h('small',{class:'muted nf-partial',text:'partial: from '+fact.fibN+' of '+fact.n+' items'}):null),h('span',{class:'nf-v',text:r1(val)+' '+unit}));return r;
   }
+  nf.appendChild(h('p',{class:'muted small',id:'nf-basis',text:'For the whole meal: '+list.length+(list.length===1?' item':' items')+', about '+r0(list.reduce(function(a,e){return a+e.grams},0))+' g eaten.'}));
   nf.appendChild(row('nf-carbs','Total carbohydrates',fact.c,'g'));
   if(fact.fibN>0)nf.appendChild(row('nf-fibre','Dietary fibre',fact.fib,'g',true,fact.fibN<fact.n));
   nf.appendChild(row('nf-protein','Protein',fact.p,'g'));
@@ -1413,7 +1421,7 @@ function submitQuick(){
   openPreview(t);
 }
 function slotOfId(id){return S.profile.slots.filter(function(s){return s.id===id})[0]}
-function amountText(it){return it.unit==='g'&&shortUnit(it)==='g'?r0(it.grams)+' g':it.unit==='g'?fmtQty(it.qty)+' '+shortUnit(it)+' ('+r0(it.grams)+' g)':fmtQty(it.qty)+' × '+it.unitLabel.replace(/\s*\(.*$/,'')+' ('+r0(it.grams)+' g)'}
+function amountText(it){var sh=shortUnit(it);if(isCountU(it))return fmtQty(it.qty)+' '+sh+' ('+r0(it.grams)+' g)';if(it.unit==='g')return sh==='g'?r0(it.grams)+' g':sh==='ml'?fmtQty(it.qty)+' ml':fmtQty(it.qty)+' '+sh+' ('+amtG(it)+')';return fmtQty(it.qty)+' × '+it.unitLabel.replace(/\s*\(.*$/,'')+' ('+amtG(it)+')'}
 function rowItemsFor(txt,date){
   var kg=weightOn(S.profile.id,S.profile,date),sv=savedFor(txt,loadSaved(S.profile.id));
   if(sv)return savedItems(sv,kg);
@@ -1502,10 +1510,10 @@ function openPreview(text,restore,opts){
       panel.replaceChildren();
       var cur=it.foodId,list=(it.cands||[]).filter(function(c){return c.id!==cur}).slice(0,3);
       list.forEach(function(c){var f=findFood(c.id);if(!f)return;
-        panel.appendChild(h('button',{type:'button',class:'btn pv-alt',onclick:function(){setFood(c.id)}},h('span',{class:'grow',style:'text-align:left'},h('b',{text:f.name}),h('span',{class:'muted small',style:'display:block',text:r0(f.per100.kcal)+' kcal per 100 g'}))))});
+        panel.appendChild(h('button',{type:'button',class:'btn pv-alt',onclick:function(){setFood(c.id)}},h('span',{class:'grow',style:'text-align:left'},h('b',{text:f.name}),h('span',{class:'muted small',style:'display:block',text:perText(f)}))))});
       var res=h('div',{class:'pv-results'}),si=h('input',{type:'search',class:'pv-search','aria-label':'Search all foods',placeholder:'Search all foods',autocomplete:'off',oninput:function(){
         res.replaceChildren();var q=si.value.trim();if(q.length<2)return;
-        search(q,S.profile.id).slice(0,8).forEach(function(f){res.appendChild(h('button',{type:'button',class:'btn pv-alt',onclick:function(){setFood(f.id)}},h('span',{class:'grow',style:'text-align:left'},h('b',{text:f.name}),h('span',{class:'muted small',style:'display:block',text:r0(f.per100.kcal)+' kcal per 100 g'}))))});
+        search(q,S.profile.id).slice(0,8).forEach(function(f){res.appendChild(h('button',{type:'button',class:'btn pv-alt',onclick:function(){setFood(f.id)}},h('span',{class:'grow',style:'text-align:left'},h('b',{text:f.name}),h('span',{class:'muted small',style:'display:block',text:perText(f)}))))});
       }});
       panel.appendChild(si);panel.appendChild(res);
       if(it.type==='food'&&it.foodId)panel.appendChild(h('div',{class:'row',style:'margin-top:6px'},h('button',{type:'button',class:'btn sm pv-online',text:'Search online',onclick:function(){leaveTo('online')}}),h('button',{type:'button',class:'btn sm pv-custom',text:'Make custom food',onclick:function(){leaveTo('custom')}})));
@@ -1525,7 +1533,7 @@ function openPreview(text,restore,opts){
           it.flag==='check'?h('span',{class:'tag pv-flag',text:'Check'}):null,it.assumed?h('span',{class:'tag pv-assumed',text:'amount assumed'}):null,it.fromSaved?h('span',{class:'tag alt',text:'saved'}):null));
         status.appendChild(h('div',{class:'muted small pv-amount'},amountText(it)+' - ',h('b',{class:'pv-kcal',text:r0(it.kcal)+' kcal'}),it.est==='ai'?' - P '+r0(it.p)+' / C '+r0(it.c)+' / F '+r0(it.f)+' g':null));
         if(it.est==='ai')status.appendChild(h('p',{class:'small muted pv-est-note',text:'Not in the food list: these numbers are the AI\'s estimate. Please check them.'}));
-        tools.appendChild(h('button',{type:'button',class:'btn sm pv-notthis',text:'Not this?',onclick:function(){panel.hidden=!panel.hidden;if(!panel.hidden)altsPanel()}}));
+        tools.appendChild(h('button',{type:'button',class:'btn sm pv-notthis',text:'Change item',onclick:function(){panel.hidden=!panel.hidden;if(!panel.hidden)altsPanel()}}));
       }else{
         status.appendChild(h('div',{class:'pv-line pv-none'},h('span',{class:'tag pv-notfound',text:'Not found'}),' ',h('span',{text:'No food matched these words. Change the words above, or choose an action.'})));
         tools.appendChild(h('button',{type:'button',class:'btn sm pv-findall',text:'Search all foods',onclick:function(){panel.hidden=false;altsPanel();var s0=panel.querySelector('.pv-search');if(s0)s0.focus()}}));
@@ -1564,48 +1572,55 @@ function openPreview(text,restore,opts){
   }
   /* optional on-device AI re-read: always starts from, and falls back to, the rule result */
   var aiBox=h('div',{id:'pv-ai',class:'pv-ai',role:'status','aria-live':'polite'}),dirty=false;
-  function aiLine(msg,busy){
+  function aiLine(msg,busy,retry){
     aiBox.replaceChildren();
     if(busy){aiBox.appendChild(h('span',{class:'pv-ai-msg',id:'pv-ai-busy',text:msg}));aiBox.appendChild(h('button',{type:'button',class:'btn sm',id:'pv-ai-cancel',text:'Cancel',onclick:function(){if(LLM.state==='loading'||LLM.state==='downloading')llmCancel();else if(LLM.job&&LLM.job.cancel)LLM.job.cancel()}}))}
     else{
       if(msg)aiBox.appendChild(h('span',{class:'pv-ai-msg small muted',id:'pv-ai-msg',text:msg+' '}));
+      if(retry)aiBox.appendChild(h('button',{type:'button',class:'btn sm',id:'pv-ai-retry',text:'Retry',onclick:function(){runAI()}}));
       if(aiEnabled()&&nFood()+nEx()>0)aiBox.appendChild(h('button',{type:'button',class:'btn sm',id:'pv-reread',text:'Re-read with AI',onclick:function(){runAI()}}));
     }
   }
   /* AI on: ONE model call for the WHOLE text (all lines). With several distinct times the rules only decide which line belongs to which time group
      (the model's items are matched back to their line), so the groups are still separate entries. The rules read the text by themselves only as the Basic fallback. */
-  function aiBlocksRun(){
+  function aiBlocksRun(onPhase){
     var blocks=st.blocks||[st.text];
-    if(blocks.length<2)return parseLogAI(st.text,{viewDate:S.viewDate});
+    if(blocks.length<2)return parseLogAI(st.text,{viewDate:S.viewDate},{onPhase:onPhase});
     var gd=parseLog(st.text,{viewDate:S.viewDate,metaOnly:true}).date;
-    return parseLogAI(st.text,{viewDate:gd,metaText:blocks[0]}).then(function(r){
+    return parseLogAI(st.text,{viewDate:gd,metaText:blocks[0]},{onPhase:onPhase}).then(function(r){
       var metas=blocks.map(function(b){return parseLog(b,{viewDate:gd,metaOnly:true})}),items=[];
       if(!r.used){   /* Basic fallback: the rules read each time group */
         blocks.forEach(function(b,i){var rb=parseLog(b,{viewDate:gd});rb.items.forEach(function(it){if(i>0){it.gt=rb.time;it.gs=rb.slotId}items.push(it)})});
-        return {res:Object.assign({},r.res,{items:items}),used:false,reason:r.reason};
+        return {res:Object.assign({},r.res,{items:items}),used:false,reason:r.reason,detail:r.detail};
       }
       var by=blocks.map(function(){return []});
       r.res.items.forEach(function(it){var bi=it.line!=null&&st.lineMap&&st.lineMap[it.line]>=0?st.lineMap[it.line]:0;by[bi].push(it)});
       by.forEach(function(arr,bi){arr.forEach(function(it){if(bi>0){it.gt=metas[bi].time;it.gs=metas[bi].slotId}items.push(it)})});
-      return {res:Object.assign({},r.res,{items:items}),used:true,reason:'ok'};
+      return {res:Object.assign({},r.res,{items:items}),used:true,reason:'ok',perLine:r.perLine,badLines:r.badLines,nLines:r.nLines};
     });
+  }
+  function onPhase(ph,n,k){
+    if(!aiBox.isConnected)return;
+    aiLine(ph==='load'?(LLM.state==='ready'?'Reading with on-device AI...':'Loading the on-device AI (first use can take a minute)...'):ph==='read'?'Reading '+n+(n===1?' line':' lines')+' with on-device AI...':'Retrying line '+n+' of '+k+'...',true);
   }
   function runAI(){
     st.aiTried=true;st.waitAI=true;aiLine(LLM.state==='ready'?'Reading with on-device AI...':'Starting on-device AI...',true);drawRows();
-    aiBlocksRun().then(function(r){
+    aiBlocksRun(onPhase).then(function(r){
       st.waitAI=false;
       if(!aiBox.isConnected)return;
       var m=r.res;st.items=m.items;
       if(!r.used){
         drawRows();
-        aiLine(r.reason==='cancelled'?'AI read cancelled, using the built-in rules.':r.reason==='timeout'?'AI took too long, using the built-in rules.':r.reason==='loadfail'?'The AI could not start ('+(LLM.err||'see On-device AI')+') Using the built-in rules.':'AI could not read this, using the built-in rules.');
+        if(r.reason==='cancelled')aiLine('AI read cancelled, using the built-in rules.');
+        else aiLine('AI could not read this: '+aiReasonText(r.reason,r.detail)+'. Using the built-in rules.',false,true);
         return;
       }
       if(m.dateAi&&!st.dateExplicit){st.date=m.date;if(!st.touched&&!st.timeExplicit)st.time=st.date===S.today?nowTime():pastDefaultTime(S.profile.slots,st.slot,st.mealExplicit);reKg()}
       if(m.timeAi&&!st.touched){st.time=m.time}
       if(m.slotAi&&!st.mealExplicit){st.slot=m.slotId;st.mealExplicit=true}
       drawChips();drawRows();
-      aiLine('Read with on-device AI'+(m.aiDropped?' ('+m.aiDropped+' invented item'+(m.aiDropped===1?'':'s')+' ignored)':'')+'. Please check the rows.');
+      if(r.badLines){drawChips();drawRows();aiLine('The AI read '+(r.nLines-r.badLines)+' of '+r.nLines+' lines (line by line); '+r.badLines+' used the built-in rules ('+aiReasonText(LLM.last&&LLM.last.reason,'')+'). Please check the rows.',false,true);return}
+      aiLine('Read with on-device AI'+(r.perLine?' (line by line)':'')+(m.aiDropped?' ('+m.aiDropped+' invented item'+(m.aiDropped===1?'':'s')+' ignored)':'')+'. Please check the rows.');
     });
   }
   openSheet({title:'Check before saving',opener:opener,id:'pv-sheet',tall:true,dismiss:false,build:function(body){
@@ -1635,15 +1650,26 @@ var UNITW={katori:'katori',katoris:'katori',katora:'katori',vati:'katori',bowl:'
   piece:'piece',pieces:'piece',pc:'piece',pcs:'piece',nos:'piece',no:'piece',slice:'slice',slices:'slice',
   tbsp:'tbsp',tablespoon:'tbsp',tablespoons:'tbsp',tsp:'tsp',teaspoon:'tsp',teaspoons:'tsp',spoon:'tsp',spoons:'tsp',
   chammach:'tsp',chamach:'tsp',chamcha:'tsp',chammache:'tsp',g:'g',gm:'g',gms:'g',gram:'g',grams:'g',gr:'g',kg:'kg',
-  ml:'ml',l:'l',litre:'l',liter:'l',litres:'l',liters:'l',handful:'handful',mutthi:'handful',muthi:'handful',serving:'serving',servings:'serving'};
+  ml:'ml',l:'l',litre:'l',liter:'l',litres:'l',liters:'l',handful:'handful',mutthi:'handful',muthi:'handful',serving:'serving',servings:'serving',
+  bottle:'bottle',bottles:'bottle',can:'can',cans:'can',shot:'shot',shots:'shot',pint:'pint',pints:'pint'};
 /* the unit exactly as the person typed it (spelling variants folded): shown and stored as typed, never relabelled */
 var UNIT_SHOW={katori:'katori',katoris:'katori',katora:'katori',vati:'katori',bowl:'bowl',bowls:'bowl',glass:'glass',glasses:'glass',gilas:'glass',cup:'cup',cups:'cup',plate:'plate',plates:'plate',
   piece:'piece',pieces:'piece',pc:'piece',pcs:'piece',nos:'piece',no:'piece',slice:'slice',slices:'slice',tbsp:'tbsp',tablespoon:'tbsp',tablespoons:'tbsp',tsp:'tsp',teaspoon:'tsp',teaspoons:'tsp',spoon:'spoon',spoons:'spoon',
-  chammach:'tsp',chamach:'tsp',chamcha:'tsp',chammache:'tsp',g:'g',gm:'g',gms:'g',gram:'g',grams:'g',gr:'g',kg:'kg',ml:'ml',l:'l',litre:'l',liter:'l',litres:'l',liters:'l',handful:'handful',mutthi:'handful',muthi:'handful',serving:'serving',servings:'serving'};
-var SINGLE_UNIT={g:1,l:1,no:1,gr:1};   /* these only count as units right after a number */
+  chammach:'tsp',chamach:'tsp',chamcha:'tsp',chammache:'tsp',g:'g',gm:'g',gms:'g',gram:'g',grams:'g',gr:'g',kg:'kg',ml:'ml',l:'l',litre:'l',liter:'l',litres:'l',liters:'l',handful:'handful',mutthi:'handful',muthi:'handful',serving:'serving',servings:'serving',
+  bottle:'bottle',bottles:'bottle',can:'can',cans:'can',shot:'shot',shots:'shot',pint:'pint',pints:'pint'};
+var SINGLE_UNIT={g:1,l:1,no:1,gr:1,can:1,cans:1,shot:1,shots:1,bottle:1,bottles:1,pint:1,pints:1};   /* these only count as units right after a number */
 var SIZEW={small:0.75,chhota:0.75,chhoti:0.75,chota:0.75,mini:0.75,large:1.3,bada:1.3,badi:1.3,big:1.3,bit:0.5,thoda:0.5,thodi:0.5,little:0.5,medium:1};
 var STOPW={};('of ki ka ke ko wala wali wale plain some the my i had ate eat eaten eating have having took take drank drink drunk for in at on me mein mai ne khaya khayi khaye khai piya piyi pi liya li lia is was just about around approx approximately like also too only to hai tha thi x subah dopahar shaam raat morning afternoon evening night then aaj today yesterday kal').split(' ').forEach(function(w){STOPW[w]=1});
-var FILLER={white:1,fresh:1,homemade:1,home:1,style:1,regular:1,normal:1,sabzi:1,sabji:1,subzi:1,bhaji:1,curry:1,hot:1,boiled:1,cooked:1,steamed:1,grilled:1,roasted:1,leaves:1,leave:1,leaf:1};
+var FILLER={white:1,fresh:1,homemade:1,home:1,style:1,regular:1,normal:1,sabzi:1,sabji:1,subzi:1,bhaji:1,curry:1,hot:1,boiled:1,cooked:1,steamed:1,grilled:1,roasted:1,leaves:1,leave:1,leaf:1,soaked:1,soak:1,dried:1,dry:1,raw:1,peeled:1,chopped:1,sliced:1,toasted:1,unsalted:1,salted:1,whole:1,mashed:1,overnight:1,sprouted:1,shelled:1};
+/* words that only describe the food before them: "Anjeer, soaked (2 figs)" is ONE item */
+var DESCW={};'soaked soak dried dry raw cooked boiled roasted fried fresh chopped peeled sliced steamed grilled toasted unsalted salted whole mashed overnight sprouted shelled homemade'.split(' ').forEach(function(w){DESCW[w]=1});
+/* count nouns: "(4 nuts)", "(2 figs)" are counts of pieces, shown as typed */
+var COUNTN={nut:1,nuts:1,fig:1,figs:1,date:1,dates:1};
+var COUNT_LAB=/^(nuts?|figs?|dates?|cashews?|walnuts?|pistachios?|raisins?|almonds?)$/;
+/* weight of ONE piece for foods the table has only per 100 g (calibrated: 4 cashews 35 kcal, 2 figs 42, 2 dates 40) */
+var HSIZE={"tsp":5,"tbsp":15,"cup":150,"katori_s":100,"katori":150,"katori_l":200,"bowl":275,"glass":250}; // household volumes in ml (tsp, tbsp, cup, katori_s, katori, katori_l, bowl, glass); from table household_sizes
+var COUNTG=[[/cashew/,'cashew',1.5],[/^figs?\b/,'fig',25.5],[/^dates?\b/,'date',7],[/walnut/,'walnut',4],[/pistachio/,'pistachio',0.7],[/raisin/,'raisin',0.5]];
+function countG(food){var n=String(food.name||'').toLowerCase();for(var i=0;i<COUNTG.length;i++)if(COUNTG[i][0].test(n))return {noun:COUNTG[i][1],g:COUNTG[i][2]};return null}
 var EXERCISEW={walk:1,walked:1,walking:1,run:1,ran:1,running:1,jog:1,jogged:1,jogging:1,gym:1,workout:1,weights:1,yoga:1,cycling:1,cycled:1,cycle:1,bike:1,biked:1,swim:1,swam:1,swimming:1,badminton:1,steps:1,exercise:1,exercised:1,chala:1,tehla:1,tehle:1,daud:1,dauda:1,treadmill:1,pushups:1,squats:1};
 /* ---- exercise table (data/met.json, inlined at build) ---- */
 var MET=(function(){try{return JSON.parse($('#met').textContent)}catch(e){return {activities:[],brisk:[],stepM:0.75,defaultMinutes:30}}})();
@@ -1818,8 +1844,9 @@ function parseSegment(seg){
       prevNum=true;continue;
     }
     if((t==='bada'||t==='badi'||t==='chhota'||t==='chhoti')&&nx&&UNITW[nx]==='tsp'){unit=(t[0]==='b')?'tbsp':'tsp';uw=unit;i++;prevNum=false;continue}
+    if(COUNTN[t]&&prevNum&&unit===null&&words.length>0){unit='piece';uw=t;prevNum=false;continue}   /* "almonds soaked 3 nuts": nuts is the unit */
     if(UNITW[t]){
-      if(SINGLE_UNIT[t]&&!prevNum){words.push(t);prevNum=false;continue}
+      if((SINGLE_UNIT[t]&&!prevNum)||(t==='bottle'&&nx==='gourd')){words.push(t);prevNum=false;continue}
       if(unit===null){unit=UNITW[t];uw=UNIT_SHOW[t]||UNITW[t]}
       prevNum=false;continue;
     }
@@ -1851,15 +1878,16 @@ function cutByNumbers(seg){
 function exactKeys(f){
   if(f._ex)return f._ex;
   var out=[f.words.map(sing).join(' ')];
-  if(f.kind!=='raw'){f.base.split('/').forEach(function(p){var w=p.split(',')[0].split(/[^a-z0-9]+/).filter(Boolean).map(sing).join(' ');if(w&&out.indexOf(w)<0)out.push(w)})}
+  if(f.kind!=='raw'&&!f.src){f.base.split('/')   /* cooked rows: "Cabbage, boiled" must not own the plain word "cabbage" (the raw item keeps it) */.forEach(function(p){var w=p.split(',')[0].split(/[^a-z0-9]+/).filter(Boolean).map(sing).join(' ');if(w&&out.indexOf(w)<0)out.push(w)})}
+  if(f.liquid&&f.kind==='dish'&&f.base.indexOf(',')>0){var q=f.base.split(',').map(function(x){return x.trim()}).reverse().join(' ');if(out.indexOf(q)<0)out.push(q)}   /* "Juice, orange" is also "orange juice" */
   f._ex=out;return out;
 }
 /* 1 = the phrase is the food's own name (or a one-word alias) and the food is a popular/own one; 0.97 = same for other foods */
 function scoreStrict(f,tokens,worst){
   var core=tokens.join(' '),top=(f.pop||f.kind==='shared'||f.kind==='custom')?1:0.97;
   if(exactKeys(f).indexOf(core)>=0)return top;
-  if(tokens.length===1&&f.awords.some(function(a){return sing(a)===tokens[0]}))return top;
-  if(worst<=1)return 0.85;
+  if(tokens.length===1&&!f.src&&f.awords.some(function(a){return sing(a)===tokens[0]}))return top;   /* a cooked row's alias (tinda, methi) never outranks the raw item */
+  if(worst<=1)return f.group==='Beverages and liquids'?0.8:0.85;   /* a one-word hit (mango) leaves the raw item ahead of "Juice, mango" */
   if(worst===3&&tokens.every(function(t){return f.words.some(function(w){return sing(w)===t})||f.awords.some(function(w){return sing(w)===t})}))return 0.85;
   return 0.7;
 }
@@ -1879,9 +1907,9 @@ function fuzzyTokens(tokens){
   var vocab=Object.create(null);
   allFoods().forEach(function(f){f.words.forEach(function(w){vocab[w]=1});f.awords.forEach(function(w){vocab[w]=1})});
   var changed=false,out=tokens.map(function(t){
-    if(vocab[t]||t.length<4||/\d/.test(t))return t;
+    if(vocab[t]||t.length<5||/\d/.test(t))return t;   /* 4-letter words are too short to guess (beer is not beet, coke is not cooked) */
     var lim=t.length>=8?2:1,best=null,bd=9;
-    Object.keys(vocab).forEach(function(w){if(Math.abs(w.length-t.length)>lim)return;var d=dlDist(t,w);if(d<=lim&&(d<bd||(d===bd&&w.length<best.length))){best=w;bd=d}});
+    Object.keys(vocab).forEach(function(w){if(Math.abs(w.length-t.length)>lim||w[0]!==t[0])return;var d=dlDist(t,w);   /* same first letter: a guess must not jump to an unrelated food */if(d<=lim&&(d<bd||(d===bd&&w.length<best.length))){best=w;bd=d}});
     if(best){changed=true;return best}return t;
   });
   return changed?out:null;
@@ -1911,7 +1939,7 @@ function matchTokens(tokens,noSplit){
   }
   if(!list.length&&tokens.length>=2){
     var map={};
-    for(i=0;i<tokens.length;i++){var sub=tokens.slice(0,i).concat(tokens.slice(i+1));if(sub.length&&sub.some(function(t){return !FILLER[t]}))mergeInto(map,strictList(sub),0.65,i*100000)}
+    for(i=0;i<tokens.length;i++){var sub=tokens.slice(0,i).concat(tokens.slice(i+1));if(sub.length&&!(sub.length===1&&sub[0]==='protein')&&sub.some(function(t){return !FILLER[t]}))mergeInto(map,strictList(sub),0.65,i*100000)}
     list=Object.keys(map).map(function(k){return map[k]});via='drop';
   }
   if(!list.length){
@@ -1936,6 +1964,7 @@ function matchSeg(seg){
 }
 
 /* ---- grams ---- */
+var LIQML={bottle:500,can:330,shot:30,pint:568};   /* ml of a bottle, can or shot when the food has no row of its own */
 var SIZE_NOTE={small:0.75,large:1.3,bit:0.5};
 function isFatFood(f){return f.group==='Fats and oils'||/\b(oil|ghee|butter|vanaspati|margarine)\b/i.test(f.name)}
 function roundq(x){return Math.round(x*100)/100}
@@ -1953,11 +1982,16 @@ function resolveAmount(food,q){
     return fin(gU,qty===null?100:qty,false,1);
   }
   if(unit==='ml'||unit==='kg'||unit==='l'){
-    /* ml, l and kg stay as typed: the amount is shown in that unit and converted to grams (1 ml = 1 g; no density data) */
-    var per=unit==='ml'?1:1000,qv=qty===null?(unit==='ml'?100:1):qty;
+    /* ml, l and kg stay as typed: the amount is shown in that unit and converted to grams (ml and l use the food's density, 1 g/ml when unknown) */
+    var dn=food.density||1,per=unit==='ml'?dn:unit==='l'?1000*dn:1000,qv=qty===null?(unit==='ml'?100:1):qty;
     if(!(qv>0))qv=unit==='ml'?1:0.01;
     var gm=qv*per;if(gm>SIZE_MAX_G){qv=SIZE_MAX_G/per;gm=SIZE_MAX_G}
     return {qty:roundq(qv),unit:'g',unitLabel:unit,unitG:per,grams:roundq(qv*per),assumed:qty===null};
+  }
+  var cw=countG(food);
+  if(cw&&!us.some(function(x){return x.kind==='piece'&&x.grams!==cw.g})&&(unit==='piece'||(!unit&&qty!==null&&qty<=(cw.g<=20?200:19)))){
+    var cq=qty===null?1:qty,cn=q.word&&COUNT_LAB.test(q.word)?q.word:cw.noun+(cq===1?'':'s'),cg=Math.min(cq*cw.g*m,SIZE_MAX_G);
+    return {qty:roundq(cq),unit:'piece',unitLabel:cn+' ('+fmt2(cw.g)+' g)',unitG:cw.g,grams:roundq(cg),assumed:qty===null};
   }
   if(unit){
     var kind=unit==='slice'?'piece':unit;
@@ -1968,19 +2002,27 @@ function resolveAmount(food,q){
     else if(unit==='handful')u=pick('piece',/handful/i);
     else u=pick(kind);
     if(unit==='handful'&&u&&!/handful/i.test(u.label))u=null;
+    /* sizes: "bowl" is 275 ml against the 150 ml katori (a food's own bowl row wins: pick above); "small katori" 100 ml, "large katori" 200 ml. shortcut: "large bowl" still multiplies 1.3 */
+    var isBowl=unit==='katori'&&q.word&&/^bowls?$/.test(q.word);
+    if(isBowl&&u&&u.kind==='katori'&&!/bowl/i.test(u.label))u={kind:'katori',label:'bowl',grams:u.grams*HSIZE.bowl/HSIZE.katori};
     if(!u){
-      var g=unit==='katori'?150:unit==='glass'?250:unit==='cup'?200:unit==='plate'?250:unit==='handful'?30:unit==='tbsp'?(isFatFood(food)?13:15):unit==='tsp'?(isFatFood(food)?4.5:5):
+      var dd=food.density||1,vg=function(k){return Math.round(HSIZE[k]*dd*10)/10};
+      var lq=food.liquid&&food.density,g=LIQML[unit]&&lq?Math.round(LIQML[unit]*dd*10)/10:unit==='katori'?vg('katori'):unit==='glass'?vg('glass'):unit==='cup'?vg('cup'):unit==='plate'?250:unit==='handful'?30:unit==='tbsp'?(isFatFood(food)&&!food.density?13:vg('tbsp')):unit==='tsp'?(isFatFood(food)&&!food.density?4.5:vg('tsp')):
         unit==='serving'?100:(firstNonG&&(unit==='piece'||unit==='slice')?firstNonG.grams:30);
       var lab=unit==='slice'?'piece':unit;
-      u={kind:(unit==='slice'?'piece':unit),label:lab+' ('+g+' g)',grams:g};
+      u={kind:(unit==='slice'?'piece':unit),label:lab+' ('+(lq?Math.round(g/dd)+' ml':g+' g')+')',grams:g};
     }
+    /* "small katori" is its own 100 ml unit and "large katori" 200 ml, shown as typed (not "0.67 x katori") */
+    if(unit==='katori'&&!isBowl&&(m===0.75||m===1.3)){u={kind:'katori',label:(m<1?'small':'large')+' katori',grams:Math.round(u.grams*HSIZE[m<1?'katori_s':'katori_l']/HSIZE.katori*10)/10};m=1}
     return fin(u,qty,assumed,m);
   }
   if(qty===null){
     if(firstNonG)return fin(firstNonG,1,true,m);
     return fin(gU,100,true,1);
   }
-  if(qty>=20||!firstNonG){return fin(gU,qty>=20?qty:qty*100,false,1)}
+  /* a small countable piece (grape, almond, peanut, chilli: up to 20 g) keeps a typed count up to 200 as pieces; other foods read 20 or more as grams */
+  var smallPc=firstNonG&&firstNonG.kind==='piece'&&firstNonG.grams<=20&&qty<=200;
+  if(!smallPc&&(qty>=20||!firstNonG)){return fin(gU,qty>=20?qty:qty*100,false,1)}
   return fin(firstNonG,qty,false,m);
   function fin(u0,qv,asm,mult){
     var qe=qv*(u0.kind==='g'?1:mult);
@@ -1989,7 +2031,7 @@ function resolveAmount(food,q){
     if(gram>SIZE_MAX_G){qe=SIZE_MAX_G/u0.grams;gram=SIZE_MAX_G}
     var lab=u0.label;
     /* keep the word the person typed (bowl, slice, serving...) when the food's own unit is named differently */
-    if(q.word&&u0.kind!=='g'&&lab.toLowerCase().indexOf(q.word)!==0)lab=q.word+' ('+fmt2(u0.grams)+' g)';
+    if(q.word&&u0.kind!=='g'&&lab.toLowerCase().indexOf(q.word)!==0&&!/^(small|large) katori$/.test(lab))lab=q.word+' ('+(food.liquid&&food.density?fmt2(u0.grams/food.density)+' ml':fmt2(u0.grams)+' g')+')';
     return {qty:roundq(qe),unit:u0.kind,unitLabel:lab,unitG:u0.grams,grams:roundq(gram),assumed:asm};
   }
 }
@@ -2000,6 +2042,17 @@ function fillItem(it,food){
   it.qty=a.qty;it.unit=a.unit;it.unitLabel=a.unitLabel;it.unitG=a.unitG;it.grams=a.grams;it.assumed=a.assumed;
   var g=a.grams/100;it.per100=food.per100;it.kcal=food.per100.kcal*g;it.p=food.per100.p*g;it.c=food.per100.c*g;it.f=food.per100.f*g;
   return it;
+}
+/* a plain count of a countable noun ("5 bhindi", "2 country eggs", "2 green chillies"): when the best match has no piece portion (a dish, a cooked
+   variant), the raw ingredient that has one is used. Not when the words name a dish (sabzi, curry, omelette ...) or give a unit. */
+var DISHW={};'sabzi sabji subzi curry masala omelette omlet omlette fry fried bhurji gravy sambar dry roast roasted'.split(' ').forEach(function(w){DISHW[w]=1});
+function countPick(ps,f){
+  if(ps.qty===null||ps.unit||ps.qty>=20||ps.words.some(function(w){return DISHW[w]}))return null;
+  function pc(x){var u=unitsFor(x)[1];return u&&u.kind==='piece'}
+  if(pc(f))return null;
+  var l=sortList(matchTokens(ps.words).list);
+  for(var i=0;i<l.length;i++)if(l[i].score>=0.85&&l[i].f.kind==='raw'&&pc(l[i].f))return l[i].f;
+  return null;
 }
 /* One text segment -> list of items (usually one; two when the words are two foods, e.g. "dal chawal"). */
 function buildItems(seg,kg){
@@ -2028,6 +2081,7 @@ function buildItems(seg,kg){
     }
     var it={type:'unmatched',text:text,phrase:ps.phrase,score:m.score,flag:m.flag,cands:m.cands,q:q,via:m.via};
     var f=m.foodId&&findFood(m.foodId);
+    if(f)f=countPick(ps,f)||f;
     if(f){
       var oc=ownCountHit(f,ps.tokens);
       if(oc){it.q={qty:oc.countable?oc.qty/oc.n:null,unit:null,size:ps.size,word:null};if(!oc.countable)it.flag='check'}
@@ -2186,7 +2240,10 @@ function parseLog(text,ctx){
   var kg=ctx.kg>0?ctx.kg:(S.profile?weightOn(S.profile.id,S.profile,date):70);
   if(ctx.metaOnly)return {text:String(text).slice(0,500),date:date,dateExplicit:!!d.date,dateAdjusted:d.adjusted,time:time,timeExplicit:tm.explicit,slotId:slot.id,slotName:slot.name,slotExplicit:ml.found&&!!ml.slot,items:[],rule:false};
   /* split: hard separators always; soft words only when the whole phrase is not one known food */
-  var items=[],hard=t.split(/[\n,;+&]+/);
+  /* a comma splits items ("rice, dal") in single- and multi-line text, except a fragment that is only a descriptor ("soaked", "soaked (2 figs)"):
+     it belongs to the item before it on the same line, so "Anjeer, soaked (2 figs)" is ONE item */
+  var items=[],hard=[];
+  t.split(/[\n;+&]+/).forEach(function(l){var hm=[];l.split(',').forEach(function(f0){var pw=parseSegment(f0).words;if(hm.length&&pw.length&&pw.every(function(w){return DESCW[w]}))hm[hm.length-1]+=' '+f0;else hm.push(f0)});hard=hard.concat(hm)});
   function expand(seg){
     var m=/qqsv\d+qq/g.exec(seg);if(!m)return false;
     seg.replace(/qqsv\d+qq/g,function(k){savedItems(svMap[k],kg).forEach(function(it){items.push(it)});return k});return true;
@@ -2223,7 +2280,7 @@ var LLM_MODELS=[
 var LLM_FAMS=['q06','q17','l1'];
 var MIN_BUF=268435456,MIN_STORAGE_BUFS=10;   /* the limits WebLLM itself checks */
 function llmModel(id){return LLM_MODELS.filter(function(m){return m.id===id})[0]||null}
-var LLM={state:'idle',pct:0,text:'',modelId:null,engine:null,worker:null,err:'',webllm:null,token:0,cached:{},job:null,gpu:null,gpuP:null,calls:0,loading:null,idleT:null};
+var LLM={last:null,loadMs:null,state:'idle',pct:0,text:'',modelId:null,engine:null,worker:null,err:'',webllm:null,token:0,cached:{},job:null,gpu:null,gpuP:null,calls:0,loading:null,idleT:null};
 /* what the GPU can do: shader-f16 decides which model variants are offered */
 function llmProbe(){
   if(LLM.gpu)return Promise.resolve(LLM.gpu);
@@ -2338,7 +2395,7 @@ function llmEnsure(){
   var id=UI.modelId;
   LLM.loading=llmHas(id).then(function(has){
     if(!has){LLM.cached[id]=false;LLM.state='error';LLM.err='The model files are no longer on this phone (the browser may have cleared them). Open On-device AI and download it again.';refreshAI();return false}
-    return llmLoad(id,{cached:true});
+    var t0=Date.now();return llmLoad(id,{cached:true}).then(function(ok){if(ok)LLM.loadMs=Date.now()-t0;return ok});
   }).then(function(ok){LLM.loading=null;return ok},function(){LLM.loading=null;return false});
   return LLM.loading;
 }
@@ -2397,20 +2454,34 @@ function llmInterrupt(){
 function llmParseJSON(raw){
   if(raw&&typeof raw==='object')return raw;
   if(typeof raw!=='string')return null;
-  var t=raw.trim(),a=t.indexOf('{'),b=t.lastIndexOf('}');
+  var t=raw.replace(/<think>[\s\S]*?<\/think>/g,'').trim(),a=t.indexOf('{'),b=t.lastIndexOf('}');
   if(a<0||b<a)return null;
-  try{var o=JSON.parse(t.slice(a,b+1));return o&&typeof o==='object'?o:null}catch(e){return null}
+  t=t.slice(a,b+1);
+  try{var o=JSON.parse(t);return o&&typeof o==='object'?o:null}catch(e){}
+  try{o=JSON.parse(t.replace(/,\s*([}\]])/g,'$1'));return o&&typeof o==='object'?o:null}catch(e){return null}   /* small models leave trailing commas */
 }
-/* run one extraction with a timeout; always resolves {data,reason} (reason: ok | timeout | cancelled | bad | error) */
-function llmRun(text,today){
+/* GENERATE phase only (the model is already loaded): timeout grows with the number of lines (+20 s for the very first call: GPU shader compile).
+   Always resolves {data,reason,detail,ms} (reason: ok | timeout | cancelled | bad | error). */
+function llmTimeout(lines){return window.__llmTimeoutMs||(15000+9000*Math.max(1,lines||1)+(LLM.calls===0?20000:0))}
+function llmRun(text,today,lines){
   return new Promise(function(resolve){
-    var done=false,job={};LLM.job=job;
-    function fin(data,reason){if(done)return;done=true;clearTimeout(tm);if(LLM.job===job)LLM.job=null;if(LLM.state==='ready')llmTouch();resolve({data:data,reason:reason})}
-    var tm=setTimeout(function(){llmInterrupt();fin(null,'timeout')},window.__llmTimeoutMs||(LLM.calls===0?30000:15000));LLM.calls++;
+    var done=false,job={},t0=Date.now();LLM.job=job;
+    function fin(data,reason,detail){if(done)return;done=true;clearTimeout(tm);if(LLM.job===job)LLM.job=null;if(LLM.state==='ready')llmTouch();resolve({data:data,reason:reason,detail:detail||'',ms:Date.now()-t0})}
+    var to=llmTimeout(lines),tm=setTimeout(function(){llmInterrupt();fin(null,'timeout','no answer after '+Math.round(to/1000)+' s')},to);LLM.calls++;
     job.cancel=function(){llmInterrupt();fin(null,'cancelled')};
-    var p;try{p=llmGenerate(text,today)}catch(e){fin(null,'error');return}
-    p.then(function(raw){var o=llmParseJSON(raw);fin(o,o?'ok':'bad')},function(){fin(null,'error')});
+    var p;try{p=llmGenerate(text,today)}catch(e){fin(null,'error',String(e&&e.message||e).slice(0,160));return}
+    p.then(function(raw){var o=llmParseJSON(raw);fin(o,o?'ok':'bad',o?'':'the answer was not valid JSON: '+String(raw).slice(0,60))},function(e){fin(null,'error',String(e&&e.message||e).slice(0,160))});
   });
+}
+/* the plain-words reason shown in the check sheet and kept for the 'Last AI problem' report */
+function aiReasonText(r,detail){
+  var d=detail?' ('+detail+')':'';
+  return r==='timeout'?'the AI took too long'+d:r==='cancelled'?'cancelled':r==='loadfail'?'the AI could not start'+(LLM.err?' ('+LLM.err+')':''):r==='bad'?'the AI gave an answer that could not be read'+d:r==='empty'?'the AI named no food that is in your text'+d:r==='error'?'the AI stopped with an error'+d:r;
+}
+function aiRecord(reason,detail,extra){
+  if(reason==='ok'||reason==='cancelled'||reason==='off')return;
+  var m=llmModel(UI.modelId||LLM.modelId);
+  LLM.last=Object.assign({when:new Date().toISOString(),model:m?m.name:(UI.modelId||'?'),loadMs:LLM.loadMs||null,genMs:null,tokens:(LLM.lastUsage&&LLM.lastUsage.completion_tokens)||null,reason:reason,detail:aiReasonText(reason,detail),input:null},extra||{});
 }
 /* ---- validation and mapping into the rule pipeline ---- */
 function lowConf(it){return it.type==='unmatched'||(it.type==='food'&&(it.score==null?false:it.score<0.8))}
@@ -2426,7 +2497,7 @@ function cleanSeg(t,today,slots){
 }
 var LLM_GLUE={and:1,aur:1,with:1,n:1,then:1,phir:1,plus:1,along:1,at:1,for:1,in:1,on:1,the:1,a:1,an:1,of:1,i:1,had:1,ate:1,have:1,my:1,some:1,ki:1,ka:1,ke:1,ko:1,me:1,mein:1,after:1,before:1,so:1,then:1,also:1,today:1,aaj:1};
 function llmNum(x,lo,hi){x=typeof x==='number'?x:(typeof x==='string'&&x.trim()!==''?parseFloat(x):NaN);if(!isFinite(x)||x<lo)return null;return Math.min(hi,x)}
-var AI_UNIT_G={katori:150,bowl:150,glass:250,cup:200,plate:250,tbsp:15,tsp:5,piece:50,slice:30,handful:30,serving:100};
+var AI_UNIT_G={katori:HSIZE.katori,bowl:HSIZE.bowl,glass:HSIZE.glass,cup:HSIZE.cup,plate:250,tbsp:HSIZE.tbsp,tsp:HSIZE.tsp,piece:50,slice:30,handful:30,serving:100};
 /* The model's nutrition guess for the amount the user stated -> {kcal,p,c,f,grams,...} or null.
    Every number is range-checked and clamped; a guess that does not add up (calories vs macros, more than 9 kcal or more macros than grams) is corrected and flagged. */
 function llmEstimate(r,q,word){
@@ -2459,22 +2530,47 @@ function llmEstimate(r,q,word){
 function llmBuild(rule,data,text,ctx){
   if(!data||!Array.isArray(data.items))return null;
   var today=ctx.today||S.today,slots=ctx.slots||S.profile.slots,kg=ctx.kg>0?ctx.kg:weightOn(S.profile.id,S.profile,rule.date);
-  var nt=normText(text),out=[],rest=nt,dropped=0,saved=ctx.saved||(S.profile?loadSaved(S.profile.id):[]);
-  function wordRx(w){return new RegExp('(^|[^a-z0-9\\u0900-\\u097f])('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')(?=$|[^a-z0-9\\u0900-\\u097f])')}
+  var nt=normText(text),out=[],rest=nt.replace(/[()\[\]{}]/g,' '),dropped=0,saved=ctx.saved||(S.profile?loadSaved(S.profile.id):[]);
+  /* tolerant lookup of the model's words in the remaining input: brackets, case and punctuation do not matter; if that fails, the food words alone
+     (without modifier words, numbers, units) may be separated by modifier words ('almonds (3 nuts)' vs 'almonds soaked (3 nuts)') */
+  function findWords(rt){
+    var SEP='[^a-z0-9\\u0900-\\u097f]+',esc=function(w){return w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')};
+    var toks=rt.replace(/[()\[\]{}]/g,' ').split(/[^a-z0-9.\u0900-\u097f]+/).map(function(w){return w.replace(/^\.+|\.+$/g,'')}).filter(Boolean);
+    function go(t,gap){
+      if(!t.length)return null;
+      var mid=gap?'(?:'+SEP+'(?:'+Object.keys(DESCW).join('|')+'))*'+SEP:SEP;
+      var m=new RegExp('(^|[^a-z0-9\\u0900-\\u097f])('+t.map(esc).join(mid)+')(?=$|[^a-z0-9\\u0900-\\u097f])').exec(rest);
+      return m?{at:m.index+m[1].length,len:m[2].length}:null;
+    }
+    var hit=go(toks,false);if(hit)return hit;
+    var food=toks.filter(function(w){return !DESCW[w]&&!isNumTok(w)&&!UNITW[w]&&!COUNTN[w]&&w.length>=2});
+    if(!food.length)food=toks.filter(function(w,i){return !DESCW[w]&&!isNumTok(w)&&!UNITW[w]&&w.length>=2&&toks.indexOf(w)===i});   /* only a count noun left ("dates (2 dates)"): it is the food */
+    return food.length?go(food,true):null;
+  }
+  /* the model's text often leaves out the typed amount ("Cashews" for "Cashews (4 nuts)", "milk" for "200 ml milk"): the span grows over the amount
+     next to it on the same line (and over a descriptor-only comma fragment), so units stay as typed; another food's words are never taken */
+  function withAmount(at,len){
+    var s=at,B=/[\n;+&\u0001,]/,ok=function(x,cnt){var p=parseSegment(cleanSeg(x,today,slots));return p.words.every(function(w){return DESCW[w]||cnt&&COUNTN[w]})};
+    while(s>0&&!B.test(rest[s-1]))s--;
+    if(!ok(rest.slice(s,at),false))s=at;
+    var tl=rest.slice(at+len).split(/[\n;+&\u0001]/)[0].split(','),k=0;
+    while(k<tl.length&&ok(tl[k],k===0))k++;
+    return {s:s,e:at+len+tl.slice(0,k).join(',').length};
+  }
   function unmatched(rt,name,m){return {type:'unmatched',text:rt,phrase:name||rt,score:m?m.score:0,flag:'none',cands:m?m.cands:[],q:{qty:null,unit:null,size:null,word:null},via:'ai'}}
   var srcLine=null;   /* which non-blank line of the text an item came from (used to split a multi-time text after the one model call) */
   function oneItem(r){
     if(!r||typeof r!=='object'){dropped++;return}
-    var type=r.type==='exercise'?'exercise':r.type==='food'?'food':null,rt=typeof r.text==='string'?normText(r.text):'';
+    var ty=String(r.type==null?'food':r.type).toLowerCase(),type=ty==='exercise'?'exercise':ty==='food'?'food':null,rt=typeof r.text==='string'?normText(r.text):'';
     /* item words must be in the input (whole words); each piece used once */
     if(!type||!rt||rt.replace(/[^a-z0-9ऀ-ॿ]/g,'').length<2){dropped++;return}
-    var m0=wordRx(rt).exec(rest);
+    var m0=findWords(rt);
     if(!m0){dropped++;return}
-    var at0=m0.index+m0[1].length;srcLine=rest.slice(0,at0).split('\n').slice(0,-1).filter(function(l){return l.trim()}).length;rest=rest.slice(0,at0)+' \u0001 '+rest.slice(at0+rt.length);
+    var wa=withAmount(m0.at,m0.len),at0=wa.s,typed=rest.slice(wa.s,wa.e);srcLine=rest.slice(0,at0).split('\n').slice(0,-1).filter(function(l){return l.trim()}).length;rest=rest.slice(0,at0)+' \u0001 '+rest.slice(wa.e);
     var svh=null;
     if(saved.length){[rt,extractTime(extractDate(rt,today).text).text.trim()].forEach(function(c){if(!svh&&c)svh=savedFor(c,saved)})}
     if(svh){savedItems(svh,kg).forEach(function(x){out.push(x)});return}
-    var seg=cleanSeg(rt,today,slots);if(!seg)seg=rt;
+    var seg=cleanSeg(typed,today,slots)||cleanSeg(rt,today,slots);if(!seg)seg=rt;
     if(type==='exercise'){
       var rx=parseExercise(seg,kg),key=rx?rx.actKey:(EXBYKEY[r.activity]?r.activity:null),exChanged=!rx;
       if(!key){out.push(unmatched(rt,rt,null));return}
@@ -2487,7 +2583,7 @@ function llmBuild(rule,data,text,ctx){
       return;
     }
     /* typed amount/unit win; the model only fills what is missing */
-    var ps=parseSegment(seg),aiUnit=LLM_UNITS.indexOf(r.unit)>=0?r.unit:null,lq=llmClampQty(r.qty,aiUnit);
+    var ps=parseSegment(seg),aiUnit=LLM_UNITS.indexOf(String(r.unit||'').toLowerCase())>=0?String(r.unit).toLowerCase():null,lq=llmClampQty(r.qty,aiUnit);
     var q={qty:null,unit:null,size:null,word:null};
     q.qty=ps.qty!==null?ps.qty:lq;
     if(ps.unit){q.unit=ps.unit;q.word=ps.unitWord}
@@ -2504,7 +2600,7 @@ function llmBuild(rule,data,text,ctx){
       return;
     }
     var it=Object.assign(unmatched(rt,m.phrase||name,m),{flag:m.flag,q:q}),f=m.foodId&&findFood(m.foodId);
-    if(f&&!(m.score>=0.8)&&llmEstimate(r,q,q.word))f=null;   /* a weak table match (score < 0.8) loses to the AI estimate; it stays under 'Not this?' */
+    if(f&&!(m.score>=0.8)&&llmEstimate(r,q,q.word))f=null;   /* a weak table match (score < 0.8) loses to the AI estimate; it stays under 'Change item' */
     if(f){
       var oc=ownCountHit(f,ps.tokens);   /* "egg omelette 2 eggs": the 2 counts the eggs inside one omelette, not omelettes */
       if(oc){it.q={qty:oc.countable?oc.qty/oc.n:null,unit:null,size:q.size,word:null};if(!oc.countable)it.flag='check'}
@@ -2526,7 +2622,7 @@ function llmBuild(rule,data,text,ctx){
   if(!out.length)return null;
   /* anything the user wrote that no valid item covers stays visible as a "not found" row */
   rest=rest.split('\n').map(function(l){return cleanSeg(l,today,slots)}).join(' ').replace(/[^a-zऀ-ॿ ]+/g,' ');   /* line by line: each line may carry its own time / meal word */
-  var left=rest.split(/\s+/).filter(function(w){return w.length>=2&&!LLM_GLUE[w]&&!STOPW[w]&&!UNITW[w]&&!NUMW[w]&&!SIZEW[w]});
+  var left=rest.split(/\s+/).filter(function(w){return w.length>=2&&!LLM_GLUE[w]&&!STOPW[w]&&!UNITW[w]&&!NUMW[w]&&!SIZEW[w]&&!DESCW[w]&&!COUNTN[w]});
   if(left.length)out.push(unmatched(left.join(' '),left.join(' '),null));
   var res=Object.assign({},rule,{items:out.slice(0,40),ai:true,aiDropped:dropped});
   if(!rule.dateExplicit&&typeof data.date==='string'&&/^\d{4}-\d\d-\d\d$/.test(data.date)&&isDate(data.date)&&data.date<=today&&data.date>=addDays(today,-60)){res.date=data.date;res.dateAi=true}
@@ -2541,21 +2637,49 @@ function llmBuild(rule,data,text,ctx){
    (no model, switched off, load error, timeout, cancel, unusable answer). In AI mode the sentence itself is never looked up in the food list. */
 function parseLogAI(text,ctx,opts){
   ctx=ctx||{};opts=opts||{};
-  function fallback(reason){return {res:parseLog(text,ctx),rule:null,used:false,reason:reason}}
+  function phase(p,n,k){if(opts.onPhase)try{opts.onPhase(p,n,k)}catch(e){}}
+  function fallback(reason,detail){aiRecord(reason,detail,{input:String(text).slice(0,300)});return {res:parseLog(text,ctx),rule:null,used:false,reason:reason,detail:detail||''}}
   if(!aiEnabled())return Promise.resolve(fallback('off'));
-  var meta=parseLog(ctx.metaText||text,Object.assign({},ctx,{metaOnly:true}));
-  /* the first use loads the model (it is not loaded at app start); a load that fails or is cancelled keeps the rule result */
+  var meta=parseLog(ctx.metaText||text,Object.assign({},ctx,{metaOnly:true})),src=String(text).slice(0,500),today=ctx.today||S.today;
+  var lines=src.split(/\r?\n/).map(function(l){return l.trim()}).filter(Boolean);
+  function build(data,t){var m=null;try{m=llmBuild(meta,data,t,ctx)}catch(e){m=null}return m}
+  /* LOAD phase (progress + Cancel, no timeout), then GENERATE phase (timeout scaled to the lines) */
+  phase('load');
   return llmEnsure().then(function(ok){
     if(!ok)return fallback(LLM.state==='error'?'loadfail':'cancelled');
-    return llmRun(String(text).slice(0,500),ctx.today||S.today).then(function(r){
-      if(!r.data)return fallback(r.reason);
-      var m=null;try{m=llmBuild(meta,r.data,text,ctx)}catch(e){m=null}
-      if(!m)return fallback('empty');
-      return {res:m,rule:meta,used:true,reason:'ok'};
+    phase('read',lines.length);
+    return llmRun(src,today,lines.length).then(function(r){
+      if(r.reason==='cancelled')return fallback('cancelled');
+      var m=r.data?build(r.data,text):null;
+      if(m)return {res:m,rule:meta,used:true,reason:'ok'};
+      var why=r.data?'empty':r.reason,detail=r.data?'the model returned '+((r.data.items||[]).length)+' item(s), none matched your words':r.detail;
+      if(lines.length<2||lines.length>8||LLM.state!=='ready'){   /* per-line retry only for a short list (each line can take 24 s on a phone) */var fb=fallback(why,detail);if(LLM.last)LLM.last.genMs=r.ms;return fb}
+      /* the whole-text call failed: ask once per line and merge everything into the same meal */
+      var merged={items:[],date:null,time:null,meal:null},bad=[],k=0,firstFail={reason:why,detail:detail},lineFail=null;
+      function next(){
+        if(k>=lines.length)return Promise.resolve();
+        var i=k++;phase('line',i+1,lines.length);
+        return llmRun(lines[i],today,1).then(function(x){
+          if(x.reason==='cancelled'){bad.cancelled=true;return}
+          var items=x.data&&Array.isArray(x.data.items)?x.data.items:[];
+          if(x.data&&items.length){items.forEach(function(it){merged.items.push(it)});['date','time','meal'].forEach(function(f){if(merged[f]==null&&x.data[f]!=null)merged[f]=x.data[f]})}
+          else{bad.push(i);lineFail=lineFail||{reason:x.data?'empty':x.reason,detail:x.data?'no item for this line':x.detail}}
+        }).then(function(){return bad.cancelled?null:next()});
+      }
+      return next().then(function(){
+        if(bad.cancelled)return fallback('cancelled');
+        var goodLines=lines.filter(function(l,i){return bad.indexOf(i)<0}),m2=merged.items.length?build(merged,goodLines.join('\n')):null;
+        if(!m2){var fb2=fallback(firstFail.reason,firstFail.detail);if(LLM.last)LLM.last.genMs=r.ms;return fb2}
+        if(bad.length){   /* lines the AI could not read keep the built-in rules' rows (marked Check) */
+          bad.forEach(function(i){parseLog(lines[i],Object.assign({},ctx,{viewDate:m2.date,metaText:null})).items.forEach(function(it){it.flag=it.flag==='none'?'check':it.flag;m2.items.push(it)})});
+          aiRecord((lineFail||firstFail).reason,(lineFail||firstFail).detail,{input:String(text).slice(0,300)});
+        }
+        return {res:m2,rule:meta,used:true,reason:'ok',perLine:true,badLines:bad.length,nLines:lines.length};
+      });
     });
   });
 }
-window.TrackMe=window.Journable={parseLog:parseLog,splitTimeBlocks:splitTimeBlocks,matchFood:matchFood,parseLogAI:parseLogAI,llmMerge:llmBuild,llmBuild:llmBuild,aiActive:aiEnabled,appConfig:function(){return llmImport().then(llmAppConfig)},version:'1.1'};
+window.TrackMe=window.Journable={parseLog:parseLog,splitTimeBlocks:splitTimeBlocks,matchFood:matchFood,parseLogAI:parseLogAI,llmMerge:llmBuild,llmBuild:llmBuild,aiActive:aiEnabled,appConfig:function(){return llmImport().then(llmAppConfig)},version:'1.1.4'};
 /* ---------- On-device AI screen (model manager) ---------- */
 function mbText(mb){return mb>=1000?(Math.round(mb/100)/10)+' GB':Math.round(mb)+' MB'}
 function onMobileData(){var c=navigator.connection;return !!c&&(c.type==='cellular'||c.saveData===true)}
@@ -2591,6 +2715,13 @@ function viewAI(root){
       h('label',{class:'check-row'},tog,h('span',{text:'Use on-device AI'})),
       h('p',{class:'small muted',id:'ai-state',text:'Status: '+chipLabel()+(UI.modelId&&llmModel(UI.modelId)?' ('+llmModel(UI.modelId).name+')':'')+'.'})));
     if(LLM.err)box.appendChild(h('section',{class:'banner error',id:'ai-err',role:'alert'},h('b',{text:'That did not work. '}),LLM.err));
+    if(LLM.last){
+      var L=LLM.last,rep=['TrackMe last AI problem, '+L.when,'Model: '+L.model,'Load: '+(L.loadMs!=null?L.loadMs+' ms':'n/a'),'Generate: '+(L.genMs!=null?L.genMs+' ms':'n/a'),'Tokens: '+(L.tokens!=null?L.tokens:'n/a'),'Reason: '+L.detail,'Text: '+(L.input||'').replace(/\n/g,' / ')].join('\n');
+      box.appendChild(h('section',{class:'card',id:'ai-last'},h('h3',{style:'margin:0 0 6px',text:'Last AI problem'}),h('pre',{class:'small',id:'ai-last-text',style:'white-space:pre-wrap;margin:0 0 8px',text:rep}),
+        h('button',{type:'button',class:'btn sm',id:'ai-last-copy',text:'Copy',onclick:function(){
+          function fb(){var ta=h('textarea',{style:'position:fixed;opacity:0;top:0',readonly:true});ta.value=rep;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){}ta.remove();toast('Copied')}
+          try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(rep).then(function(){toast('Copied')},fb);return}}catch(e){}fb();}})));
+    }
     var g=LLM.gpu,usable=!g||g.ok;
     if(g&&g.ok&&!g.f16)box.appendChild(h('section',{class:'banner warn',id:'ai-f16-note',role:'note'},h('b',{text:'Compatible models only. '}),'Your phone\'s GPU can\'t run the fast models; using the compatible one.'));
     if(g&&!g.ok&&av.ok)box.appendChild(h('section',{class:'banner warn',id:'ai-gpu-note',role:'note'},h('b',{text:'This phone\'s GPU cannot run the AI. '}),g.why==='limits'?'Its GPU limits are below what the models need (a 256 MB buffer and 10 storage buffers per stage).':g.why==='nogpu'?'The browser offers no WebGPU.':'The browser found no usable GPU adapter.',' The Basic parser keeps working.'));
@@ -2769,7 +2900,7 @@ function newAddCtx(o){
   if(e){var base=findFood(e.foodId)||{id:e.foodId,kind:'custom',est:false,units:[],group:e.est==='ai'?'AI estimate':'',alias:''};
     /* editing keeps the nutrition snapshot stored on the entry, not today's database values */
     var f=Object.assign({},base,{id:e.foodId,name:e.foodName,per100:e.per100});
-    var us=unitsFor(f),u=us.filter(function(x){return x.kind===e.unit&&x.label===(e.unitLabel||x.label)})[0];
+    var us=unitsFor(f),u=us.filter(function(x){return x.kind===e.unit&&x.label===(e.unitLabel||x.label)&&(!e.unitG||x.grams===e.unitG)})[0]; /* same label but a new weight: keep the entry's own {label, unitG} */
     if(!u)u={kind:e.unit,label:e.unitLabel||e.unit,grams:e.unitG||1};
     return {editId:e.id,editDate:e.date,food:f,unit:u,qty:e.qty,date:e.date,time:e.time,slot:e.slot,slotName:e.slotName,query:'',mode:'form',createdAt:e.createdAt,logId:e.logId,adj:e.adj,est:e.est,orig:{foodId:e.foodId,qty:e.qty,unit:e.unit,unitLabel:e.unitLabel,grams:e.grams}};}
   var t=o.date&&o.date!==S.today?'12:00':nowTime();
@@ -2798,11 +2929,22 @@ function viewAdd(root){
   if(!ctx.food)return addSearch(root,ctx);
   addForm(root,ctx);
 }
+/* the basis of a food's numbers, spelled out: "132 kcal per 100 g; 172 kcal for 1 katori (130 g)" */
+function per100Txt(f){return f.liquid&&f.density?r0(f.per100.kcal*f.density)+' kcal per 100 ml':r0(f.per100.kcal)+' kcal per 100 g'}
+function perText(f){
+  var t=per100Txt(f),m=f.units&&f.units[0];
+  if(m&&m.grams>0){
+    /* "~" for an estimated portion; a glass or cup of liquid is shown in ml, as the label says (1 ml = 1 g is not assumed for the weight) */
+    var lab=String(m.label),ml=/\((~?)\s*(\d+(?:\.\d+)?)\s*ml\)/.exec(lab),w=ml&&!/katori/i.test(lab)?ml[1]+ml[2]+' ml':(/\(~/.test(lab)?'~':'')+r0(m.grams)+' g';
+    t+='; '+r0(f.per100.kcal*m.grams/100)+' kcal for '+(/^\d/.test(lab)?'':'1 ')+lab.replace(/\s*\(.*$/,'')+' ('+w+')';
+  }
+  return t;
+}
 function foodLine(f,extra){
-  var tag=f.kind==='dish'?(f.est?h('span',{class:'tag',text:'estimate'}):h('span',{class:'tag alt',text:'IFCT'})):
+  var tag=f.kind==='dish'?(f.est?h('span',{class:'tag',text:'estimate'}):h('span',{class:'tag alt',text:f.usda?'USDA':'IFCT'})):
     (f.kind==='shared'||f.kind==='custom')?h('span',{class:'tag alt',text:f.kind==='custom'?'My food':f.group}):h('span',{class:'tag alt',text:'raw ingredient'});
   return h('span',null,h('b',{text:f.name}),' ',tag,f.check?h('span',null,' ',h('span',{class:'tag',text:'check values'})):null,extra||null,
-    h('span',{class:'muted small',style:'display:block',text:r0(f.per100.kcal)+' kcal per 100 g - '+f.group}));
+    h('span',{class:'muted small',style:'display:block',text:perText(f)+' - '+f.group}));
 }
 function addSearch(root,ctx){
   var results=h('div',{id:'results'}),status=h('p',{class:'sr-only',role:'status','aria-live':'polite'});
@@ -2842,7 +2984,10 @@ function addSearch(root,ctx){
   function offShow(r,q){
     offOut.replaceChildren();
     if(r.status==='rate'){offOut.appendChild(h('p',{class:'err',role:'alert',id:'off-msg',text:'Too many searches. Please wait a minute and try again.'}));return}
-    if(r.status!=='ok'){offOut.appendChild(h('p',{class:'err',role:'alert',id:'off-msg',text:'Could not reach Open Food Facts. You may be offline, or the site blocked this request. You can still add the food yourself with "Add a custom food".'}));return}
+    if(r.status!=='ok'){
+      var T=r.tries||[],busy=T.some(function(x){return x.why==='http'}),to=T.some(function(x){return x.why==='timeout'}),net=T.some(function(x){return x.why==='network'});
+      var why=busy?'The Open Food Facts server is busy or down right now ('+T.filter(function(x){return x.why==='http'}).map(function(x){return x.host.split('.')[0]+': HTTP '+x.code}).join(', ')+').':to?'Open Food Facts did not answer in '+Math.round(OFF_TIMEOUT/1000)+' seconds.':net?'The request did not get through: no internet, or the browser or a content blocker stopped it.':'Open Food Facts sent an answer this app could not read.';
+      offOut.appendChild(h('div',{class:'err',role:'alert',id:'off-msg'},h('span',{text:why+' You can try again, or add the food yourself with "Add a custom food". '}),h('button',{type:'button',class:'btn sm',id:'off-retry',text:'Retry',onclick:function(){startOff()}})));return}
     if(!r.items.length){offOut.appendChild(h('p',{class:'muted',id:'off-msg',role:'status',text:'No usable matches online for "'+q+'" (foods with missing or odd values are hidden). Try other words, or add a custom food.'}));return}
     offOut.appendChild(h('p',{class:'muted small',id:'off-msg',role:'status',text:r.items.length+' online matches from Open Food Facts (values per 100 g, entered by volunteers: please check them).'}));
     r.items.forEach(function(it){
@@ -2895,35 +3040,38 @@ function offNorm(p){
 function offFetch(url,handle){
   return new Promise(function(resolve){
     if(handle&&handle.cancelled){resolve({status:'cancelled'});return}
-    var ctl=typeof AbortController!=='undefined'?new AbortController():null,done=false;if(handle)handle.ctl=ctl;
-    function finish(r){if(done)return;done=true;clearTimeout(timer);resolve(r)}
-    var timer=setTimeout(function(){try{if(ctl)ctl.abort()}catch(e){}finish({status:'fail'})},OFF_TIMEOUT);
+    var ctl=typeof AbortController!=='undefined'?new AbortController():null,done=false,host=url.replace(/^https:\/\//,'').split('/')[0];if(handle)handle.ctl=ctl;
+    function finish(r){if(done)return;done=true;clearTimeout(timer);r.host=host;resolve(r)}
+    var timer=setTimeout(function(){try{if(ctl)ctl.abort()}catch(e){}finish({status:'fail',why:'timeout'})},OFF_TIMEOUT);
     try{
       fetch(url,{signal:ctl?ctl.signal:undefined,credentials:'omit',referrerPolicy:'no-referrer'}).then(function(resp){
         if(resp.status===429){finish({status:'rate'});return}   /* only 429 means "too many searches"; 5xx are plain failures */
-        if(!resp.ok){finish({status:'fail'});return}
+        if(!resp.ok){finish({status:'fail',why:'http',code:resp.status});return}
         return resp.text().then(function(txt){
-          var d;try{d=JSON.parse(txt)}catch(e){finish({status:'fail'});return}
+          var d;try{d=JSON.parse(txt)}catch(e){finish({status:'fail',why:'badjson'});return}
           var arr=d&&Array.isArray(d.products)?d.products:d&&Array.isArray(d.hits)?d.hits:Array.isArray(d)?d:null;
-          if(!arr){finish({status:'fail'});return}
+          if(!arr){finish({status:'fail',why:'badjson'});return}
           var seen=Object.create(null),items=[];arr.slice(0,100).forEach(function(x){var it=offNorm(x);if(it&&!seen[it.code]){seen[it.code]=1;items.push(it)}});
           finish({status:'ok',items:items.slice(0,20)});
         });
-      }).catch(function(){finish(handle&&handle.cancelled?{status:'cancelled'}:{status:'fail'})});
-    }catch(e){finish({status:'fail'})}
+      }).catch(function(){finish(handle&&handle.cancelled?{status:'cancelled'}:{status:'fail',why:'network'})});   /* TypeError: offline, DNS, CORS or content blocker */
+    }catch(e){finish({status:'fail',why:'network'})}
   });
 }
+/* tries the servers in turn; the first one with usable results wins. If none answers, the result carries every reason (r.tries). */
 function offSearch(q,handle){
   var qs=encodeURIComponent(q),f=encodeURIComponent(OFF_FIELDS);
-  var u1=OFF_PRIMARY+'?search_terms='+qs+'&search_simple=1&action=process&json=1&page_size=20&fields='+f;
-  var u2=OFF_FALLBACK+'?q='+qs+'&page_size=20&fields='+f;
-  return offFetch(u1,handle).then(function(r1){
-    if(r1.status==='cancelled'||r1.status==='rate'||(r1.status==='ok'&&r1.items.length))return r1;
-    return offFetch(u2,handle).then(function(r2){
-      if(r2.status==='cancelled'||r2.status==='rate'||r2.status==='ok')return r2.status==='ok'&&!r2.items.length&&r1.status==='ok'?r1:r2;
-      return r1.status==='ok'?r1:{status:'fail'};
+  var urls=[OFF_PRIMARY+'?search_terms='+qs+'&search_simple=1&action=process&json=1&page_size=20&fields='+f,OFF_FALLBACK+'?q='+qs+'&page_size=20&fields='+f,OFF_THIRD+'?search_terms='+qs+'&search_simple=1&action=process&json=1&page_size=20&fields='+f];
+  var tries=[],empty=null;
+  function go(i){
+    if(i>=urls.length)return Promise.resolve(empty||{status:'fail',tries:tries});
+    return offFetch(urls[i],handle).then(function(r){
+      if(r.status==='cancelled'||r.status==='rate')return r;
+      if(r.status==='ok'){if(r.items.length)return r;empty=empty||r;return go(i+1)}
+      tries.push({host:r.host,why:r.why,code:r.code});return go(i+1);
     });
-  });
+  }
+  return go(0);
 }
 /* "Edit as text": retype one entry in plain words ("2 roti", "dal 1 katori"); the words are read by the same parser as the log box. */
 var UNIT_WORD={g:'g',ml:'ml',katori:'katori',glass:'glass',cup:'cup',plate:'plate',tbsp:'tbsp',tsp:'tsp',slice:'slice',handful:'handful',serving:'serving'};
@@ -3012,7 +3160,7 @@ function addForm(root,ctx){
     var g=grams(),ok=isFinite(g)&&g>0&&g<=5000;prev.replaceChildren();
     if(!ok){prev.appendChild(h('p',{class:'muted',text:'Enter an amount between 0 and 5000 g.'}));return}
     var n={kcal:f.per100.kcal*g/100,p:f.per100.p*g/100,c:f.per100.c*g/100,f:f.per100.f*g/100};
-    prev.appendChild(h('p',null,h('b',{id:'pv-kcal',text:r0(n.kcal)+' kcal'}),' for '+(function(){var lb=ctx.unit.kind==='g'?ctx.unit.label:'g';return lb==='ml'||lb==='g'?r0(g*10)/10+' '+lb:lb==='l'||lb==='kg'?fmtQty(ctx.qty)+' '+lb:r0(g*10)/10+' g'})()));
+    prev.appendChild(h('p',null,h('b',{id:'pv-kcal',text:r0(n.kcal)+' kcal'}),' for '+(function(){var lb=ctx.unit.kind==='g'?ctx.unit.label:'g';return lb==='ml'?fmtQty(ctx.qty)+' ml':lb==='g'?r0(g*10)/10+' g':lb==='l'||lb==='kg'?fmtQty(ctx.qty)+' '+lb:r0(g*10)/10+' g'})()));
     prev.appendChild(h('p',{class:'muted',id:'pv-macros',text:'Protein '+r1(n.p)+' g, carbs '+r1(n.c)+' g, fat '+r1(n.f)+' g'}));
   }
   function submit(){
@@ -3891,21 +4039,21 @@ function viewSettings(root){
 
 /* ---------- About ---------- */
 function viewAbout(root){
-  root.appendChild(h('section',{class:'card about'},h('div',{class:'row'},brandIcon(56),h('div',null,h('h2',{style:'margin:0',text:'TrackMe'}),h('p',{class:'muted small',style:'margin:0',text:'Version 1.1. Works offline once installed.'}))),
+  root.appendChild(h('section',{class:'card about'},h('div',{class:'row'},brandIcon(56),h('div',null,h('h2',{style:'margin:0',text:'TrackMe'}),h('p',{class:'muted small',style:'margin:0',text:'Version 1.1.4. Works offline once installed.'}))),
     h('p',{text:'A private food journal. Type what you ate in plain words, check what was understood, and save. Your journal stays in this browser on this device.'}),
     h('p',{class:'muted small',text:'Estimates only, not medical advice. Use Backup & restore regularly: clearing site data deletes the journal.'})));
-  root.appendChild(h('section',{class:'card',id:'whatsnew-card'},h('h2',{text:'What\'s new in 1.1'}),
+  root.appendChild(h('section',{class:'card',id:'whatsnew-card'},h('h2',{text:'What\'s new in 1.1.4'}),
     h('ul',{id:'whatsnew',class:'bullets'},
-      h('li',{text:'The app is now called TrackMe.'}),
-      h('li',{text:'Text size setting, a simpler Today screen, and a summary that stays pinned and shrinks as you scroll. Swipe left or right to change the day.'}),
-      h('li',{text:'Weekly summary tables and a Weight tracker with a chart and an optional target weight.'}),
-      h('li',{text:'Tap a meal to see its items, nutrition facts and, with the on-device AI, a short health note.'}),
-      h('li',{text:'With the on-device AI on, everything you type is read by the AI first. Foods not in the list get an estimate tagged AI. Units stay as you typed them.'}),
-      h('li',{text:'Type several lines at once: they become one meal (or one meal per time if you give different times).'}))));
+      h('li',{text:'Household sizes are now fixed: small katori 100 ml, katori 150 ml, large katori 200 ml, bowl 275 ml, cup 150 ml, glass 250 ml, tbsp 15 ml, tsp 5 ml. Type "small katori dal", "1 bowl rice", "2 tbsp ghee". Milk and other liquids in ml now use their real weight (200 ml milk is about 206 g).'}),
+      h('li',{text:'Boiled vegetables (spinach, okra, cauliflower, brinjal, karela, lauki, drumstick and more) have their own cooked values. Most come from USDA FoodData Central; a few Indian vegetables are estimates derived from the raw value and say so.'}),
+      h('li',{text:'More foods have a "1 piece" size (brinjal, capsicum, radish, parwal and others). Weights are estimates, marked with ~. Entries you already saved keep their numbers.'}),
+      h('li',{text:'Drinks and liquids: water (0 kcal), juice, nimbu pani, soft drink, beer, whisky, wine, honey, kheer, soup, kadhi, smoothie, protein shake and more. They show ml ("1 cup milk (150 ml)") and the unit picker has an ml choice. "water" is no longer the water chestnut.'}),
+      h('li',{text:'Version 1.1 brought the TrackMe name, text size, a sticky summary, swipe between days, weekly tables, weight tracker, meal details, PDF export and import, and AI-first reading. All still here.'}))));
   root.appendChild(h('section',{class:'card',id:'install-help'},h('h2',{text:'Install'}),
     h('p',{class:'small',text:'In Chrome on Android: menu, then Install app (or Add to Home screen). It then opens full screen and works offline.'}),
     h('p',{class:'small muted',text:'If you installed this app before it was renamed, the home-screen icon keeps its old name and icon until you remove it and install it again (your journal stays in the browser; make a backup first if you reinstall).'})));
   root.appendChild(h('section',{class:'card',id:'credit'},h('h2',{text:'Credits'}),
+    h('p',{class:'small',id:'fdc-credit',text:'Cooked vegetables and drinks (water, juice, beer, honey and more): USDA FoodData Central, SR Legacy; Indian vegetables and home drinks or dishes without a USDA record are estimates (recipes from the food table), marked estimate.'}),
     h('p',{class:'small',id:'ifct-credit',text:'Food data: IFCT 2017, ICMR-National Institute of Nutrition (via npm ifct2017-compositions); cooked-dish values are estimates.'}),
     h('p',{class:'small',id:'off-credit',text:'Open Food Facts, ODbL (openfoodfacts.org): used when you add a food from the online search. Values are entered by volunteers.'}),
     h('p',{class:'small',id:'pdf-credit',text:'PDF import (optional): pdf.js by Mozilla, Apache-2.0 licence. PDF export is made by a small writer inside this app.'}),

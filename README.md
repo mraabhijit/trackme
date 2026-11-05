@@ -2,7 +2,7 @@
 
 A private food, exercise and water journal for one phone. Everything you log stays in your browser on that phone. There is no account and no server of ours.
 
-TrackMe is a static web app (a PWA): a folder of files that any simple web host can serve. Once you have opened it and installed it, it works without internet. This folder (`dist`) is the whole app.
+TrackMe is a static web app (a PWA): a folder of files that any simple web host can serve. Once you have opened it and installed it, it works without internet. This repository's top folder is the whole app (the build writes it there; `trackme-site.zip` holds the same site files).
 
 ## 1. Put it on the web
 
@@ -13,7 +13,7 @@ Two free ways. **Which is easier?** Cloudflare Pages is easier: you drag in one 
 ### Option A (easier): Cloudflare Pages, direct upload
 
 1. On a computer, open dash.cloudflare.com (free account) > **Workers & Pages > Create > Pages > Upload assets**.
-2. Name the project, then drag in `trackme-site.zip` (or the unzipped `dist` folder) and **Deploy**. Cloudflare reads the zip and puts `index.html` at the top.
+2. Name the project, then drag in `trackme-site.zip` (or the unzipped folder) and **Deploy**. Cloudflare reads the zip and puts `index.html` at the top.
 3. Open the `https://<project>.pages.dev` address in Chrome on your phone.
 
 ### Option B: GitHub Pages
@@ -66,7 +66,7 @@ The browser keeps data per web address, so the old file's data does not appear h
 
 ## 6. Updating later
 
-1. Upload all files from the new `dist` again (same repository, **Add file > Upload files**, replace the old ones, Commit).
+1. Upload all files from the new zip (or the repository's top folder) again (same repository, **Add file > Upload files**, replace the old ones, Commit).
 2. Open the app. After a moment it shows **Update ready**; tap **Reload to update**. Your journal is not touched by updates.
 
 ## 7. Important warnings
@@ -100,3 +100,14 @@ The app is called TrackMe from version 1.1. The folder you may have received it 
 ## Reports (PDF)
 
 **Weekly summary > Export report (PDF)** makes a PDF of food, macros, weight and water for a period (up to 92 days), named `trackme-report-<from>-to-<to>.pdf`. It is made on the phone by a small writer inside `report.js` (no library, no internet). **Backup & restore > Import a report (PDF)** reads such a PDF (also similar reports from other apps) with pdf.js (`vendor/pdfjs/`, Apache-2.0, Mozilla), shows everything for checking, and adds new days only by default. Reading a PDF needs the installed web app (an https address), not a file opened from disk. The PDF files are cached in the same lasting cache as the AI library (`journable-lib`) after first use.
+
+## Credits
+
+- Food data: IFCT 2017, ICMR-National Institute of Nutrition (via npm ifct2017-compositions). Cooked-dish values and household portion weights are estimates.
+- Cooked vegetables: **USDA FoodData Central**, SR Legacy (April 2018), records "cooked, boiled, drained, without salt" (a few are the closest boiled record). USDA FoodData Central data are in the public domain, published under CC0 1.0 Universal (https://fdc.nal.usda.gov/, "Licensing"). Citation: U.S. Department of Agriculture, Agricultural Research Service, Beltsville Human Nutrition Research Center. FoodData Central. https://fdc.nal.usda.gov. Carbohydrate is shown as "by difference minus fibre" so that it matches the IFCT figures. Indian vegetables with no USDA record (tinda, parwal, kundru, ridge gourd / turai, snake gourd, cluster beans, methi, bathua) have a cooked value derived from the IFCT raw value; they are labelled "estimate".
+- Drinks and liquids (group "Beverages and liquids", 28 rows, v1.1.5): water, honey, orange juice, beer, whisky, wine, green tea and soda water are **USDA FoodData Central** SR Legacy records (same licence as above; the fdcId of each row is in its basis note); cola, packaged juices, soups, kheer and milkshake use a USDA record as the basis and are marked estimate; home drinks and dishes (nimbu pani, sharbat, filter and cold coffee, badam milk, smoothie, protein shakes, kadhi, dal soup) are estimate recipes built from rows of the food table, with the recipe stated in the row. Liquids are stored per 1 ml with a density; a glass is 250 ml, a cup 150 ml, a bottle 500 ml, a can 330 ml, a shot 30 ml.
+- Open Food Facts (ODbL), pdf.js (Apache-2.0), WebLLM (Apache-2.0) and the Qwen3 / Llama 3.2 models: see About inside the app.
+
+## Household sizes (1.1.4)
+
+Small katori 100 ml, katori 150 ml, large katori 200 ml, bowl 275 ml, cup 150 ml, glass 250 ml, tbsp 15 ml, tsp 5 ml. The weight of a spoonful, katori or cup of a food is the size times that food's density (g per ml), so liquids typed in ml also use their density (200 ml milk is about 206 g). Entries you saved earlier keep their own numbers.

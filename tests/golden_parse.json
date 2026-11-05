@@ -1,0 +1,1593 @@
+{
+ "ctx": {
+  "today": "2026-11-04",
+  "now": "09:15"
+ },
+ "cases": [
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "2 roti and dal for lunch",
+   "items": [
+    {
+     "food": "Roti / phulka (whole wheat, no ghee)",
+     "g": 70
+    },
+    {
+     "food": "Dal (toor), cooked, light tadka",
+     "g": 150
+    }
+   ],
+   "slot": "Lunch",
+   "date": "2026-11-04",
+   "id": "g01"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "1 cup rice with rajma",
+   "items": [
+    {
+     "food": "Plain rice, cooked (white)",
+     "g": 130
+    },
+    {
+     "food": "Rajma (kidney bean curry)",
+     "g": 150
+    }
+   ],
+   "id": "g02"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "2 boiled eggs",
+   "items": [
+    {
+     "food": "Egg, boiled (whole)",
+     "g": 100
+    }
+   ],
+   "id": "g03"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "1 banana",
+   "items": [
+    {
+     "food": "Banana, ripe",
+     "g": 100
+    }
+   ],
+   "id": "g04"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "a glass of milk",
+   "items": [
+    {
+     "food": "Cow milk, toned (3% fat)",
+     "g": 258
+    }
+   ],
+   "id": "g05"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "200 ml milk",
+   "items": [
+    {
+     "food": "Cow milk, toned (3% fat)",
+     "g": 200
+    }
+   ],
+   "id": "g06"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "1 tbsp ghee",
+   "items": [
+    {
+     "food": "Ghee",
+     "g": 13
+    }
+   ],
+   "id": "g07"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "2 idli with sambar",
+   "items": [
+    {
+     "food": "Idli (steamed, rice + urad dal 3:1)",
+     "g": 80
+    },
+    {
+     "food": "Sambar",
+     "g": 150
+    }
+   ],
+   "id": "g08"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "masala dosa",
+   "items": [
+    {
+     "food": "Masala dosa (with potato filling)",
+     "g": 175
+    }
+   ],
+   "id": "g09"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "poha 1 plate",
+   "items": [
+    {
+     "food": "Poha (flattened rice, cooked, with 1 tsp oil)",
+     "g": 250
+    }
+   ],
+   "id": "g10"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "paneer 100 g",
+   "items": [
+    {
+     "food": "Paneer (fresh cottage cheese)",
+     "g": 100
+    }
+   ],
+   "id": "g11"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "chicken breast 150 g",
+   "items": [
+    {
+     "food": "Chicken, poultry, breast, skinless",
+     "g": 150
+    }
+   ],
+   "id": "g12"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "1 apple",
+   "items": [
+    {
+     "food": "Apple",
+     "g": 170
+    }
+   ],
+   "id": "g13"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "1 bowl curd",
+   "items": [
+    {
+     "food": "Curd / dahi (whole milk)",
+     "g": 275
+    }
+   ],
+   "id": "g14"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "yesterday dinner 2 chapati and paneer butter masala",
+   "items": [
+    {
+     "food": "Roti / phulka (whole wheat, no ghee)",
+     "g": 70
+    },
+    {
+     "food": "Paneer butter masala",
+     "g": 150
+    }
+   ],
+   "date": "2026-11-03",
+   "slot": "Dinner",
+   "id": "g15"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "1 cup tea",
+   "items": [
+    {
+     "food": "Chai (milk tea with 1 tsp sugar)",
+     "g": 150
+    }
+   ],
+   "id": "g16"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "2 slices bread with butter",
+   "items": [
+    {
+     "food": "Bread, white (slice)",
+     "g": 50
+    },
+    {
+     "food": "Butter (salted)",
+     "g": 4.5
+    }
+   ],
+   "id": "g17"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "1 samosa",
+   "items": [
+    {
+     "food": "Samosa (fried, potato filling)",
+     "g": 70
+    }
+   ],
+   "id": "g18"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "chicken biryani 1 plate",
+   "items": [
+    {
+     "food": "Chicken biryani",
+     "g": 300
+    }
+   ],
+   "id": "g19"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "aloo paratha 2",
+   "items": [
+    {
+     "food": "Aloo paratha (stuffed, with oil)",
+     "g": 180
+    }
+   ],
+   "id": "g20"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "2 tsp sugar",
+   "items": [
+    {
+     "food": "Sugar, white",
+     "g": 8
+    }
+   ],
+   "id": "g21"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "1 orange",
+   "items": [
+    {
+     "food": "Orange (pulp)",
+     "g": 130
+    }
+   ],
+   "id": "g22"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "upma 1 bowl",
+   "items": [
+    {
+     "food": "Upma (semolina, cooked, 1 tsp oil)",
+     "g": 275
+    }
+   ],
+   "id": "g23"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "10 almonds",
+   "items": [
+    {
+     "food": "Almonds",
+     "g": 12
+    }
+   ],
+   "id": "g24"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "1 glass buttermilk",
+   "items": [
+    {
+     "food": "Chaas / buttermilk (spiced)",
+     "g": 250
+    }
+   ],
+   "id": "g25"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "breakfast 2 idli at 8:30am",
+   "items": [
+    {
+     "food": "Idli (steamed, rice + urad dal 3:1)",
+     "g": 80
+    }
+   ],
+   "slot": "Breakfast",
+   "time": "08:30",
+   "date": "2026-11-04",
+   "id": "g26"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "dinner at 9pm 2 roti and dal",
+   "items": [
+    {
+     "food": "Roti / phulka (whole wheat, no ghee)",
+     "g": 70
+    },
+    {
+     "food": "Dal (toor), cooked, light tadka",
+     "g": 150
+    }
+   ],
+   "slot": "Dinner",
+   "time": "21:00",
+   "id": "g27"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "lunch at 1:30pm 1 cup rice",
+   "items": [
+    {
+     "food": "Plain rice, cooked (white)",
+     "g": 130
+    }
+   ],
+   "slot": "Lunch",
+   "time": "13:30",
+   "id": "g28"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "2 eggs, 1 toast",
+   "items": [
+    {
+     "food": "Egg, boiled (whole)",
+     "g": 100
+    },
+    {
+     "food": "Bread, white (slice)",
+     "g": 25
+    }
+   ],
+   "id": "g29"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "snack 1 apple at 4pm",
+   "items": [
+    {
+     "food": "Apple",
+     "g": 170
+    }
+   ],
+   "time": "16:00",
+   "slot": "Evening snack",
+   "id": "g30"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "curd rice 1 bowl",
+   "items": [
+    {
+     "food": "Curd rice",
+     "g": 275
+    }
+   ],
+   "id": "g31"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "ek roti",
+   "items": [
+    {
+     "food": "Roti / phulka (whole wheat, no ghee)",
+     "g": 35
+    }
+   ],
+   "id": "g32"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "do roti aur sabzi",
+   "items": [
+    {
+     "food": "Roti / phulka (whole wheat, no ghee)",
+     "g": 70
+    },
+    {
+     "food": "Mixed vegetable sabzi (dry, 1 tsp oil)",
+     "g": 120
+    }
+   ],
+   "id": "g33"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "ek glass doodh",
+   "items": [
+    {
+     "food": "Cow milk, toned (3% fat)",
+     "g": 258
+    }
+   ],
+   "id": "g34"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "1 katori chawal",
+   "items": [
+    {
+     "food": "Plain rice, cooked (white)",
+     "g": 130
+    }
+   ],
+   "id": "g35"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "dal chawal",
+   "items": [
+    {
+     "food": "Dal (toor), cooked, light tadka",
+     "g": 150
+    },
+    {
+     "food": "Plain rice, cooked (white)",
+     "g": 130
+    }
+   ],
+   "id": "g36"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "aadha katori dahi",
+   "items": [
+    {
+     "food": "Curd / dahi (whole milk)",
+     "g": 75
+    }
+   ],
+   "id": "g37"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "2 paratha with chai",
+   "items": [
+    {
+     "food": "Paratha (plain, with oil)",
+     "g": 160
+    },
+    {
+     "food": "Chai (milk tea with 1 tsp sugar)",
+     "g": 150
+    }
+   ],
+   "id": "g38"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "teen idli",
+   "items": [
+    {
+     "food": "Idli (steamed, rice + urad dal 3:1)",
+     "g": 120
+    }
+   ],
+   "id": "g39"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "dedh katori dal",
+   "items": [
+    {
+     "food": "Dal (toor), cooked, light tadka",
+     "g": 225
+    }
+   ],
+   "id": "g40"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "1 chai",
+   "items": [
+    {
+     "food": "Chai (milk tea with 1 tsp sugar)",
+     "g": 150
+    }
+   ],
+   "id": "g41"
+  },
+  {
+   "lang": "hi",
+   "core": 0,
+   "text": "ek kela",
+   "items": [
+    {
+     "food": "Banana, ripe",
+     "g": 100
+    }
+   ],
+   "id": "g42"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "rajma chawal",
+   "items": [
+    {
+     "food": "Rajma (kidney bean curry)",
+     "g": 150
+    },
+    {
+     "food": "Plain rice, cooked (white)",
+     "g": 130
+    }
+   ],
+   "id": "g43"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "kal raat dal chawal",
+   "items": [
+    {
+     "food": "Dal (toor), cooked, light tadka",
+     "g": 150
+    },
+    {
+     "food": "Plain rice, cooked (white)",
+     "g": 130
+    }
+   ],
+   "date": "2026-11-03",
+   "slot": "Dinner",
+   "id": "g44"
+  },
+  {
+   "lang": "hi",
+   "core": 0,
+   "text": "do chapati aur ek katori dal",
+   "items": [
+    {
+     "food": "Roti / phulka (whole wheat, no ghee)",
+     "g": 70
+    },
+    {
+     "food": "Dal (toor), cooked, light tadka",
+     "g": 150
+    }
+   ],
+   "id": "g45"
+  },
+  {
+   "lang": "hi",
+   "core": 0,
+   "text": "ek plate poha",
+   "items": [
+    {
+     "food": "Poha (flattened rice, cooked, with 1 tsp oil)",
+     "g": 250
+    }
+   ],
+   "id": "g46"
+  },
+  {
+   "lang": "hi",
+   "core": 0,
+   "text": "ek glass lassi",
+   "items": [
+    {
+     "food": "Lassi, sweet",
+     "g": 260
+    }
+   ],
+   "id": "g47"
+  },
+  {
+   "lang": "hi",
+   "core": 0,
+   "text": "aaj subah 2 roti",
+   "items": [
+    {
+     "food": "Roti / phulka (whole wheat, no ghee)",
+     "g": 70
+    }
+   ],
+   "slot": "Breakfast",
+   "date": "2026-11-04",
+   "id": "g48"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "brisk walk 45 min",
+   "items": [],
+   "ex": [
+    {
+     "key": "brisk_walk",
+     "min": 45
+    }
+   ],
+   "id": "g49"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "walked 30 minutes",
+   "items": [],
+   "ex": [
+    {
+     "key": "walk",
+     "min": 30
+    }
+   ],
+   "id": "g50"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "ran 5 km",
+   "items": [],
+   "ex": [
+    {
+     "key": "run",
+     "min": 33.3
+    }
+   ],
+   "id": "g51"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "8000 steps",
+   "items": [],
+   "ex": [
+    {
+     "key": "walk",
+     "min": 72
+    }
+   ],
+   "id": "g52"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "badminton 1 ghanta",
+   "items": [],
+   "ex": [
+    {
+     "key": "badminton",
+     "min": 60
+    }
+   ],
+   "id": "g53"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "gym 1 hour",
+   "items": [],
+   "ex": [
+    {
+     "key": "gym",
+     "min": 60
+    }
+   ],
+   "id": "g54"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "half an hour yoga",
+   "items": [],
+   "ex": [
+    {
+     "key": "yoga",
+     "min": 30
+    }
+   ],
+   "id": "g55"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "cycling 1.5 hrs",
+   "items": [],
+   "ex": [
+    {
+     "key": "cycling",
+     "min": 90
+    }
+   ],
+   "id": "g56"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "swam 45 min",
+   "items": [],
+   "ex": [
+    {
+     "key": "swim",
+     "min": 45
+    }
+   ],
+   "id": "g57"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "jog 20 min",
+   "items": [],
+   "ex": [
+    {
+     "key": "jog",
+     "min": 20
+    }
+   ],
+   "id": "g58"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "daud 25 min",
+   "items": [],
+   "ex": [
+    {
+     "key": "run",
+     "min": 25
+    }
+   ],
+   "id": "g59"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "chala 40 minutes",
+   "items": [],
+   "ex": [
+    {
+     "key": "walk",
+     "min": 40
+    }
+   ],
+   "id": "g60"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "walk",
+   "items": [],
+   "ex": [
+    {
+     "key": "walk",
+     "min": 30
+    }
+   ],
+   "assumed_ex": true,
+   "id": "g61"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "weights workout 50 mins",
+   "items": [],
+   "ex": [
+    {
+     "key": "gym",
+     "min": 50
+    }
+   ],
+   "id": "g62"
+  },
+  {
+   "lang": "hi",
+   "core": 0,
+   "text": "tehla 3 km",
+   "items": [],
+   "ex": [
+    {
+     "key": "walk",
+     "min": 36
+    }
+   ],
+   "id": "g63"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "cycle 10 km",
+   "items": [],
+   "ex": [
+    {
+     "key": "cycling",
+     "min": 37.5
+    }
+   ],
+   "id": "g64"
+  },
+  {
+   "lang": "hi",
+   "core": 0,
+   "text": "dedh ghanta cycling",
+   "items": [],
+   "ex": [
+    {
+     "key": "cycling",
+     "min": 90
+    }
+   ],
+   "id": "g65"
+  },
+  {
+   "lang": "hi",
+   "core": 0,
+   "text": "aadha ghanta walk",
+   "items": [],
+   "ex": [
+    {
+     "key": "walk",
+     "min": 30
+    }
+   ],
+   "id": "g66"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "zumba 45 min",
+   "items": [],
+   "ex": [
+    {
+     "key": "dance",
+     "min": 45
+    }
+   ],
+   "id": "g67"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "power walk 30 min",
+   "items": [],
+   "ex": [
+    {
+     "key": "brisk_walk",
+     "min": 30
+    }
+   ],
+   "id": "g68"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "walked 40 min then had chai and 2 biscuits",
+   "items": [
+    {
+     "food": "Chai (milk tea with 1 tsp sugar)",
+     "g": 150
+    },
+    {
+     "food": "Biscuit, Marie",
+     "g": 14
+    }
+   ],
+   "ex": [
+    {
+     "key": "walk",
+     "min": 40
+    }
+   ],
+   "id": "g69"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "gym 1 hour, protein shake 300ml, banana",
+   "items": [
+    {
+     "food": "Protein shake, with water",
+     "g": 300
+    },
+    {
+     "food": "Banana, ripe",
+     "g": 100
+    }
+   ],
+   "ex": [
+    {
+     "key": "gym",
+     "min": 60
+    }
+   ],
+   "unmatched": 0,
+   "id": "g70"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "brisk walk 45 min, 2 boiled eggs",
+   "items": [
+    {
+     "food": "Egg, boiled (whole)",
+     "g": 100
+    }
+   ],
+   "ex": [
+    {
+     "key": "brisk_walk",
+     "min": 45
+    }
+   ],
+   "id": "g71"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "yesterday dinner 2 roti and dal, walked 20 min",
+   "items": [
+    {
+     "food": "Roti / phulka (whole wheat, no ghee)",
+     "g": 70
+    },
+    {
+     "food": "Dal (toor), cooked, light tadka",
+     "g": 150
+    }
+   ],
+   "ex": [
+    {
+     "key": "walk",
+     "min": 20
+    }
+   ],
+   "date": "2026-11-03",
+   "slot": "Dinner",
+   "id": "g72"
+  },
+  {
+   "lang": "hi",
+   "core": 0,
+   "text": "kal raat dal chawal aur 30 min walk",
+   "items": [
+    {
+     "food": "Dal (toor), cooked, light tadka",
+     "g": 150
+    },
+    {
+     "food": "Plain rice, cooked (white)",
+     "g": 130
+    }
+   ],
+   "ex": [
+    {
+     "key": "walk",
+     "min": 30
+    }
+   ],
+   "date": "2026-11-03",
+   "slot": "Dinner",
+   "id": "g73"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "lunch at 1pm 1 plate poha, 20 min yoga",
+   "items": [
+    {
+     "food": "Poha (flattened rice, cooked, with 1 tsp oil)",
+     "g": 250
+    }
+   ],
+   "ex": [
+    {
+     "key": "yoga",
+     "min": 20
+    }
+   ],
+   "slot": "Lunch",
+   "time": "13:00",
+   "id": "g74"
+  },
+  {
+   "lang": "hi",
+   "core": 0,
+   "text": "aaj subah 40 min daud, 2 idli",
+   "items": [
+    {
+     "food": "Idli (steamed, rice + urad dal 3:1)",
+     "g": 80
+    }
+   ],
+   "ex": [
+    {
+     "key": "run",
+     "min": 40
+    }
+   ],
+   "date": "2026-11-04",
+   "slot": "Breakfast",
+   "id": "g75"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "ran 5 km at 6am then 2 egg omelette",
+   "items": [
+    {
+     "food": "Egg omelette (plain, 2 eggs)",
+     "g": 100
+    }
+   ],
+   "ex": [
+    {
+     "key": "run",
+     "min": 33.3
+    }
+   ],
+   "time": "06:00",
+   "id": "g76"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "snack 1 apple at 4pm, 15 min walk",
+   "items": [
+    {
+     "food": "Apple",
+     "g": 170
+    }
+   ],
+   "ex": [
+    {
+     "key": "walk",
+     "min": 15
+    }
+   ],
+   "slot": "Evening snack",
+   "time": "16:00",
+   "id": "g77"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "on 3 nov badminton 1 hour and 2 roti",
+   "items": [
+    {
+     "food": "Roti / phulka (whole wheat, no ghee)",
+     "g": 70
+    }
+   ],
+   "ex": [
+    {
+     "key": "badminton",
+     "min": 60
+    }
+   ],
+   "date": "2026-11-03",
+   "id": "g78"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "dinner at 8:30pm 2 roti, 1 katori dal, 20 min walk",
+   "items": [
+    {
+     "food": "Roti / phulka (whole wheat, no ghee)",
+     "g": 70
+    },
+    {
+     "food": "Dal (toor), cooked, light tadka",
+     "g": 150
+    }
+   ],
+   "ex": [
+    {
+     "key": "walk",
+     "min": 20
+    }
+   ],
+   "slot": "Dinner",
+   "time": "20:30",
+   "id": "g79"
+  },
+  {
+   "lang": "hi",
+   "core": 0,
+   "text": "ek glass doodh aur 30 min yoga",
+   "items": [
+    {
+     "food": "Cow milk, toned (3% fat)",
+     "g": 258
+    }
+   ],
+   "ex": [
+    {
+     "key": "yoga",
+     "min": 30
+    }
+   ],
+   "id": "g80"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "yesterday 1 hour gym and 2 eggs",
+   "items": [
+    {
+     "food": "Egg, boiled (whole)",
+     "g": 100
+    }
+   ],
+   "ex": [
+    {
+     "key": "gym",
+     "min": 60
+    }
+   ],
+   "date": "2026-11-03",
+   "id": "g81"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "egg omelette 2 eggs",
+   "items": [
+    {
+     "food": "Egg omelette (plain, 2 eggs)",
+     "g": 100
+    }
+   ],
+   "ex": [],
+   "id": "g82"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "3 egg omelette",
+   "items": [
+    {
+     "food": "Egg omelette (plain, 2 eggs)",
+     "g": 150
+    }
+   ],
+   "ex": [],
+   "id": "g83"
+  },
+  {
+   "lang": "hi",
+   "core": 1,
+   "text": "half plate rajma chawal",
+   "items": [
+    {
+     "food": "Rajma (kidney bean curry)",
+     "g": 125
+    },
+    {
+     "food": "Plain rice, cooked (white)",
+     "g": 125
+    }
+   ],
+   "ex": [],
+   "id": "g84"
+  },
+  {
+   "lang": "hi",
+   "core": 0,
+   "text": "1 plate dal chawal",
+   "items": [
+    {
+     "food": "Dal (toor), cooked, light tadka",
+     "g": 250
+    },
+    {
+     "food": "Plain rice, cooked (white)",
+     "g": 250
+    }
+   ],
+   "ex": [],
+   "id": "g85"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "protein shake 300ml",
+   "items": [
+    {
+     "food": "Protein shake, with water",
+     "g": 300
+    }
+   ],
+   "ex": [],
+   "unmatched": 0,
+   "id": "g86"
+  },
+  {
+   "lang": "hi",
+   "core": 0,
+   "text": "chole bhature",
+   "items": [
+    {
+     "food": "Chole (chickpea curry)",
+     "g": 150
+    },
+    {
+     "food": "Bhatura (fried, leavened)",
+     "g": 80
+    }
+   ],
+   "ex": [],
+   "id": "g87"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "monday 2 roti",
+   "items": [
+    {
+     "food": "Roti / phulka (whole wheat, no ghee)",
+     "g": 70
+    }
+   ],
+   "ex": [],
+   "date": "2026-11-02",
+   "id": "g88"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "on friday 1 banana",
+   "items": [
+    {
+     "food": "Banana, ripe",
+     "g": 100
+    }
+   ],
+   "ex": [],
+   "date": "2026-10-30",
+   "id": "g89"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "wednesday 1 banana",
+   "items": [
+    {
+     "food": "Banana, ripe",
+     "g": 100
+    }
+   ],
+   "ex": [],
+   "date": "2026-10-28",
+   "id": "g90"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "last sunday 2 roti",
+   "items": [
+    {
+     "food": "Roti / phulka (whole wheat, no ghee)",
+     "g": 70
+    }
+   ],
+   "ex": [],
+   "date": "2026-11-01",
+   "id": "g91"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "on tue 1 apple",
+   "items": [
+    {
+     "food": "Apple",
+     "g": 170
+    }
+   ],
+   "ex": [],
+   "date": "2026-11-03",
+   "id": "g92"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "my usual breakfast",
+   "items": [
+    {
+     "food": "Roti / phulka (whole wheat, no ghee)",
+     "g": 70
+    },
+    {
+     "food": "Chai (milk tea with 1 tsp sugar)",
+     "g": 150
+    }
+   ],
+   "ex": [],
+   "saved": [
+    {
+     "name": "my usual breakfast",
+     "text": "2 roti and 1 cup tea"
+    },
+    {
+     "name": "office lunch",
+     "text": "dal chawal"
+    },
+    {
+     "name": "evening run",
+     "text": "ran 30 min"
+    },
+    {
+     "name": "post workout",
+     "text": "1 banana"
+    }
+   ],
+   "id": "g93"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "my usual breakfast at 8am",
+   "items": [
+    {
+     "food": "Roti / phulka (whole wheat, no ghee)",
+     "g": 70
+    },
+    {
+     "food": "Chai (milk tea with 1 tsp sugar)",
+     "g": 150
+    }
+   ],
+   "ex": [],
+   "saved": [
+    {
+     "name": "my usual breakfast",
+     "text": "2 roti and 1 cup tea"
+    },
+    {
+     "name": "office lunch",
+     "text": "dal chawal"
+    },
+    {
+     "name": "evening run",
+     "text": "ran 30 min"
+    },
+    {
+     "name": "post workout",
+     "text": "1 banana"
+    }
+   ],
+   "time": "08:00",
+   "id": "g94"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "my usal breakfast",
+   "items": [
+    {
+     "food": "Roti / phulka (whole wheat, no ghee)",
+     "g": 70
+    },
+    {
+     "food": "Chai (milk tea with 1 tsp sugar)",
+     "g": 150
+    }
+   ],
+   "ex": [],
+   "saved": [
+    {
+     "name": "my usual breakfast",
+     "text": "2 roti and 1 cup tea"
+    },
+    {
+     "name": "office lunch",
+     "text": "dal chawal"
+    },
+    {
+     "name": "evening run",
+     "text": "ran 30 min"
+    },
+    {
+     "name": "post workout",
+     "text": "1 banana"
+    }
+   ],
+   "id": "g95"
+  },
+  {
+   "lang": "en",
+   "core": 1,
+   "text": "office lunch",
+   "items": [
+    {
+     "food": "Dal (toor), cooked, light tadka",
+     "g": 150
+    },
+    {
+     "food": "Plain rice, cooked (white)",
+     "g": 130
+    }
+   ],
+   "ex": [],
+   "saved": [
+    {
+     "name": "my usual breakfast",
+     "text": "2 roti and 1 cup tea"
+    },
+    {
+     "name": "office lunch",
+     "text": "dal chawal"
+    },
+    {
+     "name": "evening run",
+     "text": "ran 30 min"
+    },
+    {
+     "name": "post workout",
+     "text": "1 banana"
+    }
+   ],
+   "id": "g96"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "office lunch and 1 banana",
+   "items": [
+    {
+     "food": "Dal (toor), cooked, light tadka",
+     "g": 150
+    },
+    {
+     "food": "Plain rice, cooked (white)",
+     "g": 130
+    },
+    {
+     "food": "Banana, ripe",
+     "g": 100
+    }
+   ],
+   "ex": [],
+   "saved": [
+    {
+     "name": "my usual breakfast",
+     "text": "2 roti and 1 cup tea"
+    },
+    {
+     "name": "office lunch",
+     "text": "dal chawal"
+    },
+    {
+     "name": "evening run",
+     "text": "ran 30 min"
+    },
+    {
+     "name": "post workout",
+     "text": "1 banana"
+    }
+   ],
+   "id": "g97"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "evening run, 2 biscuits",
+   "items": [
+    {
+     "food": "Biscuit, Marie",
+     "g": 14
+    }
+   ],
+   "ex": [
+    {
+     "key": "run",
+     "min": 30
+    }
+   ],
+   "saved": [
+    {
+     "name": "my usual breakfast",
+     "text": "2 roti and 1 cup tea"
+    },
+    {
+     "name": "office lunch",
+     "text": "dal chawal"
+    },
+    {
+     "name": "evening run",
+     "text": "ran 30 min"
+    },
+    {
+     "name": "post workout",
+     "text": "1 banana"
+    }
+   ],
+   "id": "g98"
+  },
+  {
+   "lang": "en",
+   "core": 0,
+   "text": "yesterday post workout",
+   "items": [
+    {
+     "food": "Banana, ripe",
+     "g": 100
+    }
+   ],
+   "ex": [],
+   "saved": [
+    {
+     "name": "my usual breakfast",
+     "text": "2 roti and 1 cup tea"
+    },
+    {
+     "name": "office lunch",
+     "text": "dal chawal"
+    },
+    {
+     "name": "evening run",
+     "text": "ran 30 min"
+    },
+    {
+     "name": "post workout",
+     "text": "1 banana"
+    }
+   ],
+   "date": "2026-11-03",
+   "id": "g99"
+  }
+ ]
+}

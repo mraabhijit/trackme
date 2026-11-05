@@ -1,11 +1,11 @@
 /* TrackMe service worker: app-shell cache only.
-   - cache name is trackme-shell-v<hash> (older installs used journable-shell-v<hash>), the hash is injected by scripts/build.py from the shell files
+   - cache name is trackme-shell-v<hash> (older installs used journable-shell-v<hash>), the hash is injected by scripts/build.mjs from the shell files
    - same-origin GET requests only; anything cross-origin (Hugging Face, Open Food Facts, ...) is never touched
    - only caches whose names start with "trackme-shell-" or the old "journable-shell-" are ever deleted
    - the optional AI library (vendor/web-llm/web-llm.js) lives in its OWN cache, journable-lib (name kept so a downloaded AI library is not orphaned), which is never versioned or deleted by an update,
      so on-device AI keeps working offline after an update (it and pdf.js are refreshed on install when the app update brings new lib files, see refreshLib)
    - a new version waits until the page asks it to take over (message {type:'SKIP_WAITING'}) so the user taps "Update ready" */
-var VERSION = 'afb0284d69';
+var VERSION = 'd0a0051592';
 var CACHE = 'trackme-shell-v' + VERSION;
 var SHELL = ['./index.html', './app.js', './app.css', './manifest.webmanifest', './icons/icon.svg', './icons/192.png', './icons/512.png', './llm-worker.js', './probe-worker.js', './early.js', './report.js'];
 var LIB = 'journable-lib';
@@ -13,7 +13,7 @@ var LIBRX = /\/vendor\/(web-llm\/web-llm\.js|pdfjs\/pdf(\.worker)?\.min\.mjs)$/;
 var LAZY = LIBRX;
 var SKIP = /\/vendor\/web-llm\/libs\//;              /* model libraries are cached by WebLLM itself */
 
-/* The cached copies in journable-lib (web-llm.js, pdf.js and its worker) carry a version marker (hash of the vendored files, injected by scripts/build.py).
+/* The cached copies in journable-lib (web-llm.js, pdf.js and its worker) carry a version marker (hash of the vendored files, injected by scripts/build.mjs).
    On install, if the marker differs (or is missing: older installs), every lib file that is cached is fetched again; the copies are replaced only if ALL downloads worked,
    so pdf.min.mjs and its worker never come from different versions. Nothing is deleted, and model weights / model libraries (cached by WebLLM) are never touched. Failures are ignored (the old copy keeps working). */
 var LIBVER = '708f38231a33';
