@@ -4,6 +4,9 @@ All notable changes to TrackMe (the app folder is still called `journable/`). Fo
 
 ## [Unreleased] (1.1.4)
 
+### Fixed (real-phone report 2026-11-05)
+- **"ModelNotLoadedError" after the AI model loaded.** WebLLM's `reload()` swallows an abort and returns with no model inside, so an engine marked ready could fail its first request in a few ms. The app now reloads the model once and asks again; if it fails a second time the usual reason and Retry are shown. Cause of the abort on the phone not proven. Test: `tests/test_v116.py`.
+
 ### Added
 - **Fixed household sizes.** small katori 100 ml, katori 150 ml (unchanged), large katori 200 ml, bowl 275 ml, cup 150 ml, glass 250 ml, tbsp 15 ml, tsp 5 ml. "small katori dal" is 100 g, "large katori dal" 200 g, "1 bowl rice" 238 g (the food's own bowl portion still wins: "oats 1 bowl" 250 g). A cup is 150 ml for every food (a cup of cooked rice 130 g instead of 160 g, a cup of milk 155 g instead of 248 g, a raw rice cup 125 g instead of 200 g). Level-teaspoon weights that were within 5% of the new value keep their old grams (4.5 g ghee/oil tsp).
 - **Per-unit data.** The food database now stores nutrition per 1 g (liquids per 1 ml) and a density for foods with a volume portion; a katori/cup/glass/spoon weight is "size x density" and cannot disagree with its label. Liquids typed in ml use their density: "200 ml milk" is 206.4 g, 123 kcal (was 200 g, 119 kcal). The app, saved entries, packs and backups still use per-100 g numbers, so nothing stored changes.
