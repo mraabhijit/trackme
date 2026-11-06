@@ -937,7 +937,7 @@ function llmAnalyse(prompt){
     function fin(text,reason){if(done)return;done=true;clearTimeout(tm);if(LLM.job===job)LLM.job=null;if(LLM.state==='ready')llmTouch();resolve({text:text,reason:reason})}
     var tm=setTimeout(function(){llmInterrupt();fin(null,'timeout')},window.__llmTimeoutMs||30000);
     job.cancel=function(){llmInterrupt();fin(null,'cancelled')};
-    llmEnsure().then(function(ok){
+    llmSerial(function(){if(done)return;return llmEnsure().then(function(ok){
       if(done)return;if(!ok){fin(null,'error');return}
       var mk=llmMock();
       if(mk&&mk.analyse)return Promise.resolve(mk.analyse(prompt));
@@ -946,7 +946,7 @@ function llmAnalyse(prompt){
       var req={messages:[{role:'system',content:'You write a short note about one meal for the person who ate it. Use only the numbers given. Write 2 or 3 plain sentences about the mix of protein, fibre, fat and sugar. No lists, no medical advice, no diagnoses.'},{role:'user',content:prompt+(model&&model.qwen?' /no_think':'')}],temperature:0,max_tokens:140};
       if(model&&model.qwen)req.extra_body={enable_thinking:false};
       return eng.chat.completions.create(req).then(function(r){return r&&r.choices&&r.choices[0]&&r.choices[0].message&&r.choices[0].message.content});
-    }).then(function(t){if(done)return;t=typeof t==='string'?t.replace(/\s+/g,' ').trim().slice(0,600):'';fin(t||null,t?'ok':'bad')},function(){fin(null,'error')});
+    }).then(function(t){if(done)return;t=typeof t==='string'?t.replace(/\s+/g,' ').trim().slice(0,600):'';fin(t||null,t?'ok':'bad')},function(){fin(null,'error')})});
   });
 }
 function viewMeal(root){
@@ -1574,7 +1574,7 @@ function openPreview(text,restore,opts){
   var aiBox=h('div',{id:'pv-ai',class:'pv-ai',role:'status','aria-live':'polite'}),dirty=false;
   function aiLine(msg,busy,retry){
     aiBox.replaceChildren();
-    if(busy){aiBox.appendChild(h('span',{class:'pv-ai-msg',id:'pv-ai-busy',text:msg}));aiBox.appendChild(h('button',{type:'button',class:'btn sm',id:'pv-ai-cancel',text:'Cancel',onclick:function(){if(LLM.state==='loading'||LLM.state==='downloading')llmCancel();else if(LLM.job&&LLM.job.cancel)LLM.job.cancel()}}))}
+    if(busy){aiBox.appendChild(h('span',{class:'pv-ai-msg',id:'pv-ai-busy',text:msg}));aiBox.appendChild(h('button',{type:'button',class:'btn sm',id:'pv-ai-cancel',text:'Cancel',onclick:function(){if(LLM.state==='loading'||LLM.state==='downloading')llmCancel();else if(LLM.job&&LLM.job.cancel)LLM.job.cancel();else{st.runTok++;st.waitAI=false;try{st.items=parseLog(st.text,{viewDate:S.viewDate}).items}catch(e){}drawRows();aiLine('AI read cancelled, using the built-in rules.')}}}))}
     else{
       if(msg)aiBox.appendChild(h('span',{class:'pv-ai-msg small muted',id:'pv-ai-msg',text:msg+' '}));
       if(retry)aiBox.appendChild(h('button',{type:'button',class:'btn sm',id:'pv-ai-retry',text:'Retry',onclick:function(){runAI()}}));
@@ -1583,11 +1583,12 @@ function openPreview(text,restore,opts){
   }
   /* AI on: ONE model call for the WHOLE text (all lines). With several distinct times the rules only decide which line belongs to which time group
      (the model's items are matched back to their line), so the groups are still separate entries. The rules read the text by themselves only as the Basic fallback. */
-  function aiBlocksRun(onPhase){
+  function aiBlocksRun(onPhase,my){
+    function stale(){return st.runTok!==my||!aiBox.isConnected}
     var blocks=st.blocks||[st.text];
-    if(blocks.length<2)return parseLogAI(st.text,{viewDate:S.viewDate},{onPhase:onPhase});
+    if(blocks.length<2)return parseLogAI(st.text,{viewDate:S.viewDate},{onPhase:onPhase,stale:stale});
     var gd=parseLog(st.text,{viewDate:S.viewDate,metaOnly:true}).date;
-    return parseLogAI(st.text,{viewDate:gd,metaText:blocks[0]},{onPhase:onPhase}).then(function(r){
+    return parseLogAI(st.text,{viewDate:gd,metaText:blocks[0]},{onPhase:onPhase,stale:stale}).then(function(r){
       var metas=blocks.map(function(b){return parseLog(b,{viewDate:gd,metaOnly:true})}),items=[];
       if(!r.used){   /* Basic fallback: the rules read each time group */
         blocks.forEach(function(b,i){var rb=parseLog(b,{viewDate:gd});rb.items.forEach(function(it){if(i>0){it.gt=rb.time;it.gs=rb.slotId}items.push(it)})});
@@ -1604,8 +1605,11 @@ function openPreview(text,restore,opts){
     aiLine(ph==='load'?(LLM.state==='ready'?'Reading with on-device AI...':'Loading the on-device AI (first use can take a minute)...'):ph==='read'?'Reading '+n+(n===1?' line':' lines')+' with on-device AI...':'Retrying line '+n+' of '+k+'...',true);
   }
   function runAI(){
+    var my=st.runTok=(st.runTok||0)+1;   /* a newer run (or Cancel) makes every older one stale: its rows are never applied */
+    if(LLM.job&&LLM.job.cancel)LLM.job.cancel();
     st.aiTried=true;st.waitAI=true;aiLine(LLM.state==='ready'?'Reading with on-device AI...':'Starting on-device AI...',true);drawRows();
-    aiBlocksRun(onPhase).then(function(r){
+    aiBlocksRun(onPhase,my).then(function(r){
+      if(my!==st.runTok)return;
       st.waitAI=false;
       if(!aiBox.isConnected)return;
       var m=r.res;st.items=m.items;
@@ -2393,7 +2397,7 @@ function llmEnsure(){
   if(LLM.loading)return LLM.loading;
   if(!UI.modelId)return Promise.resolve(false);
   var id=UI.modelId;
-  LLM.loading=llmHas(id).then(function(has){
+  LLM.loading=(LLM.pend||Promise.resolve()).then(function(){return llmHas(id)}).then(function(has){
     if(!has){LLM.cached[id]=false;LLM.state='error';LLM.err='The model files are no longer on this phone (the browser may have cleared them). Open On-device AI and download it again.';refreshAI();return false}
     var t0=Date.now();return llmLoad(id,{cached:true}).then(function(ok){if(ok)LLM.loadMs=Date.now()-t0;return ok});
   }).then(function(ok){LLM.loading=null;return ok},function(){LLM.loading=null;return false});
@@ -2436,15 +2440,19 @@ function llmMessages(text,model,today){
   msgs.push({role:'user',content:text+(qwen?' /no_think':'')});
   return msgs;
 }
-/* WebLLM's reload() swallows an abort and resolves with no model inside, so a "ready" engine can answer ModelNotLoadedError: reload once and ask again */
-function llmGenerate(text,today){
+/* WebLLM's reload() swallows an abort and resolves with no model inside, and the phone's GPU can drop buffers or the device between requests:
+   these errors mean "this engine is dead", so reload it once (fresh worker, awaited) and ask again. Never for a request that was already cancelled or timed out (live()). */
+var GPU_ERR=/ModelNotLoaded|not loaded|mapAsync|unmapped|Instance reference|already been disposed|device.{0,12}lost|AbortError/i;
+function llmGenerate(text,today,live){
   return llmGenerate1(text,today).catch(function(e){
-    if(!/ModelNotLoaded|not loaded/i.test(String(e&&(e.name+' '+e.message)||e)))throw e;
-    var id=LLM.modelId;LLM.notLoaded=(LLM.notLoaded||0)+1;
+    if(!GPU_ERR.test(String(e&&(e.name+' '+e.message)||e))||(live&&!live()))throw e;
+    var id=LLM.modelId;LLM.reloads=(LLM.reloads||0)+1;
     llmFreeEngine();LLM.state='idle';
     return llmLoad(id,{cached:true}).then(function(ok){if(!ok)throw e;return llmGenerate1(text,today)});
   });
 }
+/* one AI job at a time: load, generate and free never overlap (nested calls inside a job are not queued) */
+function llmSerial(fn){var r=(LLM.q||Promise.resolve()).then(fn);LLM.q=r.catch(function(){});return r}
 function llmGenerate1(text,today){
   var mk=llmMock();
   if(mk&&mk.extract){LLM.lastUsage=mk.usage||null;return Promise.resolve(mk.extract(text))}
@@ -2474,12 +2482,16 @@ function llmParseJSON(raw){
 function llmTimeout(lines){return window.__llmTimeoutMs||(15000+9000*Math.max(1,lines||1)+(LLM.calls===0?20000:0))}
 function llmRun(text,today,lines){
   return new Promise(function(resolve){
-    var done=false,job={},t0=Date.now();LLM.job=job;
+    var done=false,job={},t0=Date.now(),p;LLM.job=job;
+    function stop(){llmInterrupt();var g=p&&p.then?p.then(function(){},function(){}):Promise.resolve();LLM.pend=Promise.race([g,new Promise(function(r){setTimeout(r,window.__llmSafetyMs||4000)})])}
     function fin(data,reason,detail){if(done)return;done=true;clearTimeout(tm);if(LLM.job===job)LLM.job=null;if(LLM.state==='ready')llmTouch();resolve({data:data,reason:reason,detail:detail||'',ms:Date.now()-t0})}
-    var to=llmTimeout(lines),tm=setTimeout(function(){llmInterrupt();fin(null,'timeout','no answer after '+Math.round(to/1000)+' s')},to);LLM.calls++;
-    job.cancel=function(){llmInterrupt();fin(null,'cancelled')};
-    var p;try{p=llmGenerate(text,today)}catch(e){fin(null,'error',String(e&&e.message||e).slice(0,160));return}
-    p.then(function(raw){var o=llmParseJSON(raw);fin(o,o?'ok':'bad',o?'':'the answer was not valid JSON: '+String(raw).slice(0,60))},function(e){fin(null,'error',String(e&&e.message||e).slice(0,160))});
+    var to=llmTimeout(lines),tm=setTimeout(function(){stop();fin(null,'timeout','no answer after '+Math.round(to/1000)+' s')},to);
+    job.cancel=function(){stop();fin(null,'cancelled')};
+    (LLM.pend||Promise.resolve()).then(function(){   /* a generation that was interrupted must have settled first */
+    if(done)return;LLM.calls++;
+    try{p=llmGenerate(text,today,function(){return !done})}catch(e){fin(null,'error',String(e&&e.message||e).slice(0,160));return}
+    p.then(function(raw){var o=llmParseJSON(raw);fin(o,o?'ok':'bad',o?'':'the answer was not valid JSON: '+String(raw).slice(0,60))},function(e){if(!done)LLM.errName=String(e&&e.name||'');fin(null,'error',String(e&&e.message||e).slice(0,160))});
+    });
   });
 }
 /* the plain-words reason shown in the check sheet and kept for the 'Last AI problem' report */
@@ -2490,7 +2502,8 @@ function aiReasonText(r,detail){
 function aiRecord(reason,detail,extra){
   if(reason==='ok'||reason==='cancelled'||reason==='off')return;
   var m=llmModel(UI.modelId||LLM.modelId);
-  LLM.last=Object.assign({when:new Date().toISOString(),model:m?m.name:(UI.modelId||'?'),loadMs:LLM.loadMs||null,genMs:null,tokens:(LLM.lastUsage&&LLM.lastUsage.completion_tokens)||null,reason:reason,detail:aiReasonText(reason,detail),input:null},extra||{});
+  LLM.last=Object.assign({when:new Date().toISOString(),model:m?m.name:(UI.modelId||'?'),loadMs:LLM.loadMs||null,genMs:null,tokens:(LLM.lastUsage&&LLM.lastUsage.completion_tokens)||null,reason:reason,detail:aiReasonText(reason,detail),input:null,errName:LLM.errName||'',reloads:LLM.reloads||0,hidden:!!LLM.hid},extra||{});
+  llmProbe();   /* fills LLM.gpu (adapter limits, shader-f16) for the report */
 }
 /* ---- validation and mapping into the rule pipeline ---- */
 function lowConf(it){return it.type==='unmatched'||(it.type==='food'&&(it.score==null?false:it.score<0.8))}
@@ -2654,6 +2667,10 @@ function parseLogAI(text,ctx,opts){
   function build(data,t){var m=null;try{m=llmBuild(meta,data,t,ctx)}catch(e){m=null}return m}
   /* LOAD phase (progress + Cancel, no timeout), then GENERATE phase (timeout scaled to the lines) */
   phase('load');
+  function stale(){return !!(opts.stale&&opts.stale())}
+  return llmSerial(function(){
+  if(stale())return fallback('cancelled');
+  LLM.reloads=0;LLM.hid=false;LLM.errName='';
   return llmEnsure().then(function(ok){
     if(!ok)return fallback(LLM.state==='error'?'loadfail':'cancelled');
     phase('read',lines.length);
@@ -2664,14 +2681,15 @@ function parseLogAI(text,ctx,opts){
       var why=r.data?'empty':r.reason,detail=r.data?'the model returned '+((r.data.items||[]).length)+' item(s), none matched your words':r.detail;
       if(lines.length<2||lines.length>8||LLM.state!=='ready'){   /* per-line retry only for a short list (each line can take 24 s on a phone) */var fb=fallback(why,detail);if(LLM.last)LLM.last.genMs=r.ms;return fb}
       /* the whole-text call failed: ask once per line and merge everything into the same meal */
-      var merged={items:[],date:null,time:null,meal:null},bad=[],k=0,firstFail={reason:why,detail:detail},lineFail=null;
+      var merged={items:[],date:null,time:null,meal:null},bad=[],seen={},k=0,firstFail={reason:why,detail:detail},lineFail=null;
       function next(){
-        if(k>=lines.length)return Promise.resolve();
+        if(stale())bad.cancelled=true;
+        if(k>=lines.length||bad.cancelled)return Promise.resolve();
         var i=k++;phase('line',i+1,lines.length);
         return llmRun(lines[i],today,1).then(function(x){
           if(x.reason==='cancelled'){bad.cancelled=true;return}
           var items=x.data&&Array.isArray(x.data.items)?x.data.items:[];
-          if(x.data&&items.length){items.forEach(function(it){merged.items.push(it)});['date','time','meal'].forEach(function(f){if(merged[f]==null&&x.data[f]!=null)merged[f]=x.data[f]})}
+          if(x.data&&items.length){items.forEach(function(it){var key=JSON.stringify([it.text,it.name,it.qty,it.unit]);if(!seen[key])merged.items.push(it);seen[key]=1});['date','time','meal'].forEach(function(f){if(merged[f]==null&&x.data[f]!=null)merged[f]=x.data[f]})}
           else{bad.push(i);lineFail=lineFail||{reason:x.data?'empty':x.reason,detail:x.data?'no item for this line':x.detail}}
         }).then(function(){return bad.cancelled?null:next()});
       }
@@ -2686,6 +2704,7 @@ function parseLogAI(text,ctx,opts){
         return {res:m2,rule:meta,used:true,reason:'ok',perLine:true,badLines:bad.length,nLines:lines.length};
       });
     });
+  });
   });
 }
 window.TrackMe=window.Journable={parseLog:parseLog,splitTimeBlocks:splitTimeBlocks,matchFood:matchFood,parseLogAI:parseLogAI,llmMerge:llmBuild,llmBuild:llmBuild,aiActive:aiEnabled,appConfig:function(){return llmImport().then(llmAppConfig)},version:'1.1.4'};
@@ -2725,7 +2744,7 @@ function viewAI(root){
       h('p',{class:'small muted',id:'ai-state',text:'Status: '+chipLabel()+(UI.modelId&&llmModel(UI.modelId)?' ('+llmModel(UI.modelId).name+')':'')+'.'})));
     if(LLM.err)box.appendChild(h('section',{class:'banner error',id:'ai-err',role:'alert'},h('b',{text:'That did not work. '}),LLM.err));
     if(LLM.last){
-      var L=LLM.last,rep=['TrackMe last AI problem, '+L.when,'Model: '+L.model,'Load: '+(L.loadMs!=null?L.loadMs+' ms':'n/a'),'Generate: '+(L.genMs!=null?L.genMs+' ms':'n/a'),'Tokens: '+(L.tokens!=null?L.tokens:'n/a'),'Reason: '+L.detail,'Text: '+(L.input||'').replace(/\n/g,' / ')].join('\n');
+      var L=LLM.last,rep=['TrackMe last AI problem, '+L.when,'Model: '+L.model,'Load: '+(L.loadMs!=null?L.loadMs+' ms':'n/a'),'Generate: '+(L.genMs!=null?L.genMs+' ms':'n/a'),'Tokens: '+(L.tokens!=null?L.tokens:'n/a'),'Reason: '+L.detail,'Error class: '+(L.errName||'n/a'),'Auto-reloads for this input: '+L.reloads,'Page hidden during the run: '+(L.hidden?'yes':'no'),'GPU: '+(LLM.gpu?(LLM.gpu.ok?'usable':'not usable')+', shader-f16 '+(LLM.gpu.f16?'yes':'no')+', maxBufferSize '+(LLM.gpu.maxBuf!=null?LLM.gpu.maxBuf:'n/a'):'n/a'),'Text: '+(L.input||'').replace(/\n/g,' / ')].join('\n');
       box.appendChild(h('section',{class:'card',id:'ai-last'},h('h3',{style:'margin:0 0 6px',text:'Last AI problem'}),h('pre',{class:'small',id:'ai-last-text',style:'white-space:pre-wrap;margin:0 0 8px',text:rep}),
         h('button',{type:'button',class:'btn sm',id:'ai-last-copy',text:'Copy',onclick:function(){
           function fb(){var ta=h('textarea',{style:'position:fixed;opacity:0;top:0',readonly:true});ta.value=rep;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){}ta.remove();toast('Copied')}
@@ -2850,7 +2869,7 @@ function viewPhone(root){
     if(!aiEnabled()){out.textContent='Rule parser read "'+sentence+'" into '+rule.items.length+' rows in '+tr+' ms. No AI model is loaded, so there is no tokens/s figure.';return}
     var t1=performance.now();
     out.textContent=LLM.state==='ready'?'Running the AI...':'Loading the AI first (first use)...';
-    llmEnsure().then(function(ok){
+    llmSerial(function(){return llmEnsure().then(function(ok){
       if(!ok){out.textContent='The AI could not start: '+(LLM.err||'unknown reason');return}
       var t2=performance.now(),loadSec=(t2-t1)/1000;
       return llmRun(sentence,S.today).then(function(r){
@@ -2862,7 +2881,7 @@ function viewPhone(root){
         else if(tk&&sec>0)bits.push('about '+f1(tk/sec)+' tokens/s overall');
         out.textContent='AI answered in '+f1(sec)+' s and found '+n+' item'+(n===1?'':'s')+(bits.length?' ('+bits.join(', ')+')':'')+(loadSec>0.05?'. Loading took '+f1(loadSec)+' s':'')+'.';
       });
-    });
+    })});
   }
   root.appendChild(h('section',{class:'card'},h('h2',{text:'Check my phone'}),
     h('p',{class:'muted',text:'Open this first. It shows whether this phone can install the app, keep your journal safe and run the optional on-device AI. Nothing here is sent anywhere.'}),list,summary));
@@ -4074,7 +4093,13 @@ function viewAbout(root){
 /* ---------- init ---------- */
 function tick(){var t=todayStr();if(t!==S.today){var was=S.viewDate===S.today;S.today=t;if(was)S.viewDate=t;if(!sheetState)render()}}
 setInterval(tick,60000);
-document.addEventListener('visibilitychange',function(){if(!document.hidden)tick()});
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){LLM.hidAt=Date.now();if(LLM.job)LLM.hid=true;return}
+  tick();
+  /* a phone can lose the GPU while the page is in the background: after a real absence let the engine go quietly, the next request reloads it (never during a job) */
+  if(LLM.state==='ready'&&!LLM.job&&LLM.hidAt&&Date.now()-LLM.hidAt>=(window.__llmHideMs!=null?window.__llmHideMs:20000))llmUnloadOnly();
+  LLM.hidAt=0;
+});
 $('#menu-btn').addEventListener('click',function(){if(drawerOpen())closeDrawer();else openDrawer()});
 $('#drawer-scrim').addEventListener('click',function(){closeDrawer()});
 document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&drawerOpen()&&!sheetState){ev.preventDefault();closeDrawer()}});
