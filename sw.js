@@ -5,7 +5,7 @@
    - the optional AI library (vendor/web-llm/web-llm.js) lives in its OWN cache, journable-lib (name kept so a downloaded AI library is not orphaned), which is never versioned or deleted by an update,
      so on-device AI keeps working offline after an update (it and pdf.js are refreshed on install when the app update brings new lib files, see refreshLib)
    - a new version waits until the page asks it to take over (message {type:'SKIP_WAITING'}) so the user taps "Update ready" */
-var VERSION = '3b6da8313b';
+var VERSION = 'f787023a44';
 var CACHE = 'trackme-shell-v' + VERSION;
 var SHELL = ['./index.html', './app.js', './app.css', './manifest.webmanifest', './icons/icon.svg', './icons/192.png', './icons/512.png', './llm-worker.js', './probe-worker.js', './early.js', './report.js'];
 var LIB = 'journable-lib';

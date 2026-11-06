@@ -196,3 +196,6 @@ Every changed assertion is listed. New suite `test_v115.py`.
 - `scripts/db_check.mjs`: 74 dish rows / 600 + cooked built foods / unique ids / the ml list exclude or add the 28 `l_` rows; the per-ml macro range is 0..1.5 (honey carbs 1.18 g per ml); the 4-decimal round trip skips `l_` rows (recipe values). 8 new checks.
 - No other assertion changed.
 
+
+- test_v111 (v1.1.7): the mock errors 'device lost' / 'worker died: GPU device lost' became 'generation failed' / 'worker died: out of tokens'. Reason: a device-lost error is now classified as a recoverable GPU error (reload once and ask again), which added one retry call; these two checks are about a generic failure with no reload. Intent and expected numbers unchanged (7 calls, 1 call).
+- test_v111 (v1.1.7): the two checks that looked for the text 'GPU device lost' in the failure reason / Last AI problem now look for 'out of tokens' (same mock rename as above).

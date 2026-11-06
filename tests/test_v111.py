@@ -23,9 +23,9 @@ MOCK = """window.__calls=[];window.__mode='ok';window.__ans=%s;window.__llmCance
 function pl(t){var o=window.__ans.filter(function(x){return t.replace(/[^a-z]/gi,'').toLowerCase().indexOf(x.text.replace(/[^a-z]/gi,'').toLowerCase())>=0});return JSON.stringify({items:o,date:null,time:null,meal:null})}
 window.__llmMock={has:function(){return true},cancel:function(){window.__llmCancelled++},usage:{completion_tokens:42},extract:function(t){window.__calls.push(t);var m=window.__mode;
  if(m==='hang')return new Promise(function(){});
- if(m==='all-fail')return Promise.reject(new Error('worker died: GPU device lost'));
+ if(m==='all-fail')return Promise.reject(new Error('worker died: out of tokens'));
  if(m==='bad')return 'sorry I cannot do that';
- if(m==='whole-fail'&&t.indexOf('\\n')>=0)return Promise.reject(new Error('device lost'));
+ if(m==='whole-fail'&&t.indexOf('\\n')>=0)return Promise.reject(new Error('generation failed'));
  if(m==='line3-fail'){if(t.indexOf('\\n')>=0)return Promise.reject(new Error('x'));if(t.indexOf('Cashews')>=0)return 'nonsense'}
  if(t.indexOf('\\n')>=0)return JSON.stringify({items:window.__ans,date:null,time:null,meal:null});return pl(t)}};
 localStorage.setItem('dt:v1:ui',JSON.stringify({llmOn:true,modelId:'Qwen3-0.6B-q4f16_1-MLC'}))"""
@@ -107,7 +107,7 @@ with sync_playwright() as pw:
     p.evaluate("()=>{window.__mode='all-fail'}")
     open_pv(p, T6); wait_ai(p)
     msg = p.inner_text('#pv-ai')
-    check('failure shows the concrete reason (error text) and the fallback', 'AI could not read this' in msg and 'GPU device lost' in msg and 'built-in rules' in msg, msg)
+    check('failure shows the concrete reason (error text) and the fallback', 'AI could not read this' in msg and 'out of tokens' in msg and 'built-in rules' in msg, msg)
     check('failure shows Retry; rules rows are shown meanwhile', p.locator('#pv-ai-retry').count() == 1 and len(rows(p)) >= 6)
     check('failure message and Retry fit at 360 px with 44 px targets, no sideways scroll', not small_targets(p, '#pv-ai') and not hscroll(p), (small_targets(p, '#pv-ai'), hscroll(p)))
     p.screenshot(path='/tmp/claude-1000/-home-arch-projects-trackme/46f407c9-d405-4053-9938-ae0702e6983c/scratchpad/fail.png')
@@ -117,7 +117,7 @@ with sync_playwright() as pw:
     p.evaluate("()=>{document.querySelector('[data-tab=ai],#nav-ai')}")
     p.click('#ai-chip'); p.wait_for_selector('#ai-cards'); p.wait_for_timeout(300)
     lt = p.inner_text('#ai-last-text') if p.locator('#ai-last-text').count() else ''
-    check('On-device AI screen: "Last AI problem" with model, load, generate, tokens, reason', all(x in lt for x in ('Model:', 'Load:', 'Generate:', 'Tokens:', 'Reason:')) and 'GPU device lost' in lt and p.locator('#ai-last-copy').count() == 1, lt)
+    check('On-device AI screen: "Last AI problem" with model, load, generate, tokens, reason', all(x in lt for x in ('Model:', 'Load:', 'Generate:', 'Tokens:', 'Reason:')) and 'out of tokens' in lt and p.locator('#ai-last-copy').count() == 1, lt)
     check('Last AI problem: Copy button is a 44 px target', not small_targets(p, '#ai-last'))
     p.close()
     # ---- timeout (generate phase) ----
