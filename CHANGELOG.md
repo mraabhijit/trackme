@@ -4,6 +4,9 @@ All notable changes to TrackMe (the app folder is still called `journable/`). Fo
 
 ## [Unreleased] (1.1.4)
 
+### Fixed
+- **"Bengal gram 1 katori" logged 1 g.** The word "gram" inside a food name (Bengal gram, green gram, horse gram) was read as the unit grams and hid the typed katori. Weight words (gram, grams, gm, gms) now count as units only right after a number. Test: `tests/test_gram_names.py`.
+
 ### Fixed (real-phone report 2026-11-05)
 - **"ModelNotLoadedError" after the AI model loaded.** WebLLM's `reload()` swallows an abort and returns with no model inside, so an engine marked ready could fail its first request in a few ms. The app now reloads the model once and asks again; if it fails a second time the usual reason and Retry are shown. Cause of the abort on the phone not proven. Test: `tests/test_v116.py`.
 
